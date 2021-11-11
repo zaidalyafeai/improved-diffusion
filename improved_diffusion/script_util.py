@@ -32,8 +32,8 @@ def model_and_diffusion_defaults():
         rescale_learned_sigmas=True,
         use_checkpoint=False,
         use_scale_shift_norm=True,
-        channels_per_head=None,
-        channels_per_head_upsample=None,
+        channels_per_head=0,
+        channels_per_head_upsample=-1,
     )
 
 

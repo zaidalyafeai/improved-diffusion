@@ -314,7 +314,7 @@ class UNetModel(nn.Module):
         num_heads=1,
         num_heads_upsample=-1,
         use_scale_shift_norm=False,
-        channels_per_head=None,
+        channels_per_head=0,
         channels_per_head_upsample=-1
     ):
         super().__init__()
@@ -374,7 +374,7 @@ class UNetModel(nn.Module):
                 ch = mult * model_channels
                 if ds in attention_resolutions:
                     num_heads_here = num_heads
-                    if channels_per_head is not None:
+                    if channels_per_head > 0:
                         num_heads_here = ch // channels_per_head
                     layers.append(
                         AttentionBlock(
@@ -427,7 +427,7 @@ class UNetModel(nn.Module):
                 ch = model_channels * mult
                 if ds in attention_resolutions:
                     num_heads_here = num_heads_upsample
-                    if channels_per_head_upsample is not None:
+                    if channels_per_head_upsample > 0:
                         num_heads_here = ch // channels_per_head_upsample
                     layers.append(
                         AttentionBlock(
