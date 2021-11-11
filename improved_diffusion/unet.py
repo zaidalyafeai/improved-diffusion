@@ -314,11 +314,16 @@ class UNetModel(nn.Module):
         num_heads=1,
         num_heads_upsample=-1,
         use_scale_shift_norm=False,
+        channels_per_head=None,
+        channels_per_head_upsample=-1
     ):
         super().__init__()
 
         if num_heads_upsample == -1:
             num_heads_upsample = num_heads
+
+        if channels_per_head_upsample == -1:
+            channels_per_head_upsample = channels_per_head
 
         self.in_channels = in_channels
         self.model_channels = model_channels
@@ -368,9 +373,12 @@ class UNetModel(nn.Module):
                 ]
                 ch = mult * model_channels
                 if ds in attention_resolutions:
+                    num_heads_here = num_heads
+                    if channels_per_head is not None:
+                        num_heads_here = ch // channels_per_head
                     layers.append(
                         AttentionBlock(
-                            ch, use_checkpoint=use_checkpoint, num_heads=num_heads
+                            ch, use_checkpoint=use_checkpoint, num_heads=num_heads_here
                         )
                     )
                 self.input_blocks.append(TimestepEmbedSequential(*layers))
@@ -418,11 +426,14 @@ class UNetModel(nn.Module):
                 ]
                 ch = model_channels * mult
                 if ds in attention_resolutions:
+                    num_heads_here = num_heads_upsample
+                    if channels_per_head_upsample is not None:
+                        num_heads_here = ch // channels_per_head_upsample
                     layers.append(
                         AttentionBlock(
                             ch,
                             use_checkpoint=use_checkpoint,
-                            num_heads=num_heads_upsample,
+                            num_heads=num_heads_here,
                         )
                     )
                 if level and i == num_res_blocks:
@@ -544,4 +555,3 @@ class SuperResModel(UNetModel):
         upsampled = F.interpolate(low_res, (new_height, new_width), mode="bilinear")
         x = th.cat([x, upsampled], dim=1)
         return super().get_feature_vectors(x, timesteps, **kwargs)
-
