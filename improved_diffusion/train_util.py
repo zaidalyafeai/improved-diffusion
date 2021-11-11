@@ -296,7 +296,7 @@ class TrainLoop:
     def _master_params_to_state_dict(self, master_params):
         if self.use_fp16:
             master_params = unflatten_master_params(
-                self.model.parameters(), master_params
+                list(self.model.parameters()), master_params
             )
         state_dict = self.model.state_dict()
         for i, (name, _value) in enumerate(self.model.named_parameters()):
