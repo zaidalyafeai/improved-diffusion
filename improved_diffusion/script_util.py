@@ -32,6 +32,8 @@ def model_and_diffusion_defaults():
         rescale_learned_sigmas=True,
         use_checkpoint=False,
         use_scale_shift_norm=True,
+        channels_per_head=None,
+        channels_per_head_upsample=None,
     )
 
 
@@ -55,6 +57,8 @@ def create_model_and_diffusion(
     rescale_learned_sigmas,
     use_checkpoint,
     use_scale_shift_norm,
+    channels_per_head,
+    channels_per_head_upsample,
 ):
     model = create_model(
         image_size,
@@ -68,6 +72,9 @@ def create_model_and_diffusion(
         num_heads_upsample=num_heads_upsample,
         use_scale_shift_norm=use_scale_shift_norm,
         dropout=dropout,
+        channels_per_head=channels_per_head,
+        channels_per_head_upsample=channels_per_head_upsample,
+
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -95,6 +102,8 @@ def create_model(
     num_heads_upsample,
     use_scale_shift_norm,
     dropout,
+    channels_per_head,
+    channels_per_head_upsample,
 ):
     if image_size == 256:
         channel_mult = (1, 1, 2, 2, 4, 4)
@@ -122,6 +131,8 @@ def create_model(
         num_heads=num_heads,
         num_heads_upsample=num_heads_upsample,
         use_scale_shift_norm=use_scale_shift_norm,
+        channels_per_head=channels_per_head,
+        channels_per_head_upsample=channels_per_head_upsample,
     )
 
 
