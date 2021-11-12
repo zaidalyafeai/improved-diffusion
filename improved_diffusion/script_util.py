@@ -90,6 +90,8 @@ def create_model_and_diffusion(
     )
     if verbose:
         print(model)
+        n_params = sum([np.product(p.shape) for p in model.parameters()])
+        print(f"{n_params/1e6:.0f}M params")
     return model, diffusion
 
 
