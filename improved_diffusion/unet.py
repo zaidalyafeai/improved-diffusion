@@ -316,7 +316,7 @@ class UNetModel(nn.Module):
         use_scale_shift_norm=False,
         channels_per_head=0,
         channels_per_head_upsample=-1,
-        verbose=True
+        verbose=False
     ):
         super().__init__()
 
