@@ -1,6 +1,7 @@
 import copy
 import functools
 import os
+import time
 
 import blobfile as bf
 import numpy as np
@@ -163,11 +164,13 @@ class TrainLoop:
             not self.lr_anneal_steps
             or self.step + self.resume_step < self.lr_anneal_steps
         ):
+            t1 = time.time()
             batch, cond = next(self.data)
             self.run_step(batch, cond)
             if self.step % self.log_interval == 0:
+                print(f"{time.time()-t1:.2f} sec")
                 logger.dumpkvs()
-            if self.step % self.save_interval == 0:
+            if (self.step % self.save_interval == 0) and (self.step > 0):
                 self.save()
                 # Run for a finite amount of time in integration tests.
                 if os.environ.get("DIFFUSION_TRAINING_TEST", "") and self.step > 0:
