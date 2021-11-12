@@ -160,15 +160,17 @@ class TrainLoop:
         self.model.convert_to_fp16()
 
     def run_loop(self):
+        t1 = time.time()
         while (
             not self.lr_anneal_steps
             or self.step + self.resume_step < self.lr_anneal_steps
         ):
-            t1 = time.time()
             batch, cond = next(self.data)
             self.run_step(batch, cond)
             if self.step % self.log_interval == 0:
-                print(f"{time.time()-t1:.2f} sec")
+                t2 = time.time()
+                print(f"{t2-t1:.2f} sec")
+                t1 = t2
                 logger.dumpkvs()
             if (self.step % self.save_interval == 0) and (self.step > 0):
                 self.save()
