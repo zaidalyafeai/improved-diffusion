@@ -1,6 +1,8 @@
 import argparse
 import inspect
 
+import numpy as np
+
 from . import gaussian_diffusion as gd
 from .respace import SpacedDiffusion, space_timesteps
 from .unet import SuperResModel, UNetModel
