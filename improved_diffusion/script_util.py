@@ -59,6 +59,7 @@ def create_model_and_diffusion(
     use_scale_shift_norm,
     channels_per_head,
     channels_per_head_upsample,
+    verbose=False
 ):
     model = create_model(
         image_size,
@@ -87,6 +88,8 @@ def create_model_and_diffusion(
         rescale_learned_sigmas=rescale_learned_sigmas,
         timestep_respacing=timestep_respacing,
     )
+    if verbose:
+        print(model)
     return model, diffusion
 
 
