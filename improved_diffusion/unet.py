@@ -320,6 +320,10 @@ class UNetModel(nn.Module):
     ):
         super().__init__()
 
+        def vprint(*args):
+            if verbose:
+                print(*args)
+
         if num_heads_upsample == -1:
             num_heads_upsample = num_heads
 
@@ -384,16 +388,16 @@ class UNetModel(nn.Module):
                     )
                 self.input_blocks.append(TimestepEmbedSequential(*layers))
                 input_block_chans.append(ch)
-                print(f"up   | {level} of {len(channel_mult)} | ch {ch} | ds {ds}")
+                vprint(f"up   | {level} of {len(channel_mult)} | ch {ch} | ds {ds}")
             if level != len(channel_mult) - 1:
                 self.input_blocks.append(
                     TimestepEmbedSequential(Downsample(ch, conv_resample, dims=dims))
                 )
                 input_block_chans.append(ch)
                 ds *= 2
-                print(f"up   | ds {ds // 2} -> {ds}")
+                vprint(f"up   | ds {ds // 2} -> {ds}")
 
-        print(f"input_block_chans: {input_block_chans}")
+        vprint(f"input_block_chans: {input_block_chans}")
 
         self.middle_block = TimestepEmbedSequential(
             ResBlock(
@@ -441,11 +445,11 @@ class UNetModel(nn.Module):
                             num_heads=num_heads_here,
                         )
                     )
-                print(f"down | {level} of {len(channel_mult)} | ch {ch} | ds {ds}")
+                vprint(f"down | {level} of {len(channel_mult)} | ch {ch} | ds {ds}")
                 if level and i == num_res_blocks:
                     layers.append(Upsample(ch, conv_resample, dims=dims))
                     ds //= 2
-                    print(f"down | ds {ds * 2} -> {ds}")
+                    vprint(f"down | ds {ds * 2} -> {ds}")
                 self.output_blocks.append(TimestepEmbedSequential(*layers))
 
         self.out = nn.Sequential(
