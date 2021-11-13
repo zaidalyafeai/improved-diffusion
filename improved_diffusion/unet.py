@@ -552,6 +552,11 @@ class UNetModel(nn.Module):
             self.txt
         ), "must specify txt if and only if the model is text-conditional"
 
+        if txt is not None:
+            print(txt.shape)
+            txt = self.text_encoder(txt)
+            print(txt.shape)
+
         hs = []
         emb = self.time_embed(timestep_embedding(timesteps, self.model_channels))
 
