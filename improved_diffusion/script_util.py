@@ -37,6 +37,9 @@ def model_and_diffusion_defaults():
         channels_per_head=0,
         channels_per_head_upsample=-1,
         channel_mult="",
+        use_checkpoint_down=False,
+        use_checkpoint_middle=False,
+        use_checkpoint_up=False,
     )
 
 
@@ -63,7 +66,10 @@ def create_model_and_diffusion(
     channels_per_head,
     channels_per_head_upsample,
     channel_mult="",
-    verbose=False
+    verbose=False,
+    use_checkpoint_up=False,
+    use_checkpoint_middle=False,
+    use_checkpoint_down=False,
 ):
     model = create_model(
         image_size,
@@ -72,6 +78,9 @@ def create_model_and_diffusion(
         learn_sigma=learn_sigma,
         class_cond=class_cond,
         use_checkpoint=use_checkpoint,
+        use_checkpoint_down=use_checkpoint_down,
+        use_checkpoint_middle=use_checkpoint_middle,
+        use_checkpoint_up=use_checkpoint_up,
         attention_resolutions=attention_resolutions,
         num_heads=num_heads,
         num_heads_upsample=num_heads_upsample,
@@ -80,6 +89,7 @@ def create_model_and_diffusion(
         channels_per_head=channels_per_head,
         channels_per_head_upsample=channels_per_head_upsample,
         channel_mult=channel_mult,
+
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -114,6 +124,9 @@ def create_model(
     channels_per_head,
     channels_per_head_upsample,
     channel_mult="",
+    use_checkpoint_up=False,
+    use_checkpoint_middle=False,
+    use_checkpoint_down=False,
 ):
     if channel_mult != "":
         print(f"got channel_mult: {channel_mult}")
@@ -148,6 +161,9 @@ def create_model(
         channel_mult=channel_mult,
         num_classes=(NUM_CLASSES if class_cond else None),
         use_checkpoint=use_checkpoint,
+        use_checkpoint_down=use_checkpoint_down,
+        use_checkpoint_middle=use_checkpoint_middle,
+        use_checkpoint_up=use_checkpoint_up,
         num_heads=num_heads,
         num_heads_upsample=num_heads_upsample,
         use_scale_shift_norm=use_scale_shift_norm,

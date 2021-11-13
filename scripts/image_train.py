@@ -74,6 +74,9 @@ def create_argparser():
         use_fp16=False,
         fp16_scale_growth=1e-3,
         channel_mult="",
+        use_checkpoint_down=False,
+        use_checkpoint_middle=False,
+        use_checkpoint_up=False,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
