@@ -420,7 +420,6 @@ class UNetModel(nn.Module):
                     )
                 if self.txt and ds == self.txt_resolution:
                     self.text_encoder = TextEncoder(
-                        output_dim=ch,
                         inner_dim=txt_dim,
                     )
                     layers.append(
