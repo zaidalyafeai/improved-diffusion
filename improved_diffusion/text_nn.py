@@ -129,9 +129,12 @@ class CrossAttention(nn.Module):
     def forward(self, src, tgt):
         b, c, *spatial = tgt.shape
         tgt = tgt.reshape(b, c, -1)
+        print(tgt.dtype)
         tgt = self.tgt_ln(tgt)
+        print(tgt.dtype)
         tgt = tgt.transpose(1, 2)
 
+        print(self.q.weight.dtype)
         q = self.q(tgt)
 
         src = self.src_ln(src)
