@@ -126,7 +126,8 @@ class TrainLoop:
                 self.model.load_state_dict(
                     dist_util.load_state_dict(
                         resume_checkpoint, map_location=dist_util.dev()
-                    )
+                    ),
+                    strict = (not self.model.txt)
                 )
 
         dist_util.sync_params(self.model.parameters())
