@@ -177,7 +177,8 @@ class TrainLoop:
                 print(f"{t2-t1:.2f} sec")
                 for n, m in self.model.named_modules():
                     if hasattr(m, 'gain'):
-                        print(f"gain {getattr(m, 'gain').exp().item():.4f} | {n}")
+                        gain_val = (getattr(m, 'gain_scale') * getattr(m, 'gain')).exp().item()
+                        print(f"gain {gain_val:.4f} | {n}")
                         # print(f"gain grad {getattr(m, 'gain').grad.item():.4f} | {n}")
                 t1 = t2
                 logger.dumpkvs()
