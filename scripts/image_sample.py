@@ -101,6 +101,7 @@ def create_argparser():
         use_ddim=False,
         model_path="",
         text_input="",
+        log_interval=10,  # ignored
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
