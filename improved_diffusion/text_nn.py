@@ -25,7 +25,7 @@ class TextEncoder(nn.Module):
         use_encoder_decoder = False,
         decoder_sqrt_ntok = 32,
         encoder_kwargs = {},
-        return_sequences=False
+        return_sequences=True
     ):
         super().__init__()
 
