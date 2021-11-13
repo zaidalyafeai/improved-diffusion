@@ -12,7 +12,8 @@ def convert_module_to_f16(l):
     """
     if isinstance(l, (nn.Conv1d, nn.Conv2d, nn.Conv3d, nn.Linear, nn.LayerNorm, nn.MultiheadAttention)):
         l.weight.data = l.weight.data.half()
-        l.bias.data = l.bias.data.half()
+        if l.bias is not None:
+            l.bias.data = l.bias.data.half()
 
 
 def convert_module_to_f32(l):
@@ -21,7 +22,8 @@ def convert_module_to_f32(l):
     """
     if isinstance(l, (nn.Conv1d, nn.Conv2d, nn.Conv3d, nn.LayerNorm, nn.MultiheadAttention)):
         l.weight.data = l.weight.data.float()
-        l.bias.data = l.bias.data.float()
+        if l.bias is not None:
+            l.bias.data = l.bias.data.float()
 
 
 def make_master_params(model_params):
