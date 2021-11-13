@@ -130,16 +130,12 @@ class CrossAttention(nn.Module):
 
     def forward(self, src, tgt):
         b, c, *spatial = tgt.shape
-        print(tgt.shape)
         tgt = tgt.reshape(b, c, -1)
-        print(tgt.shape)
         tgt = self.tgt_ln(tgt)
         tgt = tgt.transpose(1, 2)
 
-        print(self.q.weight.dtype)
         q = self.q(tgt)
 
-        print(src.shape)
         src = self.src_ln(src)
         kv = self.kv(src)
 
@@ -147,11 +143,5 @@ class CrossAttention(nn.Module):
 
         attn_output, attn_output_weights = self.attn(q, k, v)
         attn_output = self.gain.exp() * attn_output
-        print(attn_output.shape)
         attn_output = rearrange(attn_output, 'b (h w) c -> b c h w', h=spatial[0])
-        print(attn_output.shape)
         return attn_output
-
-    def apply(self, *args, **kwargs):
-        print('apply at CrossAttention')
-        return super().apply(*args, **kwargs)

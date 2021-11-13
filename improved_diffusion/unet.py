@@ -50,10 +50,6 @@ class CrossAttentionAdapter(CrossAttention, TextBlock):
     def forward(self, x, txt):
         return super().forward(src=txt, tgt=x)
 
-    def apply(self, *args, **kwargs):
-        print('apply at CrossAttentionAdapter')
-        return super().apply(*args, **kwargs)
-
 
 class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
     """
@@ -568,14 +564,11 @@ class UNetModel(nn.Module):
             emb = emb + self.label_emb(y)
 
         if txt is not None:
-            print(txt.shape)
             txt = self.text_encoder(txt)
             txt = txt.type(self.inner_dtype)
-            print(txt.shape)
 
         h = x.type(self.inner_dtype)
         for module in self.input_blocks:
-            print((h.dtype, emb.dtype, txt.dtype))
             h = module(h, emb, txt=txt)
             hs.append(h)
         h = self.middle_block(h, emb, txt=txt)
