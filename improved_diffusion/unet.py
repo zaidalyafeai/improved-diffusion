@@ -46,7 +46,7 @@ class TextBlock(nn.Module):
         """
 
 
-class CrossAttentionAdapter(CrossAttention):
+class CrossAttentionAdapter(CrossAttention, TextBlock):
     def forward(self, x, txt):
         return super().forward(src=txt, tgt=x)
 
