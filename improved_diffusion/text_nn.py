@@ -108,7 +108,7 @@ class CrossAttention(nn.Module):
         dim,
         heads,
         text_dim=512,
-        init_gain=5e-1
+        init_gain=1.,
     ):
         super().__init__()
         self.dim = dim
