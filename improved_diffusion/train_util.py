@@ -239,10 +239,7 @@ class TrainLoop:
                 loss.backward()
 
     def optimize_fp16(self):
-        for n, p in self.model.named_parameters():
-            if p.grad is None:
-                print(n)
-        if any(not th.isfinite(p.grad).all() for p in self.model_params):
+        if any(not th.isfinite(p.grad).all() for p in self.model_params if p.grad is not None):
             self.lg_loss_scale -= 1
             logger.log(f"Found NaN, decreased lg_loss_scale to {self.lg_loss_scale}")
             return
@@ -267,6 +264,8 @@ class TrainLoop:
     def _log_grad_norm(self):
         sqsum = 0.0
         for p in self.master_params:
+            if p.grad is None:
+                continue
             sqsum += (p.grad ** 2).sum().item()
         logger.logkv_mean("grad_norm", np.sqrt(sqsum))
 
