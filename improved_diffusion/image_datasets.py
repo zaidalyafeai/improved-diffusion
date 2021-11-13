@@ -100,8 +100,8 @@ class ImageDataset(Dataset):
         self.max_seq_len = max_seq_len
 
         if self.txt:
-            self.local_images = [p for p in local_images if p in image_file_to_text_file]
-            self.local_texts = [image_file_to_text_file[p] for p in local_images]
+            self.local_images = [p for p in self.local_images if p in image_file_to_text_file]
+            self.local_texts = [image_file_to_text_file[p] for p in self.local_images]
 
             self.tokenizer = tokenizers.Tokenizer.from_file(tokenizer_path)
             self.tokenizer.enable_truncation(max_seq_len)
