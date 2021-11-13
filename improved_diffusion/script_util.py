@@ -76,6 +76,7 @@ def create_model_and_diffusion(
     txt=False,
     txt_dim=128,
 ):
+    print(f"create_model_and_diffusion: got txt={txt}")
     model = create_model(
         image_size,
         num_channels,
@@ -136,6 +137,7 @@ def create_model(
     txt=False,
     txt_dim=128,
 ):
+    print(f"create_model: got txt={txt}")
     if channel_mult != "":
         print(f"got channel_mult: {channel_mult}")
         try:

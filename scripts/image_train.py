@@ -18,6 +18,7 @@ from improved_diffusion.train_util import TrainLoop
 
 def main():
     args = create_argparser().parse_args()
+    print(f"args: got txt={args.txt}")
 
     dist_util.setup_dist()
     logger.configure()
