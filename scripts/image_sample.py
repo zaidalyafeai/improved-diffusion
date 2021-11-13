@@ -18,6 +18,7 @@ from improved_diffusion.script_util import (
     add_dict_to_argparser,
     args_to_dict,
 )
+from improved_diffusion.image_datasets import load_tokenizer, tokenize
 
 
 def main():
@@ -46,6 +47,10 @@ def main():
                 low=0, high=NUM_CLASSES, size=(args.batch_size,), device=dist_util.dev()
             )
             model_kwargs["y"] = classes
+        if args.txt:
+            tokenizer = load_tokenizer(max_seq_len=model.text_encoder.max_seq_len)
+            txt = th.as_tensor(tokenize(tokenizer, args.batch_size * [args.text_input])).to(dist_util.dev())
+            model_kwargs["txt"] = txt
         sample_fn = (
             diffusion.p_sample_loop if not args.use_ddim else diffusion.ddim_sample_loop
         )
@@ -95,6 +100,7 @@ def create_argparser():
         batch_size=16,
         use_ddim=False,
         model_path="",
+        text_input="",
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
