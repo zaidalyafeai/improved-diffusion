@@ -21,6 +21,8 @@ from .fp16_util import (
 from .nn import update_ema
 from .resample import LossAwareSampler, UniformSampler
 
+from .image_datasets import tokenize
+
 # For ImageNet experiments, this was a good default value.
 # We found that the lg_loss_scale quickly climbed to
 # 20-21 within the first ~1K steps of training.
@@ -46,6 +48,7 @@ class TrainLoop:
         schedule_sampler=None,
         weight_decay=0.0,
         lr_anneal_steps=0,
+        tokenizer=None
     ):
         self.model = model
         self.diffusion = diffusion
@@ -66,6 +69,7 @@ class TrainLoop:
         self.schedule_sampler = schedule_sampler or UniformSampler(diffusion)
         self.weight_decay = weight_decay
         self.lr_anneal_steps = lr_anneal_steps
+        self.tokenizer = tokenizer
 
         self.step = 0
         self.resume_step = 0
@@ -201,7 +205,7 @@ class TrainLoop:
                 for k, v in cond.items()
             }
             if 'txt' in micro_cond:
-                micro_cond['txt'] = th.as_tensor(self.data.tokenize(micro_cond['txt'])).to(dist_util.dev())
+                micro_cond['txt'] = th.as_tensor(tokenize(self.tokenizer, micro_cond['txt'])).to(dist_util.dev())
             last_batch = (i + self.microbatch) >= batch.shape[0]
             t, weights = self.schedule_sampler.sample(micro.shape[0], dist_util.dev())
 
