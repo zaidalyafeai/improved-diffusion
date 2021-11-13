@@ -519,6 +519,7 @@ class UNetModel(nn.Module):
         self.middle_block.apply(convert_module_to_f16)
         self.output_blocks.apply(convert_module_to_f16)
         if hasattr(self, 'text_encoder'):
+            print("text_encoder to fp16")
             self.text_encoder.apply(convert_module_to_f16)
 
     def convert_to_fp32(self):
