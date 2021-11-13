@@ -61,6 +61,7 @@ def create_model_and_diffusion(
     use_scale_shift_norm,
     channels_per_head,
     channels_per_head_upsample,
+    channel_mult="",
     verbose=False
 ):
     model = create_model(
@@ -77,7 +78,7 @@ def create_model_and_diffusion(
         dropout=dropout,
         channels_per_head=channels_per_head,
         channels_per_head_upsample=channels_per_head_upsample,
-
+        channel_mult=channel_mult,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -111,15 +112,25 @@ def create_model(
     dropout,
     channels_per_head,
     channels_per_head_upsample,
+    channel_mult="",
 ):
-    if image_size == 256:
-        channel_mult = (1, 1, 2, 2, 4, 4)
-    elif image_size == 64:
-        channel_mult = (1, 2, 3, 4)
-    elif image_size == 32:
-        channel_mult = (1, 2, 2, 2)
-    else:
-        raise ValueError(f"unsupported image size: {image_size}")
+    if channel_mult != "":
+        try:
+            channel_mult = tuple(int(v) for v in channel_mult.strip().split(','))
+        except ValueError:
+            pass
+
+    if not isinstance(channel_mult, tuple):
+        if image_size == 256:
+            channel_mult = (1, 1, 2, 2, 4, 4)
+        elif image_size == 64:
+            channel_mult = (1, 2, 3, 4)
+        elif image_size == 32:
+            channel_mult = (1, 2, 2, 2)
+        else:
+            raise ValueError(f"unsupported image size: {image_size}")
+
+    print(f"channel_mult: {channel_mult}")
 
     attention_ds = []
     for res in attention_resolutions.split(","):
