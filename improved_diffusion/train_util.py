@@ -196,6 +196,8 @@ class TrainLoop:
             micro = batch[i : i + self.microbatch].to(dist_util.dev())
             micro_cond = {
                 k: v[i : i + self.microbatch].to(dist_util.dev())
+                if k != 'txt'
+                else k: v[i : i + self.microbatch]
                 for k, v in cond.items()
             }
             if 'txt' in micro_cond:
