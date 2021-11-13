@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader, Dataset
 import tokenizers
 
 
-def load_tokenizer(tokenizer_path  = "tokenizer_file",):
+def load_tokenizer(tokenizer_path  = "tokenizer_file", max_seq_len=130):
     tokenizer = tokenizers.Tokenizer.from_file(tokenizer_path)
     tokenizer.enable_truncation(max_seq_len)
     tokenizer.enable_padding()
@@ -21,7 +21,6 @@ def tokenize(tokenizer, txt):
 def load_data(
     *, data_dir, batch_size, image_size, class_cond=False, deterministic=False,
     txt=False,
-    max_seq_len     = 130,
 ):
     """
     For a dataset, create a generator over (images, kwargs) pairs.
@@ -57,7 +56,6 @@ def load_data(
         classes=classes,
         image_file_to_text_file=image_file_to_text_file,
         txt=txt,
-        max_seq_len=max_seq_len,
         shard=MPI.COMM_WORLD.Get_rank(),
         num_shards=MPI.COMM_WORLD.Get_size(),
     )
@@ -102,14 +100,12 @@ class ImageDataset(Dataset):
                  classes=None,
                  image_file_to_text_file=None,
                  txt=False,
-                 max_seq_len=130,
                  shard=0, num_shards=1):
         super().__init__()
         self.resolution = resolution
         self.local_images = image_paths[shard:][::num_shards]
         self.local_classes = None if classes is None else classes[shard:][::num_shards]
         self.txt = txt
-        self.max_seq_len = max_seq_len
 
         if self.txt:
             self.local_images = [p for p in self.local_images if p in image_file_to_text_file]
