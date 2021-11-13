@@ -85,6 +85,7 @@ def create_argparser():
         use_checkpoint_middle=False,
         use_checkpoint_up=False,
         txt=False,
+        txt_dim=128,
         verbose=False,
     )
     defaults.update(model_and_diffusion_defaults())
