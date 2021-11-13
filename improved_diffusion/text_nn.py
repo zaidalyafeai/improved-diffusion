@@ -97,7 +97,7 @@ class TextEncoder(nn.Module):
             return out
 
 
-class CrossAttention(nn.Module):
+class CrossAttentionOld(nn.Module):
     def __init__(
         self,
         dim,
@@ -124,8 +124,15 @@ class CrossAttention(nn.Module):
         torch.nn.init.orthogonal_(self.attn.out_proj.weight)
 
     def forward(self, src, tgt):
-        q = self.q(self.tgt_ln(tgt))
-        kv = self.kv(self.src_ln(src))
+        b, c, *spatial = tgt.shape
+        tgt = tgt.reshape(b, c, -1)
+        tgt = self.tgt_ln(tgt)
+        tgt = tgt.transpose(1, 2)
+
+        q = self.q(tgt)
+
+        src = self.src_ln(src)
+        kv = self.kv(src)
 
         k, v = kv.chunk(2, dim=-1)
 
