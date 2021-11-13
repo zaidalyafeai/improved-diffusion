@@ -569,7 +569,8 @@ class UNetModel(nn.Module):
 
         if txt is not None:
             print(txt.shape)
-            txt = self.text_encoder(txt).to(emb.dtype)
+            txt = self.text_encoder(txt)
+            h = x.type(self.inner_dtype)
             print(txt.shape)
 
         h = x.type(self.inner_dtype)
