@@ -29,7 +29,7 @@ def convert_module_to_f32(l):
         l.weight.data = l.weight.data.float()
         if l.bias is not None:
             l.bias.data = l.bias.data.float()
-    if isinstance(l, (nn.MultiheadAttention, TextEncoder))
+    if isinstance(l, (nn.MultiheadAttention, TextEncoder)):
         for p in l.parameters():
             p.data = p.data.half()
 
