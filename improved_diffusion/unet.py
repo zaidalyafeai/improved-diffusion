@@ -375,7 +375,7 @@ class UNetModel(nn.Module):
                         dropout,
                         out_channels=mult * model_channels,
                         dims=dims,
-                        use_checkpoint=use_checkpoint or use_checkpoint_up,
+                        use_checkpoint=use_checkpoint or use_checkpoint_down,
                         use_scale_shift_norm=use_scale_shift_norm,
                     )
                 ]
@@ -386,7 +386,7 @@ class UNetModel(nn.Module):
                         num_heads_here = ch // channels_per_head
                     layers.append(
                         AttentionBlock(
-                            ch, use_checkpoint=use_checkpoint or use_checkpoint_up, num_heads=num_heads_here
+                            ch, use_checkpoint=use_checkpoint or use_checkpoint_down, num_heads=num_heads_here
                         )
                     )
                 self.input_blocks.append(TimestepEmbedSequential(*layers))
