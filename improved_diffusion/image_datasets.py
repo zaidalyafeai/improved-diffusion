@@ -74,7 +74,7 @@ def _list_image_files_recursively(data_dir, txt=False):
             results.append(full_path)
             if txt:
                 prefix, _, ext = full_path.rpartition(".")
-                path_txt = full_path + ".txt"
+                path_txt = prefix + ".txt"
                 # print(f'made path_txt={repr(path_txt)} from {repr(entry)}')
                 if bf.exists(path_txt):
                     image_file_to_text_file[full_path] = path_txt
