@@ -342,7 +342,7 @@ class UNetModel(nn.Module):
         channels_per_head_upsample=-1,
         txt=False,
         txt_dim=128,
-        txt_resolution=32,
+        txt_resolution=8,
         verbose=False
     ):
         super().__init__()
