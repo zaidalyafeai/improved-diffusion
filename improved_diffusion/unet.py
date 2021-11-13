@@ -347,6 +347,8 @@ class UNetModel(nn.Module):
     ):
         super().__init__()
 
+        print(f"unet: got txt={txt}")
+
         def vprint(*args):
             if verbose:
                 print(*args)
