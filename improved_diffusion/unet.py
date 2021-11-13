@@ -50,6 +50,10 @@ class CrossAttentionAdapter(CrossAttention, TextBlock):
     def forward(self, x, txt):
         return super().forward(src=txt, tgt=x)
 
+    def apply(*args, **kwargs):
+        print('apply at CrossAttentionAdapter')
+        return super().apply(*args, **kwargs)
+
 
 class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
     """
