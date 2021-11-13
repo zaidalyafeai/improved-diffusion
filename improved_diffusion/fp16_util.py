@@ -56,8 +56,8 @@ def model_grads_to_master_grads(model_params, master_params):
     """
     master_params[0].grad = _flatten_dense_tensors(
         [param.grad.data.detach().float()
-         if param.grad is None else None
-         for param in model_params]
+         for param in model_params
+         if param.grad is None else None]
     )
 
 
