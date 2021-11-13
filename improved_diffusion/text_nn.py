@@ -97,7 +97,7 @@ class TextEncoder(nn.Module):
             return out
 
 
-class CrossAttentionOld(nn.Module):
+class CrossAttention(nn.Module):
     def __init__(
         self,
         dim,

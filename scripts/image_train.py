@@ -36,6 +36,7 @@ def main():
         batch_size=args.batch_size,
         image_size=args.image_size,
         class_cond=args.class_cond,
+        txt=args.txt
     )
 
     logger.log("training...")
@@ -77,6 +78,7 @@ def create_argparser():
         use_checkpoint_down=False,
         use_checkpoint_middle=False,
         use_checkpoint_up=False,
+        txt=False,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

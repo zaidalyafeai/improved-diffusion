@@ -40,6 +40,8 @@ def model_and_diffusion_defaults():
         use_checkpoint_down=False,
         use_checkpoint_middle=False,
         use_checkpoint_up=False,
+        txt=False,
+        txt_dim=128,
     )
 
 
@@ -70,6 +72,8 @@ def create_model_and_diffusion(
     use_checkpoint_up=False,
     use_checkpoint_middle=False,
     use_checkpoint_down=False,
+    txt=False,
+    txt_dim=128,
 ):
     model = create_model(
         image_size,
@@ -89,7 +93,8 @@ def create_model_and_diffusion(
         channels_per_head=channels_per_head,
         channels_per_head_upsample=channels_per_head_upsample,
         channel_mult=channel_mult,
-
+        txt=txt,
+        txt_dim=txt_dim,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -127,6 +132,8 @@ def create_model(
     use_checkpoint_up=False,
     use_checkpoint_middle=False,
     use_checkpoint_down=False,
+    txt=False,
+    txt_dim=128,
 ):
     if channel_mult != "":
         print(f"got channel_mult: {channel_mult}")
@@ -169,6 +176,8 @@ def create_model(
         use_scale_shift_norm=use_scale_shift_norm,
         channels_per_head=channels_per_head,
         channels_per_head_upsample=channels_per_head_upsample,
+        txt=txt,
+        txt_dim=txt_dim,
     )
 
 

@@ -4,10 +4,14 @@ from mpi4py import MPI
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
 
+import tokenizers
+
 
 def load_data(
     *, data_dir, batch_size, image_size, class_cond=False, deterministic=False,
-    txt=False
+    txt=False,
+    tokenizer_path  = "tokenizer_file",
+    max_seq_len     = 130,
 ):
     """
     For a dataset, create a generator over (images, kwargs) pairs.
@@ -34,7 +38,7 @@ def load_data(
     if class_cond:
         # Assume classes are the first part of the filename,
         # before an underscore.
-        class_names = [bf.basename(path).split("_")[0] for path in all_files]
+        class_names = [bf.basename(path).split("_")[0] for vpath in all_files]
         sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
         classes = [sorted_classes[x] for x in class_names]
     dataset = ImageDataset(
@@ -43,6 +47,8 @@ def load_data(
         classes=classes,
         image_file_to_text_file=image_file_to_text_file,
         txt=txt,
+        tokenizer_path=tokenizer_path,
+        max_seq_len=max_seq_len,
         shard=MPI.COMM_WORLD.Get_rank(),
         num_shards=MPI.COMM_WORLD.Get_size(),
     )
@@ -83,16 +89,23 @@ class ImageDataset(Dataset):
                  classes=None,
                  image_file_to_text_file=None,
                  txt=False,
+                 tokenizer_path="tokenizer_file",
+                 max_seq_len=130,
                  shard=0, num_shards=1):
         super().__init__()
         self.resolution = resolution
         self.local_images = image_paths[shard:][::num_shards]
         self.local_classes = None if classes is None else classes[shard:][::num_shards]
         self.txt = txt
+        self.max_seq_len = max_seq_len
 
         if self.txt:
             self.local_images = [p for p in local_images if p in image_file_to_text_file]
             self.local_texts = [image_file_to_text_file[p] for p in local_images]
+
+            self.tokenizer = tokenizers.Tokenizer.from_file(tokenizer_path)
+            self.tokenizer.enable_truncation(max_seq_len)
+            self.tokenizer.enable_padding()
 
     def __len__(self):
         return len(self.local_images)
@@ -131,3 +144,6 @@ class ImageDataset(Dataset):
                 text = f.read()
             out_dict['txt'] = text
         return np.transpose(arr, [2, 0, 1]), out_dict
+
+    def tokenize(self, txt):
+        return [t.ids for t in self.tokenizer.encode_batch(txt)]

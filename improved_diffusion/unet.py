@@ -19,6 +19,8 @@ from .nn import (
     checkpoint,
 )
 
+from .text_nn import TextEncoder, CrossAttention
+
 
 class TimestepBlock(nn.Module):
     """
@@ -319,6 +321,9 @@ class UNetModel(nn.Module):
         use_scale_shift_norm=False,
         channels_per_head=0,
         channels_per_head_upsample=-1,
+        txt=False,
+        txt_dim=128,
+        txt_resolutions=(32,),
         verbose=False
     ):
         super().__init__()
