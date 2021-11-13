@@ -522,8 +522,8 @@ class UNetModel(nn.Module):
         self.input_blocks.apply(convert_module_to_f16)
         self.middle_block.apply(convert_module_to_f16)
         self.output_blocks.apply(convert_module_to_f16)
-        if hasattr(self, 'text_encoder'):
-            self.text_encoder.apply(convert_module_to_f16)
+        # if hasattr(self, 'text_encoder'):
+        #     self.text_encoder.apply(convert_module_to_f16)
 
     def convert_to_fp32(self):
         """
@@ -532,8 +532,8 @@ class UNetModel(nn.Module):
         self.input_blocks.apply(convert_module_to_f32)
         self.middle_block.apply(convert_module_to_f32)
         self.output_blocks.apply(convert_module_to_f32)
-        if hasattr(self, 'text_encoder'):
-            self.text_encoder.apply(convert_module_to_f32)
+        # if hasattr(self, 'text_encoder'):
+        #     self.text_encoder.apply(convert_module_to_f32)
 
     @property
     def inner_dtype(self):
@@ -560,17 +560,17 @@ class UNetModel(nn.Module):
             self.txt
         ), "must specify txt if and only if the model is text-conditional"
 
-        if txt is not None:
-            print(txt.shape)
-            txt = self.text_encoder(txt)
-            print(txt.shape)
-
         hs = []
         emb = self.time_embed(timestep_embedding(timesteps, self.model_channels))
 
         if self.num_classes is not None:
             assert y.shape == (x.shape[0],)
             emb = emb + self.label_emb(y)
+
+        if txt is not None:
+            print(txt.shape)
+            txt = self.text_encoder(txt).to(emb.dtype)
+            print(txt.shape)
 
         h = x.type(self.inner_dtype)
         for module in self.input_blocks:
