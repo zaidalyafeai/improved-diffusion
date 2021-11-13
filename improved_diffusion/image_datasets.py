@@ -73,7 +73,7 @@ def _list_image_files_recursively(data_dir, txt=False):
         if "." in entry and ext.lower() in ["jpg", "jpeg", "png", "gif"]:
             results.append(full_path)
             if txt:
-                prefix, _, ext = entry.rpartition(".")
+                prefix, _, ext = full_path.rpartition(".")
                 path_txt = full_path + ".txt"
                 # print(f'made path_txt={repr(path_txt)} from {repr(entry)}')
                 if bf.exists(path_txt):
