@@ -115,6 +115,7 @@ def create_model(
     channel_mult="",
 ):
     if channel_mult != "":
+        print(f"got channel_mult: {channel_mult}")
         try:
             channel_mult = tuple(int(v) for v in channel_mult.strip().split(','))
         except ValueError:
