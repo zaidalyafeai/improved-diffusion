@@ -130,8 +130,6 @@ class CrossAttention(nn.Module):
         b, c, *spatial = tgt.shape
         tgt = tgt.reshape(b, c, -1)
         print(tgt.dtype)
-        for n, p in self.named_parameters():
-            print((p.dtype, n))
         tgt = self.tgt_ln(tgt)
         print(tgt.dtype)
         tgt = tgt.transpose(1, 2)

@@ -30,7 +30,9 @@ def convert_module_to_f32(l):
         if l.bias is not None:
             l.bias.data = l.bias.data.float()
     if isinstance(l, (CrossAttention, TextEncoder)):
-        for p in l.parameters():
+        for n, p in l.named_parameters():
+            if 'tgt_ln' in n:
+                continue
             p.data = p.data.half()
 
 
