@@ -42,6 +42,7 @@ def model_and_diffusion_defaults():
         use_checkpoint_up=False,
         txt=False,
         txt_dim=128,
+        max_seq_len=64,
         verbose=False,
     )
 
@@ -75,6 +76,7 @@ def create_model_and_diffusion(
     use_checkpoint_down=False,
     txt=False,
     txt_dim=128,
+    max_seq_len=64,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     model = create_model(
@@ -97,6 +99,7 @@ def create_model_and_diffusion(
         channel_mult=channel_mult,
         txt=txt,
         txt_dim=txt_dim,
+        max_seq_len=max_seq_len,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -136,6 +139,7 @@ def create_model(
     use_checkpoint_down=False,
     txt=False,
     txt_dim=128,
+    max_seq_len=64,
 ):
     print(f"create_model: got txt={txt}")
     if channel_mult != "":
@@ -181,6 +185,7 @@ def create_model(
         channels_per_head_upsample=channels_per_head_upsample,
         txt=txt,
         txt_dim=txt_dim,
+        max_seq_len=max_seq_len,
     )
 
 

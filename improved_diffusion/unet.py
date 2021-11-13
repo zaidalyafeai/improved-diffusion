@@ -342,6 +342,7 @@ class UNetModel(nn.Module):
         channels_per_head_upsample=-1,
         txt=False,
         txt_dim=128,
+        max_seq_len=64,
         txt_resolution=8,
         verbose=False
     ):
@@ -421,6 +422,7 @@ class UNetModel(nn.Module):
                 if self.txt and ds == self.txt_resolution:
                     self.text_encoder = TextEncoder(
                         inner_dim=txt_dim,
+                        max_seq_len=max_seq_len
                     )
                     layers.append(
                         CrossAttentionAdapter(

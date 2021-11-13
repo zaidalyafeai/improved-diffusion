@@ -42,7 +42,7 @@ def main():
 
     tokenizer = None
     if args.txt:
-        tokenizer = load_tokenizer()
+        tokenizer = load_tokenizer(max_seq_len=args.max_seq_len)
 
     logger.log("training...")
     TrainLoop(
@@ -86,6 +86,7 @@ def create_argparser():
         use_checkpoint_up=False,
         txt=False,
         txt_dim=128,
+        max_seq_len=64,
         verbose=False,
     )
     defaults.update(model_and_diffusion_defaults())

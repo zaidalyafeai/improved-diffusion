@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader, Dataset
 import tokenizers
 
 
-def load_tokenizer(tokenizer_path  = "tokenizer_file", max_seq_len=130):
+def load_tokenizer(tokenizer_path  = "tokenizer_file", max_seq_len=64):
     tokenizer = tokenizers.Tokenizer.from_file(tokenizer_path)
     tokenizer.enable_truncation(max_seq_len)
     tokenizer.enable_padding()
