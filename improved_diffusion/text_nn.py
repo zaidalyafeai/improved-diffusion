@@ -12,8 +12,7 @@ from .nn import normalization
 
 class TextEncoder(nn.Module):
     def __init__(self,
-        output_dim,                      # output dim
-        inner_dim = None,           # model dim (default = w_dim)
+        inner_dim,           # model dim (default = w_dim)
         depth = 2,
         head_dim = 64,
         num_tokens = 2500,
@@ -28,9 +27,6 @@ class TextEncoder(nn.Module):
         return_sequences=True
     ):
         super().__init__()
-
-        if inner_dim is None:
-            inner_dim = output_dim
 
         head_dim = min(head_dim, inner_dim)
 
@@ -84,7 +80,7 @@ class TextEncoder(nn.Module):
         if hasattr(self.model, "to_logits"):
             del self.model.to_logits
 
-        self.proj = nn.Linear(inner_dim, output_dim)
+        # self.proj = nn.Linear(inner_dim, output_dim)
 
     def forward(self, tokens):
         if self.use_encoder_decoder:
@@ -92,13 +88,13 @@ class TextEncoder(nn.Module):
             enc = self.model.encoder(tokens, return_embeddings = True)
             out = self.model.decoder.net(tgt, context=enc, return_embeddings=True)
             out = rearrange(out, 'b (h w) c -> b h w c', h=self.decoder_sqrt_ntok)
-            out = self.proj(out)
+            # out = self.proj(out)
             return out
         else:
             out = self.model(tokens, return_embeddings=True)
             if not self.return_sequences:
                 out = out[:, 0, :]
-            out = self.proj(out)
+            # out = self.proj(out)
             return out
 
 
