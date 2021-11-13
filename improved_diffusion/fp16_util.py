@@ -18,6 +18,8 @@ def convert_module_to_f16(l):
             l.bias.data = l.bias.data.half()
     if isinstance(l, (CrossAttention, TextEncoder)):
         for p in l.parameters():
+            if 'tgt_ln' in n:
+                continue
             p.data = p.data.half()
 
 
@@ -31,9 +33,7 @@ def convert_module_to_f32(l):
             l.bias.data = l.bias.data.float()
     if isinstance(l, (CrossAttention, TextEncoder)):
         for n, p in l.named_parameters():
-            if 'tgt_ln' in n:
-                continue
-            p.data = p.data.half()
+            p.data = p.data.float()
 
 
 def make_master_params(model_params):
