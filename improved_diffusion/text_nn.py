@@ -139,6 +139,7 @@ class CrossAttention(nn.Module):
         print(self.q.weight.dtype)
         q = self.q(tgt)
 
+        print(src.dtype)
         src = self.src_ln(src)
         kv = self.kv(src)
 
