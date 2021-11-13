@@ -81,6 +81,8 @@ class TextEncoder(nn.Module):
                     use_rezero = use_rezero,
                 )
             )
+        if hasattr(self.model, "to_logits"):
+            del self.model.to_logits
 
         self.proj = nn.Linear(inner_dim, output_dim)
 
