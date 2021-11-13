@@ -201,7 +201,7 @@ class TrainLoop:
                 for k, v in cond.items()
             }
             if 'txt' in micro_cond:
-                micro_cond['txt'] = torch.as_tensor(self.data.tokenize(micro_cond['txt'])).to(dist_util.dev())
+                micro_cond['txt'] = th.as_tensor(self.data.tokenize(micro_cond['txt'])).to(dist_util.dev())
             last_batch = (i + self.microbatch) >= batch.shape[0]
             t, weights = self.schedule_sampler.sample(micro.shape[0], dist_util.dev())
 
