@@ -50,7 +50,7 @@ class CrossAttentionAdapter(CrossAttention, TextBlock):
     def forward(self, x, txt):
         return super().forward(src=txt, tgt=x)
 
-    def apply(*args, **kwargs):
+    def apply(self, *args, **kwargs):
         print('apply at CrossAttentionAdapter')
         return super().apply(*args, **kwargs)
 
