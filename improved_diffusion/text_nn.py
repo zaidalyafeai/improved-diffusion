@@ -145,3 +145,7 @@ class CrossAttention(nn.Module):
         attn_output, attn_output_weights = self.attn(q, k, v)
         attn_output = self.gain.exp() * attn_output
         return attn_output
+
+    def apply(self, *args, **kwargs):
+        print('apply at CrossAttention')
+        return super().apply(*args, **kwargs)
