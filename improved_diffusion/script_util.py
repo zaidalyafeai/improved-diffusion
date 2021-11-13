@@ -36,6 +36,7 @@ def model_and_diffusion_defaults():
         use_scale_shift_norm=True,
         channels_per_head=0,
         channels_per_head_upsample=-1,
+        channel_mult="",
     )
 
 
