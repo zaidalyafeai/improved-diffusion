@@ -34,16 +34,35 @@ class TimestepBlock(nn.Module):
         """
 
 
+class TextBlock(nn.Module):
+    """
+    Any module where forward() takes texts as a second argument.
+    """
+
+    @abstractmethod
+    def forward(self, x, txt):
+        """
+        Apply the module to `x` given `txt` texts.
+        """
+
+
+class CrossAttentionAdapter(CrossAttention):
+    def forward(self, x, txt):
+        return super().forward(src=txt, tgt=x)
+
+
 class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
     """
     A sequential module that passes timestep embeddings to the children that
     support it as an extra input.
     """
 
-    def forward(self, x, emb):
+    def forward(self, x, emb, txt):
         for layer in self:
             if isinstance(layer, TimestepBlock):
                 x = layer(x, emb)
+            elif isinstance(layer, TextBlock):
+                x = layer(x, txt)
             else:
                 x = layer(x)
         return x
@@ -323,7 +342,7 @@ class UNetModel(nn.Module):
         channels_per_head_upsample=-1,
         txt=False,
         txt_dim=128,
-        txt_resolutions=(32,),
+        txt_resolution=32,
         verbose=False
     ):
         super().__init__()
@@ -350,6 +369,9 @@ class UNetModel(nn.Module):
         self.use_checkpoint = use_checkpoint
         self.num_heads = num_heads
         self.num_heads_upsample = num_heads_upsample
+
+        self.txt = txt
+        self.txt_resolution = txt_resolution
 
         time_embed_dim = model_channels * 4
         self.time_embed = nn.Sequential(
@@ -394,6 +416,19 @@ class UNetModel(nn.Module):
                             ch, use_checkpoint=use_checkpoint or use_checkpoint_down, num_heads=num_heads_here
                         )
                     )
+                if self.txt and ds == self.txt_resolution:
+                    self.text_encoder = TextEncoder(
+                        output_dim=ch,
+                        inner_dim=txt_dim,
+                    )
+                    layers.append(
+                        CrossAttentionAdapter(
+                            dim=ch,
+                            heads=num_heads_here,
+                            text_dim=txt_dim
+                        )
+                    )
+
                 self.input_blocks.append(TimestepEmbedSequential(*layers))
                 input_block_chans.append(ch)
                 vprint(f"up   | {level} of {len(channel_mult)} | ch {ch} | ds {ds}")
@@ -453,6 +488,14 @@ class UNetModel(nn.Module):
                             num_heads=num_heads_here,
                         )
                     )
+                if self.txt and ds == self.txt_resolution:
+                    layers.append(
+                        CrossAttentionAdapter(
+                            dim=ch,
+                            heads=num_heads_here,
+                            text_dim=txt_dim
+                        )
+                    )
                 vprint(f"down | {level} of {len(channel_mult)} | ch {ch} | ds {ds}")
                 if level and i == num_res_blocks:
                     layers.append(Upsample(ch, conv_resample, dims=dims))
@@ -489,7 +532,7 @@ class UNetModel(nn.Module):
         """
         return next(self.input_blocks.parameters()).dtype
 
-    def forward(self, x, timesteps, y=None):
+    def forward(self, x, timesteps, y=None, txt=None):
         """
         Apply the model to an input batch.
 
@@ -502,6 +545,10 @@ class UNetModel(nn.Module):
             self.num_classes is not None
         ), "must specify y if and only if the model is class-conditional"
 
+        assert (txt is not None) == (
+            self.txt == False
+        ), "must specify txt if and only if the model is text-conditional"
+
         hs = []
         emb = self.time_embed(timestep_embedding(timesteps, self.model_channels))
 
@@ -511,12 +558,12 @@ class UNetModel(nn.Module):
 
         h = x.type(self.inner_dtype)
         for module in self.input_blocks:
-            h = module(h, emb)
+            h = module(h, emb, txt=txt)
             hs.append(h)
-        h = self.middle_block(h, emb)
+        h = self.middle_block(h, emb, txt=txt)
         for module in self.output_blocks:
             cat_in = th.cat([h, hs.pop()], dim=1)
-            h = module(cat_in, emb)
+            h = module(cat_in, emb, txt=txt)
         h = h.type(x.dtype)
         return self.out(h)
 

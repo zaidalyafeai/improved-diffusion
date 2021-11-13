@@ -42,6 +42,7 @@ def model_and_diffusion_defaults():
         use_checkpoint_up=False,
         txt=False,
         txt_dim=128,
+        verbose=False,
     )
 
 

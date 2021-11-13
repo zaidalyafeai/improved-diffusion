@@ -79,6 +79,7 @@ class TextEncoder(nn.Module):
                     use_rezero = use_rezero,
                 )
             )
+
         self.proj = nn.Linear(inner_dim, output_dim)
 
     def forward(self, tokens):
