@@ -146,7 +146,7 @@ class CrossAttention(nn.Module):
         attn_output, attn_output_weights = self.attn(q, k, v)
         attn_output = self.gain.exp() * attn_output
         print(attn_output.shape)
-        attn_output = rearrange(attn_output, 'b h w c -> b c (h w)', h=spatial[0])
+        attn_output = rearrange(attn_output, 'b (h w) c -> b c h w', h=spatial[0])
         print(attn_output.shape)
         return attn_output
 
