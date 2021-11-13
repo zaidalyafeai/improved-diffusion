@@ -48,7 +48,7 @@ def main():
             )
             model_kwargs["y"] = classes
         if args.txt:
-            tokenizer = load_tokenizer(max_seq_len=model.text_encoder.max_seq_len)
+            tokenizer = load_tokenizer(max_seq_len=model.text_encoder.model.max_seq_len)
             txt = th.as_tensor(tokenize(tokenizer, args.batch_size * [args.text_input])).to(dist_util.dev())
             model_kwargs["txt"] = txt
         sample_fn = (
