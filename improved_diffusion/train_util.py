@@ -200,7 +200,7 @@ class TrainLoop:
             self.optimize_normal()
         self.log_step()
 
-    def forward_backward(self, batch, cond, verbose=false):
+    def forward_backward(self, batch, cond, verbose=False):
         zero_grad(self.model_params)
         for i in range(0, batch.shape[0], self.microbatch):
             micro = batch[i : i + self.microbatch].to(dist_util.dev())
