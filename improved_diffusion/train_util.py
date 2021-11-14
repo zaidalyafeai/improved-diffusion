@@ -275,11 +275,23 @@ class TrainLoop:
 
     def _log_grad_norm(self):
         sqsum = 0.0
+        sqsum_text_encoder = 0.0
+        has_text_encoder = False
+
         for p in self.master_params:
             if p.grad is None:
                 continue
             sqsum += (p.grad ** 2).sum().item()
         logger.logkv_mean("grad_norm", np.sqrt(sqsum))
+
+        for n, p in self.model.named_parameters():
+            if 'text_encoder' not in n:
+                continue
+            if p.grad is None:
+                continue
+            has_text_encoder = True
+            sqsum_text_encoder += (p.grad ** 2).sum().item()
+        logger.logkv_mean("grad_norm_text_enc", np.sqrt(sqsum_text_encoder))
 
     def _anneal_lr(self):
         if not self.lr_anneal_steps:
