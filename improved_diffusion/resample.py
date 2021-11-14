@@ -154,6 +154,6 @@ class LossSecondMomentResampler(LossAwareSampler):
         warm = (self._loss_counts == self.history_per_term).all()
         if verbose:
             print(f"warmed_up?: {warm}")
-            _mean, _median = np.mean(self._loss_counts), np.median(self._loss_counts)
-            print(f"mean {_mean:.1f}, median {_median:.1f}")
+            _mean, _median, _min = np.mean(self._loss_counts), np.median(self._loss_counts), min(self._loss_counts)
+            print(f"mean {_mean:.2f}, median {_median:.0f}, min {_min:.0f}")
         return warm
