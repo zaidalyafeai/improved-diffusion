@@ -68,7 +68,6 @@ def main():
         weight_decay=args.weight_decay,
         lr_anneal_steps=args.lr_anneal_steps,
         tokenizer=tokenizer,
-        text_lr=args.text_lr,
     ).run_loop()
 
 
