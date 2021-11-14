@@ -233,13 +233,13 @@ class TrainLoop:
                 self.schedule_sampler.update_with_local_losses(
                     t, losses["loss"].detach()
                 )
-                print(f"got verbose={verbose}")
-                warm = self.schedule_sampler._warmed_up(verbose=verbose)
-                if warm and verbose:
-                    weights = self.schedule_sampler.weights()
-                    w_avg = np.average(np.arange(len(weights)), weights=weights)
-                    w_avg_ref = np.average(np.arange(len(weights)), weights=np.ones_like(weights))
-                    print(f"w_avg: {w_avg:.1f} (vs {w_avg_ref:.1f})")
+                if i == 0:
+                    warm = self.schedule_sampler._warmed_up(verbose=verbose)
+                    if warm and verbose:
+                        weights = self.schedule_sampler.weights()
+                        w_avg = np.average(np.arange(len(weights)), weights=weights)
+                        w_avg_ref = np.average(np.arange(len(weights)), weights=np.ones_like(weights))
+                        print(f"w_avg: {w_avg:.1f} (vs {w_avg_ref:.1f})")
 
             loss = (losses["loss"] * weights).mean()
             log_loss_dict(
