@@ -7,6 +7,8 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 
+from axial_positional_embedding import AxialPositionalEmbedding
+
 from .fp16_util import convert_module_to_f16, convert_module_to_f32
 from .nn import (
     SiLU,
@@ -40,15 +42,15 @@ class TextBlock(nn.Module):
     """
 
     @abstractmethod
-    def forward(self, x, txt):
+    def forward(self, x, txt, tgt_pos_embs=None):
         """
         Apply the module to `x` given `txt` texts.
         """
 
 
 class CrossAttentionAdapter(CrossAttention, TextBlock):
-    def forward(self, x, txt):
-        return super().forward(src=txt, tgt=x)
+    def forward(self, x, txt, tgt_pos_embs=None):
+        return super().forward(src=txt, tgt=x, tgt_pos_embs=tgt_pos_embs)
 
 
 class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
@@ -57,12 +59,12 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
     support it as an extra input.
     """
 
-    def forward(self, x, emb, txt):
+    def forward(self, x, emb, txt, tgt_pos_embs=None):
         for layer in self:
             if isinstance(layer, TimestepBlock):
                 x = layer(x, emb)
             elif isinstance(layer, TextBlock):
-                x = layer(x, txt)
+                x = layer(x, txt, tgt_pos_embs=tgt_pos_embs)
             else:
                 x = layer(x)
         return x
@@ -387,6 +389,9 @@ class UNetModel(nn.Module):
         self.txt = txt
         self.txt_resolutions = txt_resolutions
 
+        self.tgt_pos_embs = nn.ModuleDict({})
+
+
         time_embed_dim = model_channels * 4
         self.time_embed = nn.Sequential(
             linear(model_channels, time_embed_dim),
@@ -440,6 +445,14 @@ class UNetModel(nn.Module):
                     num_heads_here = num_heads
                     if cross_attn_channels_per_head > 0:
                         num_heads_here = ch // cross_attn_channels_per_head
+
+                    emb_res = image_size // ds
+                    if emb_res not in self.tgt_pos_embs:
+                        self.tgt_pos_embs[emb_res] = AxialPositionalEmbedding(
+                            dim=ch,
+                            axial_shape=(emb_res, emb_res),
+                            axial_dims=(ch // 2, ch // 2),
+                        )
                     layers.append(
                         CrossAttentionAdapter(
                             dim=ch,
@@ -449,6 +462,7 @@ class UNetModel(nn.Module):
                             init_gain = cross_attn_init_gain,
                             gain_scale = cross_attn_gain_scale,
                             lr_mult=text_lr_mult,
+                            needs_tgt_pos_emb=False,
                         )
                     )
 
@@ -524,6 +538,7 @@ class UNetModel(nn.Module):
                             init_gain = cross_attn_init_gain,
                             gain_scale = cross_attn_gain_scale,
                             lr_mult=text_lr_mult,
+                            needs_tgt_pos_emb=False,
                         )
                     )
                 vprint(f"down | {level} of {len(channel_mult)} | ch {ch} | ds {ds}")
@@ -597,12 +612,12 @@ class UNetModel(nn.Module):
 
         h = x.type(self.inner_dtype)
         for module in self.input_blocks:
-            h = module(h, emb, txt=txt)
+            h = module(h, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs)
             hs.append(h)
-        h = self.middle_block(h, emb, txt=txt)
+        h = self.middle_block(h, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs)
         for module in self.output_blocks:
             cat_in = th.cat([h, hs.pop()], dim=1)
-            h = module(cat_in, emb, txt=txt)
+            h = module(cat_in, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs)
         h = h.type(x.dtype)
         return self.out(h)
 

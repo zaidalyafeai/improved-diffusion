@@ -131,6 +131,7 @@ class CrossAttention(nn.Module):
         gain_scale=200.,
         resid=True,
         lr_mult=None,
+        needs_tgt_pos_emb=True,
     ):
         super().__init__()
         print(f"xattn: emb_res {emb_res} | dim {dim} | heads {heads}")
@@ -145,11 +146,14 @@ class CrossAttention(nn.Module):
         self.src_ln = torch.nn.LayerNorm(self.text_dim)
         self.tgt_ln = normalization(self.dim)
 
-        self.tgt_pos_emb = AxialPositionalEmbedding(
-            dim=self.dim,
-            axial_shape=(emb_res, emb_res),
-            axial_dims=(self.dim // 2, self.dim // 2),
-        )
+        self.emb_res = emb_res
+        self.tgt_pos_emb = None
+        if needs_tgt_pos_emb:
+            self.tgt_pos_emb = AxialPositionalEmbedding(
+                dim=self.dim,
+                axial_shape=(emb_res, emb_res),
+                axial_dims=(self.dim // 2, self.dim // 2),
+            )
 
         self.gain_scale = gain_scale
         self.gain = torch.nn.Parameter(torch.as_tensor(np.log(init_gain) / gain_scale))
@@ -163,12 +167,20 @@ class CrossAttention(nn.Module):
         if lr_mult is not None:
             multiply_lr_via_hooks(self, lr_mult)
 
-    def forward(self, src, tgt):
+    def forward(self, src, tgt, tgt_pos_embs=None):
         b, c, *spatial = tgt.shape
         tgt = tgt.reshape(b, c, -1)
         tgt_in = self.tgt_ln(tgt)
         tgt_in = tgt_in.transpose(1, 2)
-        tgt_in = tgt_in + self.tgt_pos_emb(tgt_in)
+
+        if tgt_pos_embs is None:
+            tgt_pos_emb = self.tgt_pos_emb
+        els:
+            tgt_pos_emb = tgt_pos_embs[self.emb_res]
+        if tgt_pos_emb is None:
+            raise ValueError('must pass tgt_pos_emb')
+
+        tgt_in = tgt_in + tgt_pos_emb(tgt_in)
 
         q = self.q(tgt_in)
 
