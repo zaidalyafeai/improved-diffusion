@@ -104,7 +104,7 @@ class CrossAttention(nn.Module):
         dim,
         heads,
         text_dim=512,
-        init_gain=1.,
+        init_gain=0.01,
         gain_scale=200.,
         resid=True,
     ):
@@ -143,7 +143,7 @@ class CrossAttention(nn.Module):
         k, v = kv.chunk(2, dim=-1)
 
         attn_output, attn_output_weights = self.attn(q, k, v)
-        attn_output = 0. * (self.gain_scale * self.gain).exp() * attn_output
+        attn_output = (self.gain_scale * self.gain).exp() * attn_output
         attn_output = rearrange(attn_output, 'b (h w) c -> b c h w', h=spatial[0])
 
         if self.resid:
