@@ -151,7 +151,6 @@ class CrossAttention(nn.Module):
             with torch.no_grad():
                 norm_in = torch.linalg.norm(tgt).item()
                 norm_add = torch.linalg.norm(attn_output).item()
-            print(f"norm in {norm_in:.4f} | norm_add {norm_add:.4f}")
             return tgt + attn_output
 
         return attn_output
