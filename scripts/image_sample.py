@@ -40,6 +40,8 @@ def main():
     model.eval()
 
     logger.log("sampling...")
+    if args.seed > -1:
+        th.manual_seed(args.seed)
     all_images = []
     all_labels = []
     while len(all_images) * args.batch_size < args.num_samples:
@@ -104,6 +106,7 @@ def create_argparser():
         model_path="",
         text_input="",
         log_interval=10,  # ignored
+        seed=-1,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
