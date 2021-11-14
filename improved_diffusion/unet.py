@@ -349,14 +349,14 @@ class UNetModel(nn.Module):
         cross_attn_init_gain=1.,
         cross_attn_gain_scale=200,
         image_size=None,
-        text_lr_mult=None,
+        text_lr_mult=-1.,
         verbose=False
     ):
         super().__init__()
 
         print(f"unet: got txt={txt}, text_lr_mult={text_lr_mult}")
 
-        if not isinstance(text_lr_mult, float):
+        if text_lr_mult < 0:
             text_lr_mult = None
 
         print(f"unet: got txt={txt}, text_lr_mult={text_lr_mult}")
