@@ -448,7 +448,7 @@ class UNetModel(nn.Module):
 
                     emb_res = image_size // ds
                     if emb_res not in self.tgt_pos_embs:
-                        self.tgt_pos_embs[emb_res] = AxialPositionalEmbedding(
+                        self.tgt_pos_embs[str(emb_res)] = AxialPositionalEmbedding(
                             dim=ch,
                             axial_shape=(emb_res, emb_res),
                             axial_dims=(ch // 2, ch // 2),

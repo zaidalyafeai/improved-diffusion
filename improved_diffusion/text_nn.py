@@ -176,7 +176,7 @@ class CrossAttention(nn.Module):
         if tgt_pos_embs is None:
             tgt_pos_emb = self.tgt_pos_emb
         else:
-            tgt_pos_emb = tgt_pos_embs[self.emb_res]
+            tgt_pos_emb = tgt_pos_embs[str(self.emb_res)]
         if tgt_pos_emb is None:
             raise ValueError('must pass tgt_pos_emb')
 
