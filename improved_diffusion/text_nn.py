@@ -141,6 +141,8 @@ class CrossAttention(nn.Module):
         tgt = tgt.reshape(b, c, -1)
         tgt_in = self.tgt_ln(tgt)
         tgt_in = tgt_in.transpose(1, 2)
+        print(tgt_in.dtype)
+        print(self.tgt_pos_emb.weights.to_list()[0].dtype)
         tgt_in = tgt_in + self.tgt_pos_emb(tgt_in)
 
         q = self.q(tgt_in)
