@@ -284,14 +284,17 @@ class TrainLoop:
             sqsum += (p.grad ** 2).sum().item()
         logger.logkv_mean("grad_norm", np.sqrt(sqsum))
 
-        for n, p in self.model.named_parameters():
-            if 'text_encoder' not in n:
-                continue
-            if p.grad is None:
-                continue
-            has_text_encoder = True
-            sqsum_text_encoder += (p.grad ** 2).sum().item()
-        logger.logkv_mean("grad_norm_text_enc", np.sqrt(sqsum_text_encoder))
+        if not self.use_fp16:
+            # fp16 master params vs model params break this
+            for n, p in self.model.named_parameters():
+                if 'text_encoder' not in n:
+                    continue
+                if p.grad is None:
+                    continue
+                has_text_encoder = True
+                sqsum_text_encoder += (p.grad ** 2).sum().item()
+            if has_text_encoder:
+                logger.logkv_mean("grad_norm_text_enc", np.sqrt(sqsum_text_encoder))
 
     def _anneal_lr(self):
         if not self.lr_anneal_steps:
