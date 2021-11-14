@@ -349,11 +349,17 @@ class UNetModel(nn.Module):
         cross_attn_init_gain=1.,
         cross_attn_gain_scale=200,
         image_size=None,
+        text_lr_mult=None,
         verbose=False
     ):
         super().__init__()
 
-        print(f"unet: got txt={txt}")
+        print(f"unet: got txt={txt}, text_lr_mult={text_lr_mult}")
+
+        if not isinstance(text_lr_mult, float):
+            text_lr_mult = None
+
+        print(f"unet: got txt={txt}, text_lr_mult={text_lr_mult}")
 
         def vprint(*args):
             if verbose:
@@ -428,7 +434,8 @@ class UNetModel(nn.Module):
                     self.text_encoder = TextEncoder(
                         inner_dim=txt_dim,
                         depth=txt_depth,
-                        max_seq_len=max_seq_len
+                        max_seq_len=max_seq_len,
+                        lr_mult=text_lr_mult,
                     )
                     num_heads_here = num_heads
                     if cross_attn_channels_per_head > 0:
@@ -441,6 +448,7 @@ class UNetModel(nn.Module):
                             emb_res = image_size // ds,
                             init_gain = cross_attn_init_gain,
                             gain_scale = cross_attn_gain_scale,
+                            lr_mult=text_lr_mult,
                         )
                     )
 
@@ -515,6 +523,7 @@ class UNetModel(nn.Module):
                             emb_res = image_size // ds,
                             init_gain = cross_attn_init_gain,
                             gain_scale = cross_attn_gain_scale,
+                            lr_mult=text_lr_mult,
                         )
                     )
                 vprint(f"down | {level} of {len(channel_mult)} | ch {ch} | ds {ds}")

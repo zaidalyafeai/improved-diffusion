@@ -23,6 +23,12 @@ def main():
     dist_util.setup_dist()
     logger.configure()
 
+    if isinstance(args.text_lr, float):
+        args.text_lr_mult = args.text_lr / args.lr
+        print(f"text_lr_mult: {text_lr_mult}")
+    else:
+        args.text_lr_mult = None
+
     logger.log("creating model and diffusion...")
     model, diffusion = create_model_and_diffusion(
         **args_to_dict(args, model_and_diffusion_defaults().keys()),
@@ -62,6 +68,7 @@ def main():
         weight_decay=args.weight_decay,
         lr_anneal_steps=args.lr_anneal_steps,
         tokenizer=tokenizer,
+        text_lr=args.text_lr,
     ).run_loop()
 
 
@@ -89,6 +96,7 @@ def create_argparser():
         txt_depth=2,
         max_seq_len=64,
         txt_resolutions="8",
+        text_lr="",
         verbose=False,
     )
     defaults.update(model_and_diffusion_defaults())

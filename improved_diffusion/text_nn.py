@@ -10,6 +10,26 @@ from x_transformers import TransformerWrapper, Encoder, XTransformer
 from .nn import normalization
 
 
+def make_grad_mult_hook(mult, debug=False):
+    def grad_mult_hook(grad):
+        if debug:
+            print(f"grad: {grad}")
+        new_grad = mult * grad
+        if debug:
+            print(f"new_grad: {new_grad}")
+        return new_grad
+    return grad_mult_hook
+
+def multiply_lr_via_hooks(m: nn.Module, mult: float, debug=False) -> nn.Module:
+    m._lr_hook_handles = {}
+
+    for n, p in m.named_parameters():
+        handle = p.register_hook(make_grad_mult_hook(mult, debug=debug))
+        m._lr_hook_handles[n] = handle
+
+    return m
+
+
 class TextEncoder(nn.Module):
     def __init__(self,
         inner_dim,           # model dim (default = w_dim)
@@ -24,7 +44,8 @@ class TextEncoder(nn.Module):
         use_encoder_decoder = False,
         decoder_sqrt_ntok = 32,
         encoder_kwargs = {},
-        return_sequences=True
+        return_sequences=True,
+        lr_mult=None,
     ):
         super().__init__()
 
@@ -80,7 +101,8 @@ class TextEncoder(nn.Module):
         if hasattr(self.model, "to_logits"):
             del self.model.to_logits
 
-        # self.proj = nn.Linear(inner_dim, output_dim)
+        if lr_mult is not None:
+            multiply_lr_via_hooks(self, lr_mult)
 
     def forward(self, tokens):
         if self.use_encoder_decoder:
@@ -108,6 +130,7 @@ class CrossAttention(nn.Module):
         init_gain=1.,
         gain_scale=200.,
         resid=True,
+        lr_mult=None,
     ):
         super().__init__()
         print(f"xattn: emb_res {emb_res} | dim {dim} | heads {heads}")
@@ -136,6 +159,9 @@ class CrossAttention(nn.Module):
         torch.nn.init.orthogonal_(self.q.weight)
         torch.nn.init.orthogonal_(self.kv.weight)
         torch.nn.init.orthogonal_(self.attn.out_proj.weight)
+
+        if lr_mult is not None:
+            multiply_lr_via_hooks(self, lr_mult)
 
     def forward(self, src, tgt):
         b, c, *spatial = tgt.shape

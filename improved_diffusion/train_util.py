@@ -48,7 +48,7 @@ class TrainLoop:
         schedule_sampler=None,
         weight_decay=0.0,
         lr_anneal_steps=0,
-        tokenizer=None
+        tokenizer=None,
     ):
         self.model = model
         self.diffusion = diffusion
