@@ -352,11 +352,12 @@ class UNetModel(nn.Module):
         cross_attn_gain_scale=200,
         image_size=None,
         text_lr_mult=-1.,
+        txt_output_layers_only=False,
         verbose=False
     ):
         super().__init__()
 
-        print(f"unet: got txt={txt}, text_lr_mult={text_lr_mult}")
+        print(f"unet: got txt={txt}, text_lr_mult={text_lr_mult}, txt_output_layers_only={txt_output_layers_only}")
 
         if text_lr_mult < 0:
             text_lr_mult = None
@@ -435,7 +436,7 @@ class UNetModel(nn.Module):
                             ch, use_checkpoint=use_checkpoint or use_checkpoint_down, num_heads=num_heads_here
                         )
                     )
-                if self.txt and ds in self.txt_resolutions:
+                if self.txt and ds in self.txt_resolutions and (not txt_output_layers_only):
                     self.text_encoder = TextEncoder(
                         inner_dim=txt_dim,
                         depth=txt_depth,
@@ -529,12 +530,20 @@ class UNetModel(nn.Module):
                     num_heads_here = num_heads
                     if cross_attn_channels_per_head > 0:
                         num_heads_here = ch // cross_attn_channels_per_head
+
+                    emb_res = image_size // ds
+                    if emb_res not in self.tgt_pos_embs:
+                        self.tgt_pos_embs[str(emb_res)] = AxialPositionalEmbedding(
+                            dim=ch,
+                            axial_shape=(emb_res, emb_res),
+                            axial_dims=(ch // 2, ch // 2),
+                        )
                     layers.append(
                         CrossAttentionAdapter(
                             dim=ch,
                             heads=num_heads_here,
                             text_dim=txt_dim,
-                            emb_res = image_size // ds,
+                            emb_res = emb_res,
                             init_gain = cross_attn_init_gain,
                             gain_scale = cross_attn_gain_scale,
                             lr_mult=text_lr_mult,
