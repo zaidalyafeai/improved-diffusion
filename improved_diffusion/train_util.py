@@ -59,7 +59,7 @@ class TrainLoop:
         self.ema_rate = (
             [ema_rate]
             if isinstance(ema_rate, float)
-            else [float(x) for x in ema_rate.split(",")]
+            else [float(x) for x in ema_rate.split(",") if len(x) > 0]
         )
         self.log_interval = log_interval
         self.save_interval = save_interval
