@@ -103,6 +103,7 @@ class CrossAttention(nn.Module):
         self,
         dim,
         heads,
+        emb_res,
         text_dim=512,
         init_gain=1.,
         gain_scale=200.,
@@ -120,6 +121,12 @@ class CrossAttention(nn.Module):
         self.src_ln = torch.nn.LayerNorm(self.text_dim)
         self.tgt_ln = normalization(self.dim)
 
+        self.tgt_pos_emb = AxialPositionalEmbedding(
+            dim=self.dim,
+            axial_shape=(emb_res, emb_res),
+            axial_dims=(self.dim // 2, self.dim // 2),
+        )
+
         self.gain_scale = gain_scale
         self.gain = torch.nn.Parameter(torch.as_tensor(np.log(init_gain) / gain_scale))
 
@@ -134,6 +141,7 @@ class CrossAttention(nn.Module):
         tgt = tgt.reshape(b, c, -1)
         tgt_in = self.tgt_ln(tgt)
         tgt_in = tgt_in.transpose(1, 2)
+        tgt_in = tgt_in + self.tgt_pos_emb(tgt_in)
 
         q = self.q(tgt_in)
 

@@ -179,6 +179,8 @@ def create_model(
     for res in attention_resolutions.split(","):
         attention_ds.append(image_size // int(res))
 
+    txt_ds = image_size // txt_resolution
+
     return UNetModel(
         in_channels=3,
         model_channels=num_channels,
@@ -201,8 +203,9 @@ def create_model(
         txt_dim=txt_dim,
         max_seq_len=max_seq_len,
         txt_depth=txt_depth,
-        txt_resolution=txt_resolution,
+        txt_resolution=txt_ds,
         cross_attn_channels_per_head=cross_attn_channels_per_head,
+        image_size=image_size
     )
 
 

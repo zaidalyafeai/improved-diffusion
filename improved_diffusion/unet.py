@@ -346,6 +346,7 @@ class UNetModel(nn.Module):
         max_seq_len=64,
         txt_resolution=8,
         cross_attn_channels_per_head=-1,
+        image_size=None,
         verbose=False
     ):
         super().__init__()
@@ -434,7 +435,8 @@ class UNetModel(nn.Module):
                         CrossAttentionAdapter(
                             dim=ch,
                             heads=num_heads_here,
-                            text_dim=txt_dim
+                            text_dim=txt_dim,
+                            emb_res = image_size // ds
                         )
                     )
 
@@ -505,7 +507,8 @@ class UNetModel(nn.Module):
                         CrossAttentionAdapter(
                             dim=ch,
                             heads=num_heads_here,
-                            text_dim=txt_dim
+                            text_dim=txt_dim,
+                            emb_res = image_size // ds
                         )
                     )
                 vprint(f"down | {level} of {len(channel_mult)} | ch {ch} | ds {ds}")
