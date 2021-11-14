@@ -147,10 +147,7 @@ class CrossAttention(nn.Module):
         attn_output = rearrange(attn_output, 'b (h w) c -> b c h w', h=spatial[0])
 
         if self.resid:
-            print(attn_output.shape)
-            print(tgt.shape)
             tgt = tgt.reshape(b, c, *spatial)
-            print(tgt.shape)
             return tgt + attn_output
 
         return attn_output
