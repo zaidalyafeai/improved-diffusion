@@ -390,6 +390,14 @@ class UNetModel(nn.Module):
         self.txt = txt
         self.txt_resolutions = txt_resolutions
 
+        if self.txt:
+            self.text_encoder = TextEncoder(
+                inner_dim=txt_dim,
+                depth=txt_depth,
+                max_seq_len=max_seq_len,
+                lr_mult=text_lr_mult,
+            )
+
         self.tgt_pos_embs = nn.ModuleDict({})
 
 
@@ -437,12 +445,6 @@ class UNetModel(nn.Module):
                         )
                     )
                 if self.txt and ds in self.txt_resolutions and (not txt_output_layers_only):
-                    self.text_encoder = TextEncoder(
-                        inner_dim=txt_dim,
-                        depth=txt_depth,
-                        max_seq_len=max_seq_len,
-                        lr_mult=text_lr_mult,
-                    )
                     num_heads_here = num_heads
                     if cross_attn_channels_per_head > 0:
                         num_heads_here = ch // cross_attn_channels_per_head
