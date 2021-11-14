@@ -88,7 +88,6 @@ def create_model_and_diffusion(
     cross_attn_channels_per_head=-1,
     cross_attn_init_gain=1.,
     cross_attn_gain_scale=200.,
-    text_lr_mult=None,
     text_lr_mult=""
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
