@@ -146,7 +146,7 @@ class CrossAttention(nn.Module):
         attn_output = (self.gain_scale * self.gain).exp() * attn_output
         attn_output = rearrange(attn_output, 'b (h w) c -> b c h w', h=spatial[0])
 
-        if resid:
+        if self.resid:
             return tgt + attn_output
 
         return attn_output
