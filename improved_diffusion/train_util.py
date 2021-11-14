@@ -171,7 +171,7 @@ class TrainLoop:
             or self.step + self.resume_step < self.lr_anneal_steps
         ):
             batch, cond = next(self.data)
-            self.run_step(batch, cond)
+            self.run_step(batch, cond, verbose = (self.step % self.log_interval == 0))
             if self.step % self.log_interval == 0:
                 t2 = time.time()
                 print(f"{t2-t1:.2f} sec")
@@ -192,15 +192,15 @@ class TrainLoop:
         if (self.step - 1) % self.save_interval != 0:
             self.save()
 
-    def run_step(self, batch, cond):
-        self.forward_backward(batch, cond)
+    def run_step(self, batch, cond, verbose=False):
+        self.forward_backward(batch, cond, verbose=verbose)
         if self.use_fp16:
             self.optimize_fp16()
         else:
             self.optimize_normal()
         self.log_step()
 
-    def forward_backward(self, batch, cond):
+    def forward_backward(self, batch, cond, verbose=false):
         zero_grad(self.model_params)
         for i in range(0, batch.shape[0], self.microbatch):
             micro = batch[i : i + self.microbatch].to(dist_util.dev())
@@ -233,6 +233,12 @@ class TrainLoop:
                 self.schedule_sampler.update_with_local_losses(
                     t, losses["loss"].detach()
                 )
+                warm = self.schedule_sampler._warmed_up(verbose=verbose)
+                if warm and verbose:
+                    weights = self.schedule_sampler.weights()
+                    w_avg = np.average(np.arange(len(weights)), weights=weights)
+                    w_avg_ref = np.average(np.arange(len(weights)), weights=np.ones_like(weights))
+                    print(f"w_avg: {w_avg:.1f} (vs {w_avg_ref:.1f})")
 
             loss = (losses["loss"] * weights).mean()
             log_loss_dict(
