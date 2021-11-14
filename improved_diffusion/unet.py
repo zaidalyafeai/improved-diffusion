@@ -501,7 +501,7 @@ class UNetModel(nn.Module):
                     )
                 if self.txt and ds == self.txt_resolution:
                     num_heads_here = num_heads
-                    if channels_per_head > 0:
+                    if cross_attn_channels_per_head > 0:
                         num_heads_here = ch // cross_attn_channels_per_head
                     layers.append(
                         CrossAttentionAdapter(
