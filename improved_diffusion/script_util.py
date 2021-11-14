@@ -46,6 +46,8 @@ def model_and_diffusion_defaults():
         max_seq_len=64,
         txt_resolution=8,
         cross_attn_channels_per_head=-1,
+        cross_attn_init_gain=1.,
+        cross_attn_gain_scale=200.,
         verbose=False,
     )
 
@@ -83,6 +85,8 @@ def create_model_and_diffusion(
     txt_depth=2,
     txt_resolution=8,
     cross_attn_channels_per_head=-1,
+    cross_attn_init_gain=1.,
+    cross_attn_gain_scale=200.,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     model = create_model(
@@ -109,6 +113,8 @@ def create_model_and_diffusion(
         txt_depth=txt_depth,
         txt_resolution=txt_resolution,
         cross_attn_channels_per_head=cross_attn_channels_per_head,
+        cross_attn_init_gain=cross_attn_init_gain,
+        cross_attn_gain_scale=cross_attn_gain_scale,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -151,7 +157,9 @@ def create_model(
     max_seq_len=64,
     txt_depth=2,
     txt_resolution=8,
-    cross_attn_channels_per_head=-1
+    cross_attn_channels_per_head=-1,
+    cross_attn_init_gain=1.,
+    cross_attn_gain_scale=200.,
 ):
     print(
         f"create_model: got txt={txt}, num_heads={num_heads}, channels_per_head={channels_per_head}, cross_attn_channels_per_head={cross_attn_channels_per_head}"
@@ -205,6 +213,8 @@ def create_model(
         txt_depth=txt_depth,
         txt_resolution=txt_ds,
         cross_attn_channels_per_head=cross_attn_channels_per_head,
+        cross_attn_init_gain=cross_attn_init_gain,
+        cross_attn_gain_scale=cross_attn_gain_scale,
         image_size=image_size
     )
 

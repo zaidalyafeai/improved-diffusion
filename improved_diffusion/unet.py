@@ -346,6 +346,8 @@ class UNetModel(nn.Module):
         max_seq_len=64,
         txt_resolution=8,
         cross_attn_channels_per_head=-1,
+        cross_attn_init_gain=1.,
+        cross_attn_gain_scale=200,
         image_size=None,
         verbose=False
     ):
@@ -436,7 +438,9 @@ class UNetModel(nn.Module):
                             dim=ch,
                             heads=num_heads_here,
                             text_dim=txt_dim,
-                            emb_res = image_size // ds
+                            emb_res = image_size // ds,
+                            init_gain = cross_attn_init_gain,
+                            gain_scale = cross_attn_gain_scale,
                         )
                     )
 
@@ -508,7 +512,9 @@ class UNetModel(nn.Module):
                             dim=ch,
                             heads=num_heads_here,
                             text_dim=txt_dim,
-                            emb_res = image_size // ds
+                            emb_res = image_size // ds,
+                            init_gain = cross_attn_init_gain,
+                            gain_scale = cross_attn_gain_scale,
                         )
                     )
                 vprint(f"down | {level} of {len(channel_mult)} | ch {ch} | ds {ds}")
