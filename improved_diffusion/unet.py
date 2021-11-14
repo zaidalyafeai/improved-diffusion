@@ -345,6 +345,7 @@ class UNetModel(nn.Module):
         txt_depth=2,
         max_seq_len=64,
         txt_resolution=8,
+        cross_attn_channels_per_head=-1,
         verbose=False
     ):
         super().__init__()
@@ -427,8 +428,8 @@ class UNetModel(nn.Module):
                         max_seq_len=max_seq_len
                     )
                     num_heads_here = num_heads
-                    if channels_per_head > 0:
-                        num_heads_here = ch // channels_per_head
+                    if cross_attn_channels_per_head > 0:
+                        num_heads_here = ch // cross_attn_channels_per_head
                     layers.append(
                         CrossAttentionAdapter(
                             dim=ch,
@@ -499,7 +500,7 @@ class UNetModel(nn.Module):
                 if self.txt and ds == self.txt_resolution:
                     num_heads_here = num_heads
                     if channels_per_head > 0:
-                        num_heads_here = ch // channels_per_head
+                        num_heads_here = ch // cross_attn_channels_per_head
                     layers.append(
                         CrossAttentionAdapter(
                             dim=ch,

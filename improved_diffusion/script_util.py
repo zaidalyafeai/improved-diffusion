@@ -45,6 +45,7 @@ def model_and_diffusion_defaults():
         txt_depth=2,
         max_seq_len=64,
         txt_resolution=8,
+        cross_attn_channels_per_head=-1
         verbose=False,
     )
 
@@ -81,6 +82,7 @@ def create_model_and_diffusion(
     max_seq_len=64,
     txt_depth=2,
     txt_resolution=8,
+    cross_attn_channels_per_head=-1,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     model = create_model(
@@ -106,6 +108,7 @@ def create_model_and_diffusion(
         max_seq_len=max_seq_len,
         txt_depth=txt_depth,
         txt_resolution=txt_resolution,
+        cross_attn_channels_per_head=cross_attn_channels_per_head,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -148,8 +151,11 @@ def create_model(
     max_seq_len=64,
     txt_depth=2,
     txt_resolution=8,
+    cross_attn_channels_per_head=-1
 ):
-    print(f"create_model: got txt={txt}")
+    print(
+        f"create_model: got txt={txt}, num_heads={num_heads}, channels_per_head={channels_per_head}, cross_attn_channels_per_head={cross_attn_channels_per_head}"
+    )
     if channel_mult != "":
         print(f"got channel_mult: {channel_mult}")
         try:
@@ -196,6 +202,7 @@ def create_model(
         max_seq_len=max_seq_len,
         txt_depth=txt_depth,
         txt_resolution=txt_resolution,
+        cross_attn_channels_per_head=cross_attn_channels_per_head,
     )
 
 
