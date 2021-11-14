@@ -97,7 +97,7 @@ def create_argparser():
         txt_depth=2,
         max_seq_len=64,
         txt_resolutions="8",
-        text_lr="",
+        text_lr=-1.,
         verbose=False,
     )
     defaults.update(model_and_diffusion_defaults())
