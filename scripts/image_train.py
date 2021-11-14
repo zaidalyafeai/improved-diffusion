@@ -88,6 +88,7 @@ def create_argparser():
         txt_dim=128,
         txt_depth=2,
         max_seq_len=64,
+        txt_resolution=8,
         verbose=False,
     )
     defaults.update(model_and_diffusion_defaults())
