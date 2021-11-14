@@ -236,9 +236,9 @@ class TrainLoop:
                 if i == 0:
                     warm = self.schedule_sampler._warmed_up(verbose=verbose)
                     if warm and verbose:
-                        weights = self.schedule_sampler.weights()
-                        w_avg = np.average(np.arange(len(weights)), weights=weights)
-                        w_avg_ref = np.average(np.arange(len(weights)), weights=np.ones_like(weights))
+                        _weights = self.schedule_sampler.weights()
+                        w_avg = np.average(np.arange(len(_weights)), weights=_weights)
+                        w_avg_ref = np.average(np.arange(len(_weights)), weights=np.ones_like(_weights))
                         print(f"w_avg: {w_avg:.1f} (vs {w_avg_ref:.1f})")
 
             loss = (losses["loss"] * weights).mean()
