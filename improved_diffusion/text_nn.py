@@ -106,6 +106,7 @@ class CrossAttention(nn.Module):
         text_dim=512,
         init_gain=1.,
         gain_scale=200.,
+        resid=True,
     ):
         super().__init__()
         self.dim = dim
@@ -121,6 +122,8 @@ class CrossAttention(nn.Module):
 
         self.gain_scale = gain_scale
         self.gain = torch.nn.Parameter(torch.as_tensor(np.log(init_gain) / gain_scale))
+
+        self.resid = resid
 
         torch.nn.init.orthogonal_(self.q.weight)
         torch.nn.init.orthogonal_(self.kv.weight)
@@ -142,4 +145,8 @@ class CrossAttention(nn.Module):
         attn_output, attn_output_weights = self.attn(q, k, v)
         attn_output = (self.gain_scale * self.gain).exp() * attn_output
         attn_output = rearrange(attn_output, 'b (h w) c -> b c h w', h=spatial[0])
+
+        if resid:
+            return tgt + attn_output
+
         return attn_output
