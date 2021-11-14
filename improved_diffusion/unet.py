@@ -344,7 +344,7 @@ class UNetModel(nn.Module):
         txt_dim=128,
         txt_depth=2,
         max_seq_len=64,
-        txt_resolution=8,
+        txt_resolutions=(8,),
         cross_attn_channels_per_head=-1,
         cross_attn_init_gain=1.,
         cross_attn_gain_scale=200,
@@ -379,7 +379,7 @@ class UNetModel(nn.Module):
         self.num_heads_upsample = num_heads_upsample
 
         self.txt = txt
-        self.txt_resolution = txt_resolution
+        self.txt_resolutions = txt_resolutions
 
         time_embed_dim = model_channels * 4
         self.time_embed = nn.Sequential(
@@ -424,7 +424,7 @@ class UNetModel(nn.Module):
                             ch, use_checkpoint=use_checkpoint or use_checkpoint_down, num_heads=num_heads_here
                         )
                     )
-                if self.txt and ds == self.txt_resolution:
+                if self.txt and ds in self.txt_resolutions:
                     self.text_encoder = TextEncoder(
                         inner_dim=txt_dim,
                         depth=txt_depth,
@@ -503,7 +503,7 @@ class UNetModel(nn.Module):
                             num_heads=num_heads_here,
                         )
                     )
-                if self.txt and ds == self.txt_resolution:
+                if self.txt and ds in self.txt_resolutions:
                     num_heads_here = num_heads
                     if cross_attn_channels_per_head > 0:
                         num_heads_here = ch // cross_attn_channels_per_head

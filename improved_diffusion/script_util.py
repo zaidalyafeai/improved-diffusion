@@ -44,7 +44,7 @@ def model_and_diffusion_defaults():
         txt_dim=128,
         txt_depth=2,
         max_seq_len=64,
-        txt_resolution=8,
+        txt_resolutions="8",
         cross_attn_channels_per_head=-1,
         cross_attn_init_gain=1.,
         cross_attn_gain_scale=200.,
@@ -83,7 +83,7 @@ def create_model_and_diffusion(
     txt_dim=128,
     max_seq_len=64,
     txt_depth=2,
-    txt_resolution=8,
+    txt_resolutions="8",
     cross_attn_channels_per_head=-1,
     cross_attn_init_gain=1.,
     cross_attn_gain_scale=200.,
@@ -111,7 +111,7 @@ def create_model_and_diffusion(
         txt_dim=txt_dim,
         max_seq_len=max_seq_len,
         txt_depth=txt_depth,
-        txt_resolution=txt_resolution,
+        txt_resolutions=txt_resolutions,
         cross_attn_channels_per_head=cross_attn_channels_per_head,
         cross_attn_init_gain=cross_attn_init_gain,
         cross_attn_gain_scale=cross_attn_gain_scale,
@@ -156,7 +156,7 @@ def create_model(
     txt_dim=128,
     max_seq_len=64,
     txt_depth=2,
-    txt_resolution=8,
+    txt_resolutions="8",
     cross_attn_channels_per_head=-1,
     cross_attn_init_gain=1.,
     cross_attn_gain_scale=200.,
@@ -187,7 +187,9 @@ def create_model(
     for res in attention_resolutions.split(","):
         attention_ds.append(image_size // int(res))
 
-    txt_ds = image_size // txt_resolution
+    txt_ds = []
+    for res in txt_resolutions.split(","):
+        txt_ds.append(image_size // int(res))
 
     return UNetModel(
         in_channels=3,
@@ -211,7 +213,7 @@ def create_model(
         txt_dim=txt_dim,
         max_seq_len=max_seq_len,
         txt_depth=txt_depth,
-        txt_resolution=txt_ds,
+        txt_resolutions=txt_ds,
         cross_attn_channels_per_head=cross_attn_channels_per_head,
         cross_attn_init_gain=cross_attn_init_gain,
         cross_attn_gain_scale=cross_attn_gain_scale,
