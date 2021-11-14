@@ -53,6 +53,7 @@ def main():
             tokenizer = load_tokenizer(max_seq_len=model.text_encoder.model.max_seq_len)
             txt = th.as_tensor(tokenize(tokenizer, args.batch_size * [args.text_input])).to(dist_util.dev())
             model_kwargs["txt"] = txt
+        print(f"model_kwargs: {model_kwargs}")
         sample_fn = (
             diffusion.p_sample_loop if not args.use_ddim else diffusion.ddim_sample_loop
         )
