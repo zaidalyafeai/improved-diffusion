@@ -23,6 +23,8 @@ def main():
     dist_util.setup_dist()
     logger.configure()
 
+    print(f"args.text_lr: {type(args.text_lr)}, {args.text_lr}")
+
     if isinstance(args.text_lr, float):
         args.text_lr_mult = args.text_lr / args.lr
         print(f"text_lr_mult: {text_lr_mult}")
