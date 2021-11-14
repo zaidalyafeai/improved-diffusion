@@ -24,6 +24,8 @@ from improved_diffusion.image_datasets import load_tokenizer, tokenize
 def main():
     args = create_argparser().parse_args()
 
+    print(f"text_input: {args.text_input}")
+
     dist_util.setup_dist()
     logger.configure()
 
