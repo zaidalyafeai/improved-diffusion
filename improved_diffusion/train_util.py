@@ -233,6 +233,7 @@ class TrainLoop:
                 self.schedule_sampler.update_with_local_losses(
                     t, losses["loss"].detach()
                 )
+                print(f"got verbose={verbose}")
                 warm = self.schedule_sampler._warmed_up(verbose=verbose)
                 if warm and verbose:
                     weights = self.schedule_sampler.weights()
