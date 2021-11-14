@@ -104,7 +104,7 @@ class CrossAttention(nn.Module):
         dim,
         heads,
         text_dim=512,
-        init_gain=1.,
+        init_gain=1e-8,# 1.,
         gain_scale=200.,
         resid=True,
     ):
