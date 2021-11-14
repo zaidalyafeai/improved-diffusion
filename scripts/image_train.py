@@ -27,9 +27,9 @@ def main():
 
     if isinstance(args.text_lr, float):
         args.text_lr_mult = args.text_lr / args.lr
-        print(f"text_lr_mult: {text_lr_mult}")
     else:
         args.text_lr_mult = None
+    print(f"args.text_lr_mult: {args.text_lr_mult}")
 
     logger.log("creating model and diffusion...")
     model, diffusion = create_model_and_diffusion(
