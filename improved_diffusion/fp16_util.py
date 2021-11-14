@@ -2,25 +2,29 @@
 Helpers to train with 16-bit precision.
 """
 
+import torch
 import torch.nn as nn
 from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
 
 from .text_nn import TextEncoder, CrossAttention
 
 
-def convert_module_to_f16(l):
+def convert_module_to_f16(l, bf16=False):
     """
     Convert primitive modules to float16.
     """
+    dtype = torch.float16
+    if bf16:
+        dtype = torch.bfloat16
     if isinstance(l, (nn.Conv1d, nn.Conv2d, nn.Conv3d, )):
-        l.weight.data = l.weight.data.half()
+        l.weight.data = l.weight.data.to(dtype)
         if l.bias is not None:
-            l.bias.data = l.bias.data.half()
+            l.bias.data = l.bias.data.to(dtype)
     if isinstance(l, (CrossAttention, TextEncoder)):
         for n, p in l.named_parameters():
             if 'tgt_ln' in n:
                 continue
-            p.data = p.data.half()
+            p.data = p.data.to(dtype)
 
 
 def convert_module_to_f32(l):
