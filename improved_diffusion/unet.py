@@ -427,8 +427,12 @@ class UNetModel(nn.Module):
         if self.num_classes is not None:
             self.label_emb = nn.Embedding(num_classes, time_embed_dim)
 
+        monochrome_adapter_modules_in = []
+        if monochrome_adapter:
+            monochrome_adapter_modules_in = nn.Linear(1, 3)
+
         self.input_blocks = nn.ModuleList(
-            [
+            [   *monochrome_adapter_modules_in,
                 TimestepEmbedSequential(
                     conv_nd(dims, in_channels, model_channels, 3, padding=1)
                 )
