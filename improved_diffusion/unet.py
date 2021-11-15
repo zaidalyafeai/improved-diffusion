@@ -299,10 +299,11 @@ class QKVAttention(nn.Module):
 
 
 class MonochromeAdapter(nn.Module):
-    def __init__(self):
+    def __init__(self, to_mono=True):
         super().__init__()
-        self.linear_mean = nn.Linear(3, 1)
-        self.linear_var = nn.Linear(3, 1)
+        dims = (3, 1) if to_mono else (1, 3)
+        self.linear_mean = nn.Linear(*dims)
+        self.linear_var = nn.Linear(*dims)
 
     def forward(self, x):
         segs = torch.split(x, 3, dim=1)
@@ -431,7 +432,7 @@ class UNetModel(nn.Module):
             self.label_emb = nn.Embedding(num_classes, time_embed_dim)
 
         if monochrome_adapter:
-            self.mono_to_rgb = nn.Linear(1, 3)
+            self.mono_to_rgb = MonochromeAdapter(to_mono=False)
 
         self.input_blocks = nn.ModuleList(
             [
@@ -588,7 +589,7 @@ class UNetModel(nn.Module):
         )
 
         if monochrome_adapter:
-            self.rgb_to_mono = MonochromeAdapter()
+            self.rgb_to_mono = MonochromeAdapter(to_mono=True)
 
     def convert_to_fp16(self):
         """
