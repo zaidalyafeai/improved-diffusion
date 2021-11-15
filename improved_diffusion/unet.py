@@ -406,6 +406,8 @@ class UNetModel(nn.Module):
         self.txt = txt
         self.txt_resolutions = txt_resolutions
 
+        self.monochrome_adapter = monochrome_adapter
+
         if self.txt:
             self.text_encoder = TextEncoder(
                 inner_dim=txt_dim,
@@ -427,12 +429,11 @@ class UNetModel(nn.Module):
         if self.num_classes is not None:
             self.label_emb = nn.Embedding(num_classes, time_embed_dim)
 
-        monochrome_adapter_modules_in = []
         if monochrome_adapter:
-            monochrome_adapter_modules_in = [nn.Linear(1, 3)]
+            self.mono_to_rgb = nn.Linear(1, 3)
 
         self.input_blocks = nn.ModuleList(
-            [   *monochrome_adapter_modules_in,
+            [
                 TimestepEmbedSequential(
                     conv_nd(dims, in_channels, model_channels, 3, padding=1)
                 )
@@ -579,16 +580,15 @@ class UNetModel(nn.Module):
                     vprint(f"down | ds {ds * 2} -> {ds}")
                 self.output_blocks.append(TimestepEmbedSequential(*layers))
 
-        monochrome_adapter_modules = []
-        if monochrome_adapter:
-            monochrome_adapter_modules = [MonochromeAdapter()]
-
         self.out = nn.Sequential(
             normalization(ch),
             SiLU(),
             zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
             *monochrome_adapter_modules
         )
+
+        if monochrome_adapter:
+            self.rgb_to_mono = MonochromeAdapter()
 
     def convert_to_fp16(self):
         """
@@ -647,6 +647,8 @@ class UNetModel(nn.Module):
             txt = txt.type(self.inner_dtype)
 
         h = x.type(self.inner_dtype)
+        if self.monochrome_adapter:
+            h = self.mono_to_rgb(h)
         for module in self.input_blocks:
             h = module(h, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs)
             hs.append(h)
@@ -655,7 +657,10 @@ class UNetModel(nn.Module):
             cat_in = th.cat([h, hs.pop()], dim=1)
             h = module(cat_in, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs)
         h = h.type(x.dtype)
-        return self.out(h)
+        h = self.out(h)
+        if self.monochrome_adapter:
+            h = self.rgb_to_mono(h)
+        return h
 
     def get_feature_vectors(self, x, timesteps, y=None):
         """
