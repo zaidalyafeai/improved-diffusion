@@ -64,11 +64,11 @@ def main():
             batch_texts.append(text)
             print(f"text {i}: {repr(text)}")
 
-        # # constant noise
-        # shape = (1, 3, args.image_size, args.image_size)
-        # device = next(model.parameters()).device
-        # noise = th.randn(*shape, device=device)
-        # noise = th.tile(noise, (4, 1, 1, 1))
+        # constant noise
+        shape = (1, 3, args.image_size, args.image_size)
+        device = next(model.parameters()).device
+        noise = th.randn(*shape, device=device)
+        noise = th.tile(noise, (4, 1, 1, 1))
     else:
         print(f"text_input: {args.text_input}")
 
@@ -82,6 +82,7 @@ def main():
 
     while len(all_images) * args.batch_size < args.num_samples:
         if (args.seed > -1) and using_text_dir:
+            print(f"setting seed to {args.seed}")
             th.manual_seed(args.seed)
 
         model_kwargs = {}
@@ -101,7 +102,7 @@ def main():
         sample = sample_fn(
             model,
             (args.batch_size, 3, args.image_size, args.image_size),
-            # noise=noise,
+            noise=noise,
             clip_denoised=args.clip_denoised,
             model_kwargs=model_kwargs,
         )
