@@ -647,9 +647,9 @@ class UNetModel(nn.Module):
             txt = self.text_encoder(txt)
             txt = txt.type(self.inner_dtype)
 
-        h = x.type(self.inner_dtype)
         if self.monochrome_adapter:
             h = self.mono_to_rgb(h)
+        h = x.type(self.inner_dtype)
         for module in self.input_blocks:
             h = module(h, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs)
             hs.append(h)
