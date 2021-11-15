@@ -305,11 +305,12 @@ class MonochromeAdapter(nn.Module):
         self.linear_var = nn.Linear(3, 1)
 
     def forward(self, x):
-        segs = torch.split(x, 3, dim=-1)
-        out = self.linear_mean(segs[0])
+        segs = torch.split(x, 3, dim=1)
+        out = self.linear_mean(segs[0].transpose((1, 3)))
         if len(segs) > 1:
-            out_var = self.linear_var(segs[1])
-            out = torch.cat([out, out_var], dim=-1)
+            out_var = self.linear_var(segs[1].transpose((1, 3)))
+            out = torch.cat([out, out_var], dim=3)
+        out = out.transpose((1, 3))
         return out
 
 
