@@ -55,7 +55,7 @@ def main():
         ][args.text_dir_offset:args.text_dir_offset + n_texts]
 
         # debug
-        text_files = n_texts * [text_files[0]]
+        # text_files = n_texts * [text_files[0]]
 
         batch_texts = []
         for i, path_txt in enumerate(text_files):
@@ -76,6 +76,7 @@ def main():
 
     logger.log("sampling...")
     if args.seed > -1:
+        print(f"setting seed to {args.seed}")
         th.manual_seed(args.seed)
     all_images = []
     all_labels = []
