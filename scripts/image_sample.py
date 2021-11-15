@@ -25,8 +25,6 @@ from improved_diffusion.image_datasets import load_tokenizer, tokenize
 def main():
     args = create_argparser().parse_args()
 
-    print(f"text_input: {args.text_input}")
-
     dist_util.setup_dist()
     logger.configure()
 
@@ -62,6 +60,9 @@ def main():
         device = next(model.parameters()).device
         noise = th.randn(*shape, device=device)
         noise = th.tile(noise, (4, 1, 1, 1))
+    else:
+        print(f"text_input: {args.text_input}")
+
 
     logger.log("sampling...")
     if args.seed > -1:
