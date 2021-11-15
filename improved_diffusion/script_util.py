@@ -50,6 +50,8 @@ def model_and_diffusion_defaults():
         cross_attn_gain_scale=200.,
         text_lr_mult=-1.,
         txt_output_layers_only=False,
+        monochrome=False,
+        monochrome_adapter=False,
         verbose=False,
     )
 
@@ -91,6 +93,8 @@ def create_model_and_diffusion(
     cross_attn_gain_scale=200.,
     text_lr_mult=-1.,
     txt_output_layers_only=False,
+    monochrome=False,
+    monochrome_adapter=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     model = create_model(
@@ -121,6 +125,8 @@ def create_model_and_diffusion(
         cross_attn_gain_scale=cross_attn_gain_scale,
         text_lr_mult=text_lr_mult,
         txt_output_layers_only=txt_output_layers_only,
+        monochrome=monochrome,
+        monochrome_adapter=monochrome_adapter,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -168,6 +174,8 @@ def create_model(
     cross_attn_gain_scale=200.,
     text_lr_mult=-1.,
     txt_output_layers_only=False,
+    monochrome=False,
+    monochrome_adapter=False,
 ):
     print(
         f"create_model: got txt={txt}, num_heads={num_heads}, channels_per_head={channels_per_head}, cross_attn_channels_per_head={cross_attn_channels_per_head}, text_lr_mult={text_lr_mult}"
@@ -199,10 +207,15 @@ def create_model(
     for res in txt_resolutions.split(","):
         txt_ds.append(image_size // int(res))
 
+    if monochrome and (not monochrome_adapter):
+        out_channels = (1 if not learn_sigma else 2)
+    else:
+        out_channels = (3 if not learn_sigma else 6)
+
     return UNetModel(
         in_channels=3,
         model_channels=num_channels,
-        out_channels=(3 if not learn_sigma else 6),
+        out_channels=out_channels,
         num_res_blocks=num_res_blocks,
         attention_resolutions=tuple(attention_ds),
         dropout=dropout,
@@ -228,6 +241,7 @@ def create_model(
         image_size=image_size,
         text_lr_mult=text_lr_mult,
         txt_output_layers_only=txt_output_layers_only,
+        monochrome_adapter=monochrome_adapter,
     )
 
 

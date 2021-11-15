@@ -20,7 +20,7 @@ def tokenize(tokenizer, txt):
 
 def load_data(
     *, data_dir, batch_size, image_size, class_cond=False, deterministic=False,
-    txt=False,
+    txt=False, monochrome=False,
 ):
     """
     For a dataset, create a generator over (images, kwargs) pairs.
@@ -56,6 +56,7 @@ def load_data(
         classes=classes,
         image_file_to_text_file=image_file_to_text_file,
         txt=txt,
+        monochrome=monochrome,
         shard=MPI.COMM_WORLD.Get_rank(),
         num_shards=MPI.COMM_WORLD.Get_size(),
     )
@@ -100,12 +101,14 @@ class ImageDataset(Dataset):
                  classes=None,
                  image_file_to_text_file=None,
                  txt=False,
+                 monochrome=False,
                  shard=0, num_shards=1):
         super().__init__()
         self.resolution = resolution
         self.local_images = image_paths[shard:][::num_shards]
         self.local_classes = None if classes is None else classes[shard:][::num_shards]
         self.txt = txt
+        self.monochrome = monochrome
 
         if self.txt:
             self.local_images = [p for p in self.local_images if p in image_file_to_text_file]
@@ -133,7 +136,8 @@ class ImageDataset(Dataset):
             tuple(round(x * scale) for x in pil_image.size), resample=Image.BICUBIC
         )
 
-        arr = np.array(pil_image.convert("RGB"))
+        mode = "L" if self.monochrome else "RGB"
+        arr = np.array(pil_image.convert(mode))
         crop_y = (arr.shape[0] - self.resolution) // 2
         crop_x = (arr.shape[1] - self.resolution) // 2
         arr = arr[crop_y : crop_y + self.resolution, crop_x : crop_x + self.resolution]

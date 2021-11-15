@@ -298,6 +298,20 @@ class QKVAttention(nn.Module):
         model.total_ops += th.DoubleTensor([matmul_ops])
 
 
+class MonochromeAdapter(nn.Module):
+    def __init__(self):
+        self.linear_mean = nn.Linear(3, 1)
+        self.linear_var = nn.Linear(3, 1)
+
+    def forward(self, x):
+        segs = torch.split(x, 3, dim=-1)
+        out = self.linear_mean(segs[0])
+        if len(segs) > 1
+            out_var = self.linear_var(segs[1])
+            out = torch.cat([out, out_var], dim=-1)
+        return out
+
+
 class UNetModel(nn.Module):
     """
     The full UNet model with attention and timestep embedding.
@@ -353,6 +367,7 @@ class UNetModel(nn.Module):
         image_size=None,
         text_lr_mult=-1.,
         txt_output_layers_only=False,
+        monochrome_adapter=False,
         verbose=False
     ):
         super().__init__()
@@ -559,10 +574,15 @@ class UNetModel(nn.Module):
                     vprint(f"down | ds {ds * 2} -> {ds}")
                 self.output_blocks.append(TimestepEmbedSequential(*layers))
 
+        monochrome_adapter_modules = []
+        if monochrome_adapter:
+            monochrome_adapter_modules = [MonochromeAdapter()]
+
         self.out = nn.Sequential(
             normalization(ch),
             SiLU(),
             zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
+            *monochrome_adapter_modules
         )
 
     def convert_to_fp16(self):
