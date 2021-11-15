@@ -300,6 +300,7 @@ class QKVAttention(nn.Module):
 
 class MonochromeAdapter(nn.Module):
     def __init__(self):
+        super().__init__()
         self.linear_mean = nn.Linear(3, 1)
         self.linear_var = nn.Linear(3, 1)
 
