@@ -48,6 +48,10 @@ def main():
             for entry in sorted(bf.listdir(data_dir))
             if entry.endswith('.txt')
         ][args.text_dir_offset:args.text_dir_offset + args.batch_size]
+
+        # debug
+        text_files = args.batch_size * [text_files[0]]
+
         batch_texts = []
         for i, path_txt in enumerate(text_files):
             with bf.BlobFile(path_txt, "r") as f:
