@@ -584,7 +584,6 @@ class UNetModel(nn.Module):
             normalization(ch),
             SiLU(),
             zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
-            *monochrome_adapter_modules
         )
 
         if monochrome_adapter:
