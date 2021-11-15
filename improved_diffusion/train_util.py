@@ -175,11 +175,10 @@ class TrainLoop:
             if self.step % self.log_interval == 0:
                 t2 = time.time()
                 print(f"{t2-t1:.2f} sec")
-                for n, m in self.model.named_modules():
-                    if hasattr(m, 'gain'):
-                        gain_val = (getattr(m, 'gain_scale') * getattr(m, 'gain')).exp().item()
-                        print(f"gain {gain_val:.4f} | {n}")
-                        # print(f"gain grad {getattr(m, 'gain').grad.item():.4f} | {n}")
+                # for n, m in self.model.named_modules():
+                #     if hasattr(m, 'gain'):
+                #         gain_val = (getattr(m, 'gain_scale') * getattr(m, 'gain')).exp().item()
+                #         print(f"gain {gain_val:.4f} | {n}")
                 t1 = t2
                 logger.dumpkvs()
             if (self.step % self.save_interval == 0) and (self.step > 0):
@@ -305,11 +304,19 @@ class TrainLoop:
         for param_group in self.opt.param_groups:
             param_group["lr"] = lr
 
+    def log_gain(self):
+        for n, m in self.model.named_modules():
+            if hasattr(m, 'gain'):
+                gain_val = (getattr(m, 'gain_scale') * getattr(m, 'gain')).exp().item()
+                short_name = ".".join(seg[:3] for seg in n.split("."))
+                logger.logkv(f"gain_{short_name}", gain_val)
+
     def log_step(self):
         logger.logkv("step", self.step + self.resume_step)
         logger.logkv("samples", (self.step + self.resume_step + 1) * self.global_batch)
         if self.use_fp16:
             logger.logkv("lg_loss_scale", self.lg_loss_scale)
+        self.log_gain()
 
     def save(self):
         def save_checkpoint(rate, params):
