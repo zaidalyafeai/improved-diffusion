@@ -138,6 +138,8 @@ class ImageDataset(Dataset):
 
         mode = "L" if self.monochrome else "RGB"
         arr = np.array(pil_image.convert(mode))
+        if self.monochrome:
+            arr = np.expand_dims(arr, 2)
         crop_y = (arr.shape[0] - self.resolution) // 2
         crop_x = (arr.shape[1] - self.resolution) // 2
         arr = arr[crop_y : crop_y + self.resolution, crop_x : crop_x + self.resolution]
