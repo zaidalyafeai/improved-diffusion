@@ -299,16 +299,18 @@ class QKVAttention(nn.Module):
 
 
 class MonochromeAdapter(nn.Module):
-    def __init__(self, to_mono=True):
+    def __init__(self, to_mono=True, needs_var=False):
         super().__init__()
         dims = (3, 1) if to_mono else (1, 3)
         self.linear_mean = nn.Linear(*dims)
-        self.linear_var = nn.Linear(*dims)
+        self.needs_var = needs_var
+        if needs_var:
+            self.linear_var = nn.Linear(*dims)
 
     def forward(self, x):
         segs = th.split(x, 3, dim=1)
         out = self.linear_mean(segs[0].transpose(1, 3))
-        if len(segs) > 1:
+        if self.needs_var and len(segs) > 1:
             out_var = self.linear_var(segs[1].transpose(1, 3))
             out = th.cat([out, out_var], dim=3)
         out = out.transpose(1, 3)
@@ -432,7 +434,7 @@ class UNetModel(nn.Module):
             self.label_emb = nn.Embedding(num_classes, time_embed_dim)
 
         if monochrome_adapter:
-            self.mono_to_rgb = MonochromeAdapter(to_mono=False)
+            self.mono_to_rgb = MonochromeAdapter(to_mono=False, needs_var=False)
 
         self.input_blocks = nn.ModuleList(
             [
@@ -589,7 +591,7 @@ class UNetModel(nn.Module):
         )
 
         if monochrome_adapter:
-            self.rgb_to_mono = MonochromeAdapter(to_mono=True)
+            self.rgb_to_mono = MonochromeAdapter(to_mono=True, needs_var=out_channels>3)
 
     def convert_to_fp16(self):
         """
