@@ -429,7 +429,7 @@ class UNetModel(nn.Module):
 
         monochrome_adapter_modules_in = []
         if monochrome_adapter:
-            monochrome_adapter_modules_in = nn.Linear(1, 3)
+            monochrome_adapter_modules_in = [nn.Linear(1, 3)]
 
         self.input_blocks = nn.ModuleList(
             [   *monochrome_adapter_modules_in,
