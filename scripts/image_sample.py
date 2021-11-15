@@ -9,6 +9,7 @@ import os
 import numpy as np
 import torch as th
 import torch.distributed as dist
+import blobfile as bf
 
 from improved_diffusion import dist_util, logger
 from improved_diffusion.script_util import (
@@ -39,6 +40,29 @@ def main():
     model.to(dist_util.dev())
     model.eval()
 
+    batch_texts = args.batch_size * [args.text_input]
+    noise = None
+
+    if args.text_dir and os.path.exists(args.text_dir):
+        data_dir = args.text_dir
+        text_files = [
+            bf.join(data_dir, entry)
+            for entry in sorted(bf.listdir(data_dir))
+            if entry.endswith('.txt')
+        ][args.text_dir_offset:args.text_dir_offset + args.batch_size]
+        batch_texts = []
+        for i, path_txt in enumerate(text_files):
+            with bf.BlobFile(path_txt, "r") as f:
+                text = f.read()
+            batch_texts.append(text)
+            print(f"text {i}: {repr(text)}")
+
+        # constant noise
+        shape = (1, 3, args.image_size, args.image_size)
+        device = next(model.parameters()).device
+        noise = th.randn(*shape, device=device)
+        noise = th.tile(noise, (4, 1, 1, 1))
+
     logger.log("sampling...")
     if args.seed > -1:
         th.manual_seed(args.seed)
@@ -53,7 +77,7 @@ def main():
             model_kwargs["y"] = classes
         if args.txt:
             tokenizer = load_tokenizer(max_seq_len=model.text_encoder.model.max_seq_len)
-            txt = th.as_tensor(tokenize(tokenizer, args.batch_size * [args.text_input])).to(dist_util.dev())
+            txt = th.as_tensor(tokenize(tokenizer, batch_texts)).to(dist_util.dev())
             model_kwargs["txt"] = txt
         sample_fn = (
             diffusion.p_sample_loop if not args.use_ddim else diffusion.ddim_sample_loop
@@ -61,6 +85,7 @@ def main():
         sample = sample_fn(
             model,
             (args.batch_size, 3, args.image_size, args.image_size),
+            noise=noise,
             clip_denoised=args.clip_denoised,
             model_kwargs=model_kwargs,
         )
@@ -105,6 +130,8 @@ def create_argparser():
         use_ddim=False,
         model_path="",
         text_input="",
+        text_dir="",
+        text_dir_offset=0,
         log_interval=10,  # ignored
         seed=-1,
     )
