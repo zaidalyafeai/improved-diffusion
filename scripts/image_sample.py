@@ -68,7 +68,7 @@ def main():
         shape = (1, 3, args.image_size, args.image_size)
         device = next(model.parameters()).device
         noise = th.randn(*shape, device=device)
-        noise = th.tile(noise, (4, 1, 1, 1))
+        noise = th.tile(noise, (args.batch_size, 1, 1, 1))
     else:
         print(f"text_input: {args.text_input}")
 
