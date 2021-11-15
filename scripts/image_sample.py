@@ -38,19 +38,24 @@ def main():
     model.to(dist_util.dev())
     model.eval()
 
-    batch_texts = args.batch_size * [args.text_input]
+    n_texts = args.num_samples // args.batch_size
+
+    using_text_dir = False
+    batch_texts = n_texts * [args.text_input]
     noise = None
 
     if args.text_dir and os.path.exists(args.text_dir):
+        using_text_dir = True
         data_dir = args.text_dir
+
         text_files = [
             bf.join(data_dir, entry)
             for entry in sorted(bf.listdir(data_dir))
             if entry.endswith('.txt')
-        ][args.text_dir_offset:args.text_dir_offset + args.batch_size]
+        ][args.text_dir_offset:args.text_dir_offset + n_texts]
 
         # debug
-        text_files = args.batch_size * [text_files[0]]
+        # text_files = n_texts * [text_files[0]]
 
         batch_texts = []
         for i, path_txt in enumerate(text_files):
@@ -59,21 +64,26 @@ def main():
             batch_texts.append(text)
             print(f"text {i}: {repr(text)}")
 
-        # constant noise
-        shape = (1, 3, args.image_size, args.image_size)
-        device = next(model.parameters()).device
-        noise = th.randn(*shape, device=device)
-        noise = th.tile(noise, (4, 1, 1, 1))
+        # # constant noise
+        # shape = (1, 3, args.image_size, args.image_size)
+        # device = next(model.parameters()).device
+        # noise = th.randn(*shape, device=device)
+        # noise = th.tile(noise, (4, 1, 1, 1))
     else:
         print(f"text_input: {args.text_input}")
 
+    text_gen = (x for x in batch_texts)
 
     logger.log("sampling...")
     if args.seed > -1:
         th.manual_seed(args.seed)
     all_images = []
     all_labels = []
+
     while len(all_images) * args.batch_size < args.num_samples:
+        if (args.seed > -1) and using_text_dir:
+            th.manual_seed(args.seed)
+
         model_kwargs = {}
         if args.class_cond:
             classes = th.randint(
@@ -81,8 +91,9 @@ def main():
             )
             model_kwargs["y"] = classes
         if args.txt:
+            this_text = args.batch_size * [next(text_gen)]
             tokenizer = load_tokenizer(max_seq_len=model.text_encoder.model.max_seq_len)
-            txt = th.as_tensor(tokenize(tokenizer, batch_texts)).to(dist_util.dev())
+            txt = th.as_tensor(tokenize(tokenizer, this_text)).to(dist_util.dev())
             model_kwargs["txt"] = txt
         sample_fn = (
             diffusion.p_sample_loop if not args.use_ddim else diffusion.ddim_sample_loop
@@ -90,7 +101,7 @@ def main():
         sample = sample_fn(
             model,
             (args.batch_size, 3, args.image_size, args.image_size),
-            noise=noise,
+            # noise=noise,
             clip_denoised=args.clip_denoised,
             model_kwargs=model_kwargs,
         )
