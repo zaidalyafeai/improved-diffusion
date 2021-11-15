@@ -100,9 +100,10 @@ def main():
         sample_fn = (
             diffusion.p_sample_loop if not args.use_ddim else diffusion.ddim_sample_loop
         )
+        image_channels = 1 if args.monochrome else 3
         sample = sample_fn(
             model,
-            (args.batch_size, 3, args.image_size, args.image_size),
+            (args.batch_size, image_channels, args.image_size, args.image_size),
             # noise=noise,
             clip_denoised=args.clip_denoised,
             model_kwargs=model_kwargs,
