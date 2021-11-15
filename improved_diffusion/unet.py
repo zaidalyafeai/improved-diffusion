@@ -302,10 +302,17 @@ class MonochromeAdapter(nn.Module):
     def __init__(self, to_mono=True, needs_var=False):
         super().__init__()
         dims = (3, 1) if to_mono else (1, 3)
+        w_init = 1/3. if to_mono else 1.
+
         self.linear_mean = nn.Linear(*dims)
+        nn.init.constant_(self.linear_mean.weight, w_init)
+        nn.init.constant_(self.linear_mean.bias, 0.)
+
         self.needs_var = needs_var
         if needs_var:
             self.linear_var = nn.Linear(*dims)
+            nn.init.constant_(self.linear_var.weight, w_init)
+            nn.init.constant_(self.linear_var.bias, 0.)
 
     def forward(self, x):
         segs = th.split(x, 3, dim=1)
