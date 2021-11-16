@@ -134,7 +134,7 @@ def create_model_and_diffusion(
         monochrome=monochrome,
         monochrome_adapter=monochrome_adapter,
         txt_attn_before_attn=txt_attn_before_attn,
-        txt_avoid_groupnorm=txt_avoid_groupnorm
+        txt_avoid_groupnorm=txt_avoid_groupnorm,
         cross_attn_orth_init=cross_attn_orth_init,
     )
     diffusion = create_gaussian_diffusion(
