@@ -52,6 +52,7 @@ def model_and_diffusion_defaults():
         txt_output_layers_only=False,
         monochrome=False,
         monochrome_adapter=False,
+        txt_attn_before_attn=False,
         verbose=False,
     )
 
@@ -95,6 +96,7 @@ def create_model_and_diffusion(
     txt_output_layers_only=False,
     monochrome=False,
     monochrome_adapter=False,
+    txt_attn_before_attn=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     model = create_model(
@@ -127,6 +129,7 @@ def create_model_and_diffusion(
         txt_output_layers_only=txt_output_layers_only,
         monochrome=monochrome,
         monochrome_adapter=monochrome_adapter,
+        txt_attn_before_attn=txt_attn_before_attn,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -176,6 +179,7 @@ def create_model(
     txt_output_layers_only=False,
     monochrome=False,
     monochrome_adapter=False,
+    txt_attn_before_attn=False,
 ):
     print(
         f"create_model: got txt={txt}, num_heads={num_heads}, channels_per_head={channels_per_head}, cross_attn_channels_per_head={cross_attn_channels_per_head}, text_lr_mult={text_lr_mult}"
@@ -244,6 +248,7 @@ def create_model(
         text_lr_mult=text_lr_mult,
         txt_output_layers_only=txt_output_layers_only,
         monochrome_adapter=monochrome_adapter,
+        txt_attn_before_attn=txt_attn_before_attn,
     )
 
 
