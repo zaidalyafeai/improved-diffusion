@@ -54,6 +54,7 @@ def model_and_diffusion_defaults():
         monochrome_adapter=False,
         txt_attn_before_attn=False,
         txt_avoid_groupnorm=False,
+        cross_attn_orth_init=False,
         verbose=False,
     )
 
@@ -99,6 +100,7 @@ def create_model_and_diffusion(
     monochrome_adapter=False,
     txt_attn_before_attn=False,
     txt_avoid_groupnorm=False,
+    cross_attn_orth_init=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     model = create_model(
@@ -133,6 +135,7 @@ def create_model_and_diffusion(
         monochrome_adapter=monochrome_adapter,
         txt_attn_before_attn=txt_attn_before_attn,
         txt_avoid_groupnorm=txt_avoid_groupnorm
+        cross_attn_orth_init=cross_attn_orth_init,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -184,6 +187,7 @@ def create_model(
     monochrome_adapter=False,
     txt_attn_before_attn=False,
     txt_avoid_groupnorm=False,
+    cross_attn_orth_init=False,
 ):
     print(
         f"create_model: got txt={txt}, num_heads={num_heads}, channels_per_head={channels_per_head}, cross_attn_channels_per_head={cross_attn_channels_per_head}, text_lr_mult={text_lr_mult}"
@@ -254,6 +258,7 @@ def create_model(
         monochrome_adapter=monochrome_adapter,
         txt_attn_before_attn=txt_attn_before_attn,
         txt_avoid_groupnorm=txt_avoid_groupnorm,
+        cross_attn_orth_init=cross_attn_orth_init,
     )
 
 

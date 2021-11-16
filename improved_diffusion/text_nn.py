@@ -133,6 +133,7 @@ class CrossAttention(nn.Module):
         lr_mult=None,
         needs_tgt_pos_emb=True,
         avoid_groupnorm=False,
+        orth_init=False
     ):
         super().__init__()
         print(f"xattn: emb_res {emb_res} | dim {dim} | heads {heads} | avoid_groupnorm {avoid_groupnorm}")
@@ -166,9 +167,10 @@ class CrossAttention(nn.Module):
 
         self.resid = resid
 
-        # torch.nn.init.orthogonal_(self.q.weight)
-        # torch.nn.init.orthogonal_(self.kv.weight)
-        # torch.nn.init.orthogonal_(self.attn.out_proj.weight)
+        if orth_init:
+            torch.nn.init.orthogonal_(self.q.weight)
+            torch.nn.init.orthogonal_(self.kv.weight)
+            torch.nn.init.orthogonal_(self.attn.out_proj.weight)
 
         if lr_mult is not None:
             multiply_lr_via_hooks(self, lr_mult)
