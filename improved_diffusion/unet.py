@@ -586,7 +586,7 @@ class UNetModel(nn.Module):
                         lr_mult=text_lr_mult,
                         needs_tgt_pos_emb=False,
                     )
-                    if txt_attn_before_attn:
+                    if txt_attn_before_attn and (ds in attention_resolutions):
                         layers.insert(-1, caa)
                     else:
                         layers.append(caa)
