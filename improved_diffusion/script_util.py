@@ -208,12 +208,14 @@ def create_model(
         txt_ds.append(image_size // int(res))
 
     if monochrome and (not monochrome_adapter):
+        in_channels = 1
         out_channels = (1 if not learn_sigma else 2)
     else:
+        in_channels = 3
         out_channels = (3 if not learn_sigma else 6)
 
     return UNetModel(
-        in_channels=3,
+        in_channels=in_channels,
         model_channels=num_channels,
         out_channels=out_channels,
         num_res_blocks=num_res_blocks,
