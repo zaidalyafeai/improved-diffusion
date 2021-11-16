@@ -381,6 +381,7 @@ class UNetModel(nn.Module):
         txt_output_layers_only=False,
         monochrome_adapter=False,
         txt_attn_before_attn=False,
+        txt_avoid_groupnorm=False,
         verbose=False
     ):
         super().__init__()
@@ -429,7 +430,6 @@ class UNetModel(nn.Module):
             )
 
         self.tgt_pos_embs = nn.ModuleDict({})
-
 
         time_embed_dim = model_channels * 4
         self.time_embed = nn.Sequential(
