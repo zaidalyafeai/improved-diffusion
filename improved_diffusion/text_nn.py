@@ -132,9 +132,10 @@ class CrossAttention(nn.Module):
         resid=True,
         lr_mult=None,
         needs_tgt_pos_emb=True,
+        avoid_groupnorm=False,
     ):
         super().__init__()
-        print(f"xattn: emb_res {emb_res} | dim {dim} | heads {heads}")
+        print(f"xattn: emb_res {emb_res} | dim {dim} | heads {heads} | avoid_groupnorm {avoid_groupnorm}")
         self.dim = dim
         self.heads = heads
         self.text_dim = text_dim
@@ -144,7 +145,12 @@ class CrossAttention(nn.Module):
         self.attn = torch.nn.MultiheadAttention(self.dim, self.heads, batch_first=True)
 
         self.src_ln = torch.nn.LayerNorm(self.text_dim)
-        self.tgt_ln = normalization(self.dim)
+        self.avoid_groupnorm = avoid_groupnorm
+
+        if avoid_groupnorm:
+            self.tgt_ln = torch.nn.LayerNorm(self.dim)
+        else:
+            self.tgt_ln = normalization(self.dim)
 
         self.emb_res = emb_res
         self.tgt_pos_emb = None
@@ -170,8 +176,14 @@ class CrossAttention(nn.Module):
     def forward(self, src, tgt, tgt_pos_embs=None):
         b, c, *spatial = tgt.shape
         tgt = tgt.reshape(b, c, -1)
-        tgt_in = self.tgt_ln(tgt)
-        tgt_in = tgt_in.transpose(1, 2)
+
+        if self.avoid_groupnorm:
+            # channels last
+            tgt_in = tgt.transpose(1, 2)
+            tgt_in = self.tgt_ln(tgt_in)
+        else:
+            tgt_in = self.tgt_ln(tgt)
+            tgt_in = tgt_in.transpose(1, 2)
 
         if tgt_pos_embs is None:
             tgt_pos_emb = self.tgt_pos_emb

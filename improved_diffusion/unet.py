@@ -498,6 +498,7 @@ class UNetModel(nn.Module):
                         gain_scale = cross_attn_gain_scale,
                         lr_mult=text_lr_mult,
                         needs_tgt_pos_emb=False,
+                        avoid_groupnorm=txt_avoid_groupnorm
                     )
                     if txt_attn_before_attn and (ds in attention_resolutions):
                         layers.insert(-1, caa)
@@ -585,6 +586,7 @@ class UNetModel(nn.Module):
                         gain_scale = cross_attn_gain_scale,
                         lr_mult=text_lr_mult,
                         needs_tgt_pos_emb=False,
+                        avoid_groupnorm=txt_avoid_groupnorm
                     )
                     if txt_attn_before_attn and (ds in attention_resolutions):
                         layers.insert(-1, caa)
