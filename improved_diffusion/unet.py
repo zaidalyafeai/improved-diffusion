@@ -500,7 +500,7 @@ class UNetModel(nn.Module):
                         needs_tgt_pos_emb=False,
                     )
                     if txt_attn_before_attn:
-                        layers.insert(caa, -1)
+                        layers.insert(-1, caa)
                     else:
                         layers.append(caa)
 
@@ -587,7 +587,7 @@ class UNetModel(nn.Module):
                         needs_tgt_pos_emb=False,
                     )
                     if txt_attn_before_attn:
-                        layers.insert(caa, -1)
+                        layers.insert(-1, caa)
                     else:
                         layers.append(caa)
                 vprint(f"down | {level} of {len(channel_mult)} | ch {ch} | ds {ds}")
