@@ -380,6 +380,7 @@ class UNetModel(nn.Module):
         text_lr_mult=-1.,
         txt_output_layers_only=False,
         monochrome_adapter=False,
+        txt_attn_before_attn=False,
         verbose=False
     ):
         super().__init__()
@@ -488,18 +489,21 @@ class UNetModel(nn.Module):
                             axial_shape=(emb_res, emb_res),
                             axial_dims=(ch // 2, ch // 2),
                         )
-                    layers.append(
-                        CrossAttentionAdapter(
-                            dim=ch,
-                            heads=num_heads_here,
-                            text_dim=txt_dim,
-                            emb_res = image_size // ds,
-                            init_gain = cross_attn_init_gain,
-                            gain_scale = cross_attn_gain_scale,
-                            lr_mult=text_lr_mult,
-                            needs_tgt_pos_emb=False,
-                        )
+                    caa = CrossAttentionAdapter(
+                        dim=ch,
+                        heads=num_heads_here,
+                        text_dim=txt_dim,
+                        emb_res = image_size // ds,
+                        init_gain = cross_attn_init_gain,
+                        gain_scale = cross_attn_gain_scale,
+                        lr_mult=text_lr_mult,
+                        needs_tgt_pos_emb=False,
                     )
+                    if txt_attn_before_attn:
+                        layers.insert(caa, -1)
+                    else:
+                        layers.append(caa)
+
 
                 self.input_blocks.append(TimestepEmbedSequential(*layers))
                 input_block_chans.append(ch)
@@ -572,18 +576,20 @@ class UNetModel(nn.Module):
                             axial_shape=(emb_res, emb_res),
                             axial_dims=(ch // 2, ch // 2),
                         )
-                    layers.append(
-                        CrossAttentionAdapter(
-                            dim=ch,
-                            heads=num_heads_here,
-                            text_dim=txt_dim,
-                            emb_res = emb_res,
-                            init_gain = cross_attn_init_gain,
-                            gain_scale = cross_attn_gain_scale,
-                            lr_mult=text_lr_mult,
-                            needs_tgt_pos_emb=False,
-                        )
+                    caa = CrossAttentionAdapter(
+                        dim=ch,
+                        heads=num_heads_here,
+                        text_dim=txt_dim,
+                        emb_res = emb_res,
+                        init_gain = cross_attn_init_gain,
+                        gain_scale = cross_attn_gain_scale,
+                        lr_mult=text_lr_mult,
+                        needs_tgt_pos_emb=False,
                     )
+                    if txt_attn_before_attn:
+                        layers.insert(caa, -1)
+                    else:
+                        layers.append(caa)
                 vprint(f"down | {level} of {len(channel_mult)} | ch {ch} | ds {ds}")
                 if level and i == num_res_blocks:
                     layers.append(Upsample(ch, conv_resample, dims=dims))
