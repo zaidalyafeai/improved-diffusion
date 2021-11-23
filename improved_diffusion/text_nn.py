@@ -8,7 +8,7 @@ from einops import rearrange
 from x_transformers import TransformerWrapper, Encoder, XTransformer
 from x_transformers.x_transformers import AbsolutePositionalEmbedding
 
-from .nn import normalization
+from .nn import normalization_1group
 
 
 def make_grad_mult_hook(mult, debug=False):
@@ -152,7 +152,7 @@ class CrossAttention(nn.Module):
         if avoid_groupnorm:
             self.tgt_ln = torch.nn.LayerNorm(self.dim)
         else:
-            self.tgt_ln = normalization(self.dim)
+            self.tgt_ln = normalization_1group(self.dim)
 
         self.emb_res = emb_res
         self.tgt_pos_emb = None
