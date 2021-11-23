@@ -178,7 +178,7 @@ class CrossAttention(nn.Module):
             )
 
         self.tgt_time_embed = nn.Sequential(
-            nn.Linear(time_embed_dim, time_embed_dim)
+            nn.Linear(time_embed_dim, time_embed_dim),
             SiLU(),
             nn.Linear(
                 time_embed_dim,
