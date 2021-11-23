@@ -127,7 +127,7 @@ class TextEncoder(nn.Module):
                 print(x.shape)
                 emb = self.time_embed(timestep_embedding(timesteps, self.dim))
                 print(emb.shape)
-                emb = emb.tile((1, x.shape[1], 1))
+                emb = emb.unsqueeze(1).tile((1, x.shape[1], 1))
                 print(emb.shape)
                 x = x + emb
 
