@@ -228,7 +228,7 @@ class CrossAttention(nn.Module):
             print(adapted_emb.shape)
             adapted_emb = adapted_emb.unsqueeze(1).tile((1, tgt_in.shape[1], 1))
             print(adapted_emb.shape)
-            tgt_in = tgt_in + self.tgt_time_embed(timestep_emb)
+            tgt_in = tgt_in + adapted_emb
 
         q = self.q(tgt_in)
 
