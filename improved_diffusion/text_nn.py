@@ -148,10 +148,11 @@ class CrossAttention(nn.Module):
         lr_mult=None,
         needs_tgt_pos_emb=True,
         avoid_groupnorm=False,
-        orth_init=False
+        orth_init=False,
+        q_t_emb=False,
     ):
         super().__init__()
-        print(f"xattn: emb_res {emb_res} | dim {dim} | heads {heads} | avoid_groupnorm {avoid_groupnorm}")
+        print(f"xattn: emb_res {emb_res} | dim {dim} | heads {heads} | avoid_groupnorm {avoid_groupnorm} | q_t_emb {q_t_emb}")
         self.dim = dim
         self.heads = heads
         self.text_dim = text_dim
@@ -177,14 +178,16 @@ class CrossAttention(nn.Module):
                 axial_dims=(self.dim // 2, self.dim // 2),
             )
 
-        self.tgt_time_embed = nn.Sequential(
-            nn.Linear(time_embed_dim, time_embed_dim),
-            SiLU(),
-            nn.Linear(
-                time_embed_dim,
-                self.dim
-            ),
-        )
+        self.q_t_emb = q_t_emb
+        if self.q_t_emb:
+            self.tgt_time_embed = nn.Sequential(
+                nn.Linear(time_embed_dim, time_embed_dim),
+                SiLU(),
+                nn.Linear(
+                    time_embed_dim,
+                    self.dim
+                ),
+            )
 
         self.gain_scale = gain_scale
         self.gain = torch.nn.Parameter(torch.as_tensor(np.log(init_gain) / gain_scale))
@@ -221,7 +224,7 @@ class CrossAttention(nn.Module):
         tgt_in = tgt_in + tgt_pos_emb(tgt_in)
 
         # TODO
-        if timestep_emb is not None:
+        if timestep_emb is not None and self.q_t_emb:
             adapted_emb = self.tgt_time_embed(timestep_emb)
             adapted_emb = adapted_emb.unsqueeze(1).tile((1, tgt_in.shape[1], 1))
             tgt_in = tgt_in + adapted_emb.to(tgt_in.dtype)
