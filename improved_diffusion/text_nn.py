@@ -181,7 +181,6 @@ class CrossAttention(nn.Module):
         self.q_t_emb = q_t_emb
         if self.q_t_emb:
             self.tgt_time_embed = nn.Sequential(
-                nn.Linear(time_embed_dim, time_embed_dim),
                 SiLU(),
                 nn.Linear(
                     time_embed_dim,
