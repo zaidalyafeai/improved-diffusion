@@ -8,7 +8,7 @@ from einops import rearrange
 from x_transformers import TransformerWrapper, Encoder, XTransformer
 from x_transformers.x_transformers import AbsolutePositionalEmbedding
 
-from .nn import normalization_1group, timestep_embedding
+from .nn import normalization_1group, timestep_embedding, SiLU
 
 
 def make_grad_mult_hook(mult, debug=False):
@@ -102,9 +102,9 @@ class TextEncoder(nn.Module):
             del self.model.to_logits
 
         self.time_embed = nn.Sequential(
-            linear(inner_dim, inner_dim),
+            nn.Linear(inner_dim, inner_dim),
             SiLU(),
-            linear(inner_dim, inner_dim),
+            nn.Linear(inner_dim, inner_dim),
         )
 
         if lr_mult is not None:
