@@ -140,6 +140,7 @@ class CrossAttention(nn.Module):
         dim,
         heads,
         emb_res,
+        time_embed_dim,
         text_dim=512,
         init_gain=1.,
         gain_scale=200.,
@@ -176,6 +177,15 @@ class CrossAttention(nn.Module):
                 axial_dims=(self.dim // 2, self.dim // 2),
             )
 
+        self.tgt_time_embed = nn.Sequential(
+            nn.Linear(time_embed_dim, time_embed_dim)
+            SiLU(),
+            nn.Linear(
+                time_embed_dim,
+                self.dim
+            ),
+        )
+
         self.gain_scale = gain_scale
         self.gain = torch.nn.Parameter(torch.as_tensor(np.log(init_gain) / gain_scale))
 
@@ -211,10 +221,11 @@ class CrossAttention(nn.Module):
         tgt_in = tgt_in + tgt_pos_emb(tgt_in)
 
         # TODO
-        # if timestep_emb is not None:
-        #     print(tgt_in.shape)
-        #     print(timestep_emb.shape)
-        #     tgt_in = tgt_in + timestep_emb
+        if timestep_emb is not None:
+            print(tgt_in.shape)
+            print(timestep_emb.shape)
+            print(self.tgt_time_embed(timestep_emb).shape)
+            tgt_in = tgt_in + self.tgt_time_embed(timestep_emb)
 
         q = self.q(tgt_in)
 
