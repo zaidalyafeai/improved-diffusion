@@ -206,13 +206,7 @@ class CrossAttention(nn.Module):
         b, c, *spatial = tgt.shape
         tgt = tgt.reshape(b, c, -1)
 
-        if self.avoid_groupnorm:
-            # channels last
-            tgt_in = tgt.transpose(1, 2)
-            tgt_in = self.tgt_ln(tgt_in)
-        else:
-            tgt_in = self.tgt_ln(tgt)
-            tgt_in = tgt_in.transpose(1, 2)
+        tgt_in = tgt.transpose(1, 2)
 
         if tgt_pos_embs is None:
             tgt_pos_emb = self.tgt_pos_emb
@@ -228,6 +222,14 @@ class CrossAttention(nn.Module):
             adapted_emb = self.tgt_time_embed(timestep_emb)
             adapted_emb = adapted_emb.unsqueeze(1).tile((1, tgt_in.shape[1], 1))
             tgt_in = tgt_in + adapted_emb.to(tgt_in.dtype)
+
+        if self.avoid_groupnorm:
+            tgt_in = self.tgt_ln(tgt_in)
+        else:
+            # channels first for groupnorm
+            tgt_in = tgt_in.transpose(1, 2)
+            tgt_in = self.tgt_ln(tgt)
+            tgt_in = tgt_in.transpose(1, 2)
 
         q = self.q(tgt_in)
 
