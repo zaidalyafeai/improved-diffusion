@@ -24,6 +24,8 @@ def convert_module_to_f16(l, bf16=False):
         for n, p in l.named_parameters():
             if 'tgt_ln' in n and (not l.avoid_groupnorm):
                 continue
+            if 'tgt_time_embed' in n:
+                continue
             p.data = p.data.to(dtype)
 
 
