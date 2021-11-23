@@ -38,15 +38,15 @@ class TimestepBlock(nn.Module):
 
 class TextTimestepBlock(nn.Module):
     @abstractmethod
-    def forward(self, x, txt, tgt_pos_embs=None, timesteps=None):
+    def forward(self, x, emb, txt, tgt_pos_embs=None):
         """
         Apply the module to `x` given `txt` texts.
         """
 
 
 class CrossAttentionAdapter(CrossAttention, TextTimestepBlock):
-    def forward(self, x, txt, tgt_pos_embs=None, timesteps=None):
-        return super().forward(src=txt, tgt=x, tgt_pos_embs=tgt_pos_embs, timesteps=timesteps)
+    def forward(self, x, emb, txt, tgt_pos_embs=None, timesteps=None):
+        return super().forward(src=txt, tgt=x, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
 
 
 class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
@@ -60,7 +60,7 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
             if isinstance(layer, TimestepBlock):
                 x = layer(x, emb)
             elif isinstance(layer, TextTimestepBlock):
-                x = layer(x, txt, tgt_pos_embs=tgt_pos_embs, timesteps=timesteps)
+                x = layer(x, emb, txt, tgt_pos_embs=tgt_pos_embs)
             else:
                 x = layer(x)
         return x
@@ -668,12 +668,12 @@ class UNetModel(nn.Module):
             h = self.mono_to_rgb(h)
         h = h.type(self.inner_dtype)
         for module in self.input_blocks:
-            h = module(h, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs, timesteps=timesteps)
+            h = module(h, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs)
             hs.append(h)
-        h = self.middle_block(h, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs, timesteps=timesteps)
+        h = self.middle_block(h, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs)
         for module in self.output_blocks:
             cat_in = th.cat([h, hs.pop()], dim=1)
-            h = module(cat_in, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs, timesteps=timesteps)
+            h = module(cat_in, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs)
         h = h.type(x.dtype)
         h = self.out(h)
         if self.monochrome_adapter:

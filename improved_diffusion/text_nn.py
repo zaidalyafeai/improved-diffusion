@@ -189,7 +189,7 @@ class CrossAttention(nn.Module):
         if lr_mult is not None:
             multiply_lr_via_hooks(self, lr_mult)
 
-    def forward(self, src, tgt, tgt_pos_embs=None, timesteps=None):
+    def forward(self, src, tgt, tgt_pos_embs=None, timestep_emb=None):
         b, c, *spatial = tgt.shape
         tgt = tgt.reshape(b, c, -1)
 
@@ -209,6 +209,9 @@ class CrossAttention(nn.Module):
             raise ValueError('must pass tgt_pos_emb')
 
         tgt_in = tgt_in + tgt_pos_emb(tgt_in)
+
+        if timestep_emb is not None:
+            tgt_in = tgt_in + timestep_emb
 
         q = self.q(tgt_in)
 
