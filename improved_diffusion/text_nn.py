@@ -222,13 +222,9 @@ class CrossAttention(nn.Module):
 
         # TODO
         if timestep_emb is not None:
-            print(tgt_in.dtype)
-            print(timestep_emb.dtype)
             adapted_emb = self.tgt_time_embed(timestep_emb)
             adapted_emb = adapted_emb.unsqueeze(1).tile((1, tgt_in.shape[1], 1))
-            print(adapted_emb.dtype)
             tgt_in = tgt_in + adapted_emb.to(tgt_in.dtype)
-            print(tgt_in.dtype)
 
         q = self.q(tgt_in)
 
