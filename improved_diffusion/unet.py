@@ -36,21 +36,17 @@ class TimestepBlock(nn.Module):
         """
 
 
-class TextBlock(nn.Module):
-    """
-    Any module where forward() takes texts as a second argument.
-    """
-
+class TextTimestepBlock(nn.Module):
     @abstractmethod
-    def forward(self, x, txt, tgt_pos_embs=None):
+    def forward(self, x, txt, tgt_pos_embs=None, timesteps=None):
         """
         Apply the module to `x` given `txt` texts.
         """
 
 
-class CrossAttentionAdapter(CrossAttention, TextBlock):
-    def forward(self, x, txt, tgt_pos_embs=None):
-        return super().forward(src=txt, tgt=x, tgt_pos_embs=tgt_pos_embs)
+class CrossAttentionAdapter(CrossAttention, TextTimestepBlock):
+    def forward(self, x, txt, tgt_pos_embs=None, timesteps=None):
+        return super().forward(src=txt, tgt=x, tgt_pos_embs=tgt_pos_embs, timesteps=timesteps)
 
 
 class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
@@ -59,12 +55,12 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
     support it as an extra input.
     """
 
-    def forward(self, x, emb, txt, tgt_pos_embs=None):
+    def forward(self, x, emb, txt, tgt_pos_embs=None, timesteps=timesteps):
         for layer in self:
             if isinstance(layer, TimestepBlock):
                 x = layer(x, emb)
             elif isinstance(layer, TextBlock):
-                x = layer(x, txt, tgt_pos_embs=tgt_pos_embs)
+                x = layer(x, emb, txt, tgt_pos_embs=tgt_pos_embs, timesteps=timesteps)
             else:
                 x = layer(x)
         return x
@@ -664,7 +660,7 @@ class UNetModel(nn.Module):
             emb = emb + self.label_emb(y)
 
         if txt is not None:
-            txt = self.text_encoder(txt)
+            txt = self.text_encoder(txt, timesteps=timesteps)
             txt = txt.type(self.inner_dtype)
 
         h = x
@@ -672,12 +668,12 @@ class UNetModel(nn.Module):
             h = self.mono_to_rgb(h)
         h = h.type(self.inner_dtype)
         for module in self.input_blocks:
-            h = module(h, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs)
+            h = module(h, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs, timesteps=timesteps)
             hs.append(h)
-        h = self.middle_block(h, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs)
+        h = self.middle_block(h, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs, timesteps=timesteps)
         for module in self.output_blocks:
             cat_in = th.cat([h, hs.pop()], dim=1)
-            h = module(cat_in, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs)
+            h = module(cat_in, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs, timesteps=timesteps)
         h = h.type(x.dtype)
         h = self.out(h)
         if self.monochrome_adapter:

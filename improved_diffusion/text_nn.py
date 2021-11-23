@@ -8,7 +8,7 @@ from einops import rearrange
 from x_transformers import TransformerWrapper, Encoder, XTransformer
 from x_transformers.x_transformers import AbsolutePositionalEmbedding
 
-from .nn import normalization_1group
+from .nn import normalization_1group, timestep_embedding
 
 
 def make_grad_mult_hook(mult, debug=False):
@@ -57,6 +57,7 @@ class TextEncoder(nn.Module):
 
         self.use_encoder_decoder = use_encoder_decoder
         self.return_sequences = return_sequences
+        self.dim = inner_dim
 
         if self.use_encoder_decoder:
             enc_kwargs = dict(
@@ -100,10 +101,16 @@ class TextEncoder(nn.Module):
         if hasattr(self.model, "to_logits"):
             del self.model.to_logits
 
+        self.time_embed = nn.Sequential(
+            linear(inner_dim, inner_dim),
+            SiLU(),
+            linear(inner_dim, inner_dim),
+        )
+
         if lr_mult is not None:
             multiply_lr_via_hooks(self, lr_mult)
 
-    def forward(self, tokens):
+    def forward(self, tokens, timesteps=None):
         if self.use_encoder_decoder:
             tgt = torch.zeros((tokens.shape[0], self.dec_max_seq_len), device=tokens.device, dtype=torch.int)
             enc = self.model.encoder(tokens, return_embeddings = True)
@@ -115,6 +122,12 @@ class TextEncoder(nn.Module):
             x = tokens
             x = self.token_emb(x)
             x = x + self.pos_emb(x)
+
+            if timesteps is not None:
+                emb = self.time_embed(timestep_embedding(timesteps, self.dim))
+                emb = emb.tile((1, x.shape[1], 1))
+                x = x + emb
+
             out = self.model(x)
             if not self.return_sequences:
                 out = out[:, 0, :]
@@ -176,7 +189,7 @@ class CrossAttention(nn.Module):
         if lr_mult is not None:
             multiply_lr_via_hooks(self, lr_mult)
 
-    def forward(self, src, tgt, tgt_pos_embs=None):
+    def forward(self, src, tgt, tgt_pos_embs=None, timesteps=None):
         b, c, *spatial = tgt.shape
         tgt = tgt.reshape(b, c, -1)
 
