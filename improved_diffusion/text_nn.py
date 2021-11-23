@@ -124,11 +124,8 @@ class TextEncoder(nn.Module):
             x = x + self.pos_emb(x)
 
             if timesteps is not None:
-                print(x.shape)
                 emb = self.time_embed(timestep_embedding(timesteps, self.dim))
-                print(emb.shape)
                 emb = emb.unsqueeze(1).tile((1, x.shape[1], 1))
-                print(emb.shape)
                 x = x + emb
 
             out = self.model(x)
