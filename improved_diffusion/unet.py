@@ -488,6 +488,7 @@ class UNetModel(nn.Module):
                         )
                     caa = CrossAttentionAdapter(
                         dim=ch,
+                        time_embed_dim=time_embed_dim,
                         heads=num_heads_here,
                         text_dim=txt_dim,
                         emb_res = image_size // ds,
@@ -577,6 +578,7 @@ class UNetModel(nn.Module):
                         )
                     caa = CrossAttentionAdapter(
                         dim=ch,
+                        time_embed_dim=time_embed_dim,
                         heads=num_heads_here,
                         text_dim=txt_dim,
                         emb_res = emb_res,
