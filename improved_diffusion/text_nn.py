@@ -228,7 +228,7 @@ class CrossAttention(nn.Module):
         else:
             # channels first for groupnorm
             tgt_in = tgt_in.transpose(1, 2)
-            tgt_in = self.tgt_ln(tgt)
+            tgt_in = self.tgt_ln(tgt_in)
             tgt_in = tgt_in.transpose(1, 2)
 
         q = self.q(tgt_in)
