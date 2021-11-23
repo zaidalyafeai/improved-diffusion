@@ -5,7 +5,7 @@ import torch.nn as nn
 
 from axial_positional_embedding import AxialPositionalEmbedding
 from einops import rearrange
-from x_transformers import TransformerWrapper, Encoder, XTransformer
+from x_transformers import TransformerWrapper, Encoder, XTransformer, AbsolutePositionalEmbedding
 
 from .nn import normalization
 
@@ -85,18 +85,16 @@ class TextEncoder(nn.Module):
                 **enc_kwargs
             )
         else:
-            self.model = TransformerWrapper(
-                num_tokens = num_tokens,
-                max_seq_len = max_seq_len,
-                attn_layers = Encoder(
-                    dim = inner_dim,
-                    depth = depth,
-                    heads = n_heads,
-                    rotary_pos_emb = rotary_pos_emb,
-                    ff_glu = ff_glu,
-                    use_scalenorm = use_scalenorm,
-                    use_rezero = use_rezero,
-                )
+            self.token_emb = nn.Embedding(num_tokens, inner_dim)
+            self.pos_emb = AbsolutePositionalEmbedding(inner_dim, max_seq_len)
+            self.model = Encoder(
+                dim = inner_dim,
+                depth = depth,
+                heads = n_heads,
+                rotary_pos_emb = rotary_pos_emb,
+                ff_glu = ff_glu,
+                use_scalenorm = use_scalenorm,
+                use_rezero = use_rezero,
             )
         if hasattr(self.model, "to_logits"):
             del self.model.to_logits
@@ -113,10 +111,12 @@ class TextEncoder(nn.Module):
             # out = self.proj(out)
             return out
         else:
-            out = self.model(tokens, return_embeddings=True)
+            x = tokens
+            x = self.token_emb(x)
+            x = x + self.pos_emb(x)
+            out = self.model(x)
             if not self.return_sequences:
                 out = out[:, 0, :]
-            # out = self.proj(out)
             return out
 
 
