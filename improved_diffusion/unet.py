@@ -55,7 +55,7 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
     support it as an extra input.
     """
 
-    def forward(self, x, emb, txt, tgt_pos_embs=None, timesteps=timesteps):
+    def forward(self, x, emb, txt, tgt_pos_embs=None, timesteps=None):
         for layer in self:
             if isinstance(layer, TimestepBlock):
                 x = layer(x, emb)
