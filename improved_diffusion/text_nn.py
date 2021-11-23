@@ -5,7 +5,8 @@ import torch.nn as nn
 
 from axial_positional_embedding import AxialPositionalEmbedding
 from einops import rearrange
-from x_transformers import TransformerWrapper, Encoder, XTransformer, AbsolutePositionalEmbedding
+from x_transformers import TransformerWrapper, Encoder, XTransformer
+from x_transformers.x_transformers import AbsolutePositionalEmbedding
 
 from .nn import normalization
 
