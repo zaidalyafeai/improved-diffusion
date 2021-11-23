@@ -211,6 +211,8 @@ class CrossAttention(nn.Module):
         tgt_in = tgt_in + tgt_pos_emb(tgt_in)
 
         if timestep_emb is not None:
+            print(tgt_in.shape)
+            print(timestep_emb.shape)
             tgt_in = tgt_in + timestep_emb
 
         q = self.q(tgt_in)
