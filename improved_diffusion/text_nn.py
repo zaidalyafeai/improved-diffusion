@@ -208,9 +208,11 @@ class CrossAttention(nn.Module):
             tgt_in = tgt.transpose(1, 2)
             tgt_in = self.tgt_ln(tgt_in)
         elif self.q_t_emb:
+            tgt_in = tgt
             tgt_in = self.tgt_ln(h=tgt_in, emb=timestep_emb)
             tgt_in = tgt_in.transpose(1, 2)
         else:
+            tgt_in = tgt
             tgt_in = self.tgt_ln(tgt_in)
             tgt_in = tgt_in.transpose(1, 2)
 
