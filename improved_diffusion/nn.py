@@ -29,14 +29,16 @@ class AdaGN(nn.Module):
         self.normalization = nn.GroupNorm(num_groups, out_channels)
 
     def forward(self, h, emb):
-        print(emb.dtype)
-        print(self.emb_layers[1].weight.dtype)
         emb_out = self.emb_layers(emb).type(h.dtype)
 
         while len(emb_out.shape) < len(h.shape):
             emb_out = emb_out[..., None]
 
         scale, shift = th.chunk(emb_out, 2, dim=1)
+        print(scale.dtype)
+        print(shift.dtype)
+        print(h.dtype)
+        print(self.normalization.weight.dtype)
         h = self.normalization(h) * (1 + scale) + shift
         return h
 
