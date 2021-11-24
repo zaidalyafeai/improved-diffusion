@@ -164,11 +164,6 @@ class CrossAttention(nn.Module):
         self.src_ln = torch.nn.LayerNorm(self.text_dim)
         self.avoid_groupnorm = avoid_groupnorm
 
-        if avoid_groupnorm:
-            self.tgt_ln = torch.nn.LayerNorm(self.dim)
-        else:
-            self.tgt_ln = normalization_1group(self.dim)
-
         self.emb_res = emb_res
         self.tgt_pos_emb = None
         if needs_tgt_pos_emb:
@@ -179,14 +174,18 @@ class CrossAttention(nn.Module):
             )
 
         self.q_t_emb = q_t_emb
-        if self.q_t_emb:
-            self.tgt_time_embed = nn.Sequential(
-                SiLU(),
-                nn.Linear(
-                    time_embed_dim,
-                    self.dim
-                ),
+
+        if avoid_groupnorm:
+            self.tgt_ln = torch.nn.LayerNorm(self.dim)
+        elif self.q_t_emb:
+            self.tgt_ln = AdaGN(
+                emb_channels=time_embed_dim,
+                out_channels=self.dim,
+                num_groups=1,
+                nonlin_in=True  # TODO: does this matter?
             )
+        else:
+            self.tgt_ln = normalization_1group(self.dim)
 
         self.gain_scale = gain_scale
         self.gain = torch.nn.Parameter(torch.as_tensor(np.log(init_gain) / gain_scale))
@@ -205,13 +204,13 @@ class CrossAttention(nn.Module):
         b, c, *spatial = tgt.shape
         tgt = tgt.reshape(b, c, -1)
 
-        tgt_in = tgt.transpose(1, 2)
-
         if self.avoid_groupnorm:
+            tgt_in = tgt.transpose(1, 2)
             tgt_in = self.tgt_ln(tgt_in)
-        else:
-            # channels first for groupnorm
+        elif self.q_t_emb:
+            tgt_in = self.tgt_ln(h=tgt_in, emb=timestep_emb)
             tgt_in = tgt_in.transpose(1, 2)
+        else:
             tgt_in = self.tgt_ln(tgt_in)
             tgt_in = tgt_in.transpose(1, 2)
 
@@ -222,13 +221,13 @@ class CrossAttention(nn.Module):
         if tgt_pos_emb is None:
             raise ValueError('must pass tgt_pos_emb')
 
+        # TODO: integrate w/ AdaGN
         tgt_in = tgt_in + tgt_pos_emb(tgt_in)
 
-        # TODO
-        if timestep_emb is not None and self.q_t_emb:
-            adapted_emb = self.tgt_time_embed(timestep_emb)
-            adapted_emb = adapted_emb.unsqueeze(1).tile((1, tgt_in.shape[1], 1))
-            tgt_in = tgt_in + adapted_emb.to(tgt_in.dtype)
+        # if timestep_emb is not None and self.q_t_emb:
+        #     adapted_emb = self.tgt_time_embed(timestep_emb)
+        #     adapted_emb = adapted_emb.unsqueeze(1).tile((1, tgt_in.shape[1], 1))
+        #     tgt_in = tgt_in + adapted_emb.to(tgt_in.dtype)
 
         q = self.q(tgt_in)
 
