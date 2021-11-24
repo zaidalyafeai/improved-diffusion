@@ -163,17 +163,21 @@ class CrossAttention(nn.Module):
 
         self.src_ln = torch.nn.LayerNorm(self.text_dim)
         self.avoid_groupnorm = avoid_groupnorm
+        self.q_t_emb = q_t_emb
 
         self.emb_res = emb_res
         self.tgt_pos_emb = None
         if needs_tgt_pos_emb:
+            pos_emb_dim = self.dim // 2
+            # TODO pos emb in AdaGN
+            # if (not avoid_groupnorm) and self.q_t_emb:
+            #     pos_emb_dim *= 2
             self.tgt_pos_emb = AxialPositionalEmbedding(
                 dim=self.dim,
                 axial_shape=(emb_res, emb_res),
-                axial_dims=(self.dim // 2, self.dim // 2),
+                axial_dims=(pos_emb_dim, pos_emb_dim),
             )
 
-        self.q_t_emb = q_t_emb
 
         if avoid_groupnorm:
             self.tgt_ln = torch.nn.LayerNorm(self.dim)
@@ -201,20 +205,22 @@ class CrossAttention(nn.Module):
             multiply_lr_via_hooks(self, lr_mult)
 
     def forward(self, src, tgt, tgt_pos_embs=None, timestep_emb=None):
-        b, c, *spatial = tgt.shape
-        tgt = tgt.reshape(b, c, -1)
+        def _to_b_c_hw(x):
+            b, c, *spatial = x.shape
+            xt = x.reshape(b, c, -1).transpose(1, 2)
+            return xt, b, c, spatial
 
         if self.avoid_groupnorm:
-            tgt_in = tgt.transpose(1, 2)
+            tgt_in, b, c, spatial = _to_b_c_hw(tgt)
             tgt_in = self.tgt_ln(tgt_in)
         elif self.q_t_emb:
             tgt_in = tgt
             tgt_in = self.tgt_ln(h=tgt_in, emb=timestep_emb)
-            tgt_in = tgt_in.transpose(1, 2)
+            tgt_in, b, c, spatial = _to_b_c_hw(tgt)
         else:
             tgt_in = tgt
             tgt_in = self.tgt_ln(tgt_in)
-            tgt_in = tgt_in.transpose(1, 2)
+            tgt_in, b, c, spatial = _to_b_c_hw(tgt)
 
         if tgt_pos_embs is None:
             tgt_pos_emb = self.tgt_pos_emb
@@ -224,12 +230,9 @@ class CrossAttention(nn.Module):
             raise ValueError('must pass tgt_pos_emb')
 
         # TODO: integrate w/ AdaGN
-        tgt_in = tgt_in + tgt_pos_emb(tgt_in)
-
-        # if timestep_emb is not None and self.q_t_emb:
-        #     adapted_emb = self.tgt_time_embed(timestep_emb)
-        #     adapted_emb = adapted_emb.unsqueeze(1).tile((1, tgt_in.shape[1], 1))
-        #     tgt_in = tgt_in + adapted_emb.to(tgt_in.dtype)
+        pos_emb = tgt_pos_emb(tgt)
+        pos_emb, _, _, _ = _to_b_c_hw(pos_emb)
+        tgt_in = tgt_in + pos_emb
 
         q = self.q(tgt_in)
 
@@ -243,10 +246,6 @@ class CrossAttention(nn.Module):
         attn_output = rearrange(attn_output, 'b (h w) c -> b c h w', h=spatial[0])
 
         if self.resid:
-            tgt = tgt.reshape(b, c, *spatial)
-            # with torch.no_grad():
-            #     norm_in = torch.linalg.norm(tgt).item()
-            #     norm_add = torch.linalg.norm(attn_output).item()
             return tgt + attn_output
 
         return attn_output
