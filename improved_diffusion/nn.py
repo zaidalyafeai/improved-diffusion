@@ -35,8 +35,6 @@ class AdaGN(nn.Module):
             emb_out = emb_out[..., None]
 
         if side_emb is not None:
-            print(emb_out.shape)
-            print(side_emb.shape)
             emb_out = emb_out + side_emb.type(emb_out.dtype)
 
         scale, shift = th.chunk(emb_out, 2, dim=1)
