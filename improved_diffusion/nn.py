@@ -31,13 +31,13 @@ class AdaGN(nn.Module):
     def forward(self, h, emb, side_emb=None):
         emb_out = self.emb_layers(emb).type(h.dtype)
 
+        while len(emb_out.shape) < len(h.shape):
+            emb_out = emb_out[..., None]
+
         if side_emb is not None:
             print(emb_out.shape)
             print(side_emb.shape)
             emb_out = emb_out + side_emb.type(emb_out.dtype)
-
-        while len(emb_out.shape) < len(h.shape):
-            emb_out = emb_out[..., None]
 
         scale, shift = th.chunk(emb_out, 2, dim=1)
         h = self.normalization(h) * (1 + scale) + shift
