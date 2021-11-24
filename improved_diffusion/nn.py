@@ -35,10 +35,6 @@ class AdaGN(nn.Module):
             emb_out = emb_out[..., None]
 
         scale, shift = th.chunk(emb_out, 2, dim=1)
-        print(scale.dtype)
-        print(shift.dtype)
-        print(h.dtype)
-        print(self.normalization.weight.dtype)
         h = self.normalization(h) * (1 + scale) + shift
         return h
 
