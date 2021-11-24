@@ -169,9 +169,9 @@ class CrossAttention(nn.Module):
         self.tgt_pos_emb = None
         if needs_tgt_pos_emb:
             pos_emb_dim = self.dim // 2
-            # TODO pos emb in AdaGN
-            # if (not avoid_groupnorm) and self.q_t_emb:
-            #     pos_emb_dim *= 2
+            # pos emb in AdaGN
+            if (not avoid_groupnorm) and self.q_t_emb:
+                pos_emb_dim *= 2
             self.tgt_pos_emb = AxialPositionalEmbedding(
                 dim=self.dim,
                 axial_shape=(emb_res, emb_res),
