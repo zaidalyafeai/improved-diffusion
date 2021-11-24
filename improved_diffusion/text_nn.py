@@ -216,11 +216,11 @@ class CrossAttention(nn.Module):
         elif self.q_t_emb:
             tgt_in = tgt
             tgt_in = self.tgt_ln(h=tgt_in, emb=timestep_emb)
-            tgt_in, b, c, spatial = _to_b_c_hw(tgt)
+            tgt_in, b, c, spatial = _to_b_c_hw(tgt_in)
         else:
             tgt_in = tgt
             tgt_in = self.tgt_ln(tgt_in)
-            tgt_in, b, c, spatial = _to_b_c_hw(tgt)
+            tgt_in, b, c, spatial = _to_b_c_hw(tgt_in)
 
         if tgt_pos_embs is None:
             tgt_pos_emb = self.tgt_pos_emb
