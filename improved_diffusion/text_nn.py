@@ -230,9 +230,7 @@ class CrossAttention(nn.Module):
             raise ValueError('must pass tgt_pos_emb')
 
         # TODO: integrate w/ AdaGN
-        pos_emb = tgt_pos_emb(tgt)
-        pos_emb, _, _, _ = _to_b_c_hw(pos_emb)
-        tgt_in = tgt_in + pos_emb
+        tgt_in = tgt_in + tgt_pos_emb(tgt_in)
 
         q = self.q(tgt_in)
 
