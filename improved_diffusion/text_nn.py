@@ -205,22 +205,36 @@ class CrossAttention(nn.Module):
             multiply_lr_via_hooks(self, lr_mult)
 
     def forward(self, src, tgt, tgt_pos_embs=None, timestep_emb=None):
-        def _to_b_c_hw(x):
+        def _to_b_hw_c(x, retdims=True):
             b, c, *spatial = x.shape
             xt = x.reshape(b, c, -1).transpose(1, 2)
-            return xt, b, c, spatial
+            if retdims:
+                return xt, b, c, spatial
+            return xt
+
+        def _to_b_c_h_w(x, spatial):
+            return rearrange(x, 'b (h w) c -> b c h w', h=spatial[0])
 
         if self.avoid_groupnorm:
-            tgt_in, b, c, spatial = _to_b_c_hw(tgt)
+            tgt_in, b, c, spatial = _to_b_hw_c(tgt)
+            tgt_in = tgt_in + tgt_pos_emb(tgt_in)
             tgt_in = self.tgt_ln(tgt_in)
         elif self.q_t_emb:
             tgt_in = tgt
-            tgt_in = self.tgt_ln(h=tgt_in, emb=timestep_emb)
-            tgt_in, b, c, spatial = _to_b_c_hw(tgt_in)
+
+            b, c, *spatial = tgt_in.shape
+            pos_emb = tgt_pos_emb(_to_b_hw_c(tgt_in, retdims=False))
+            pos_emb = _to_b_c_h_w(pos_emb, spatial)
+
+            tgt_in = self.tgt_ln(h=tgt_in, emb=timestep_emb, side_emb=pos_emb)
+
+            tgt_in, b, c, spatial = _to_b_hw_c(tgt_in)
         else:
             tgt_in = tgt
             tgt_in = self.tgt_ln(tgt_in)
-            tgt_in, b, c, spatial = _to_b_c_hw(tgt_in)
+            tgt_in, b, c, spatial = _to_b_hw_c(tgt_in)
+            # pos emb after ln, so the GroupNorm doesn't avg it away
+            tgt_in = tgt_in + tgt_pos_emb(tgt_in)
 
         if tgt_pos_embs is None:
             tgt_pos_emb = self.tgt_pos_emb
@@ -229,8 +243,6 @@ class CrossAttention(nn.Module):
         if tgt_pos_emb is None:
             raise ValueError('must pass tgt_pos_emb')
 
-        # TODO: integrate w/ AdaGN
-        tgt_in = tgt_in + tgt_pos_emb(tgt_in)
 
         q = self.q(tgt_in)
 
@@ -241,7 +253,7 @@ class CrossAttention(nn.Module):
 
         attn_output, attn_output_weights = self.attn(q, k, v)
         attn_output = (self.gain_scale * self.gain).exp() * attn_output
-        attn_output = rearrange(attn_output, 'b (h w) c -> b c h w', h=spatial[0])
+        attn_output = _to_b_c_h_w(attn_output, spatial)
 
         if self.resid:
             return tgt + attn_output
