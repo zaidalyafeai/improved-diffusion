@@ -19,6 +19,25 @@ class GroupNorm32(nn.GroupNorm):
         return super().forward(x.float()).type(x.dtype)
 
 
+class AdaGN(nn.Module):
+    def __init__(self, emb_channels, out_channels, num_groups, nonlin_in=True):
+        self.emb_layers = nn.Sequential(
+            SiLU() if nonlin_in else nn.Identity(),
+            nn.Linear(emb_channels, 2 * out_channels)
+        )
+        self.normalization = nn.GroupNorm(num_groups, out_channels)
+
+    def forward(self, h, emb):
+        emb_out = self.emb_layers(emb).type(h.dtype)
+
+        while len(emb_out.shape) < len(h.shape):
+            emb_out = emb_out[..., None]
+
+        scale, shift = th.chunk(emb_out, 2, dim=1)
+        h = self.normalization(h) * (1 + scale) + shift
+        return h
+
+
 def conv_nd(dims, *args, **kwargs):
     """
     Create a 1D, 2D, or 3D convolution module.

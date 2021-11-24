@@ -8,7 +8,7 @@ from einops import rearrange
 from x_transformers import TransformerWrapper, Encoder, XTransformer
 from x_transformers.x_transformers import AbsolutePositionalEmbedding
 
-from .nn import normalization_1group, timestep_embedding, SiLU
+from .nn import normalization_1group, timestep_embedding, SiLU, AdaGN
 
 
 def make_grad_mult_hook(mult, debug=False):
