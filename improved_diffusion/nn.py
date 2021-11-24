@@ -32,6 +32,8 @@ class AdaGN(nn.Module):
         emb_out = self.emb_layers(emb).type(h.dtype)
 
         if side_emb is not None:
+            print(emb_out.shape)
+            print(side_emb.shape)
             emb_out = emb_out + side_emb.type(emb_out.dtype)
 
         while len(emb_out.shape) < len(h.shape):
