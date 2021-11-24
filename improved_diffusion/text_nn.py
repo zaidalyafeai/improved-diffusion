@@ -215,6 +215,13 @@ class CrossAttention(nn.Module):
         def _to_b_c_h_w(x, spatial):
             return rearrange(x, 'b (h w) c -> b c h w', h=spatial[0])
 
+        if tgt_pos_embs is None:
+            tgt_pos_emb = self.tgt_pos_emb
+        else:
+            tgt_pos_emb = tgt_pos_embs[str(self.emb_res)]
+        if tgt_pos_emb is None:
+            raise ValueError('must pass tgt_pos_emb')
+
         if self.avoid_groupnorm:
             tgt_in, b, c, spatial = _to_b_hw_c(tgt)
             tgt_in = tgt_in + tgt_pos_emb(tgt_in)
@@ -235,14 +242,6 @@ class CrossAttention(nn.Module):
             tgt_in, b, c, spatial = _to_b_hw_c(tgt_in)
             # pos emb after ln, so the GroupNorm doesn't avg it away
             tgt_in = tgt_in + tgt_pos_emb(tgt_in)
-
-        if tgt_pos_embs is None:
-            tgt_pos_emb = self.tgt_pos_emb
-        else:
-            tgt_pos_emb = tgt_pos_embs[str(self.emb_res)]
-        if tgt_pos_emb is None:
-            raise ValueError('must pass tgt_pos_emb')
-
 
         q = self.q(tgt_in)
 
