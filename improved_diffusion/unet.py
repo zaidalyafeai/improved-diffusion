@@ -8,6 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from axial_positional_embedding import AxialPositionalEmbedding
+from x_transformers.x_transformers import Rezero
 
 from .fp16_util import convert_module_to_f16, convert_module_to_f32
 from .nn import (
@@ -402,6 +403,7 @@ class UNetModel(nn.Module):
         txt_avoid_groupnorm=False,
         cross_attn_orth_init=False,
         cross_attn_q_t_emb=False,
+        txt_rezero=False,
         verbose=False
     ):
         super().__init__()
@@ -448,6 +450,8 @@ class UNetModel(nn.Module):
                 depth=txt_depth,
                 max_seq_len=max_seq_len,
                 lr_mult=text_lr_mult,
+                use_rezero=txt_rezero,
+                use_scalenorm=not txt_rezero,
             )
 
         self.tgt_pos_embs = nn.ModuleDict({})
