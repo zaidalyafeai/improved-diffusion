@@ -308,7 +308,12 @@ class TrainLoop:
         for n, m in self.model.named_modules():
             if hasattr(m, 'gain'):
                 # gain_val = (getattr(m, 'gain_scale') * getattr(m, 'gain')).exp().item()
-                gain_val = m.effective_gain().item()
+                gain_val = m.effective_gain()
+                if len(gain_val) == 1:
+                    gain_val = gain_val.item()
+                else:
+                    with torch.no_grad():
+                        gain_val = gain_val.abs().mean().item()
                 short_name = ".".join(seg[:3] for seg in n.split("."))
                 logger.logkv(f"gain_{short_name}", gain_val)
 

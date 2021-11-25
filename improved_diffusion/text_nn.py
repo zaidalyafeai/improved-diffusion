@@ -151,7 +151,9 @@ class CrossAttention(nn.Module):
         orth_init=False,
         q_t_emb=False,
         use_rezero=False,
-        rezero_keeps_prenorm=False
+        rezero_keeps_prenorm=False,
+        use_layerscale=False,
+        layerscale_init=1e-5,
     ):
         super().__init__()
         print(
@@ -168,6 +170,7 @@ class CrossAttention(nn.Module):
         self.avoid_groupnorm = avoid_groupnorm
         self.q_t_emb = q_t_emb
         self.use_rezero = use_rezero
+        self.use_layerscale = use_layerscale
         self.no_prenorm = use_rezero and not rezero_keeps_prenorm
 
         if self.no_prenorm:
@@ -205,7 +208,9 @@ class CrossAttention(nn.Module):
             self.tgt_ln = normalization_1group(self.dim)
 
         self.gain_scale = gain_scale
-        if self.use_rezero:
+        if self.use_layerscale:
+            self.gain = torch.nn.Parameter(layerscale_init * torch.ones(self.dim))
+        elif self.use_rezero:
             self.gain = torch.nn.Parameter(torch.zeros(1))
         else:
             self.gain = torch.nn.Parameter(torch.as_tensor(np.log(init_gain) / gain_scale))
@@ -222,7 +227,7 @@ class CrossAttention(nn.Module):
 
     def effective_gain(self):
         g = self.gain_scale * self.gain
-        if not self.use_rezero:
+        if not (self.use_rezero or self.use_layerscale):
             g = g.exp()
         return g
 
@@ -273,7 +278,7 @@ class CrossAttention(nn.Module):
         k, v = kv.chunk(2, dim=-1)
 
         attn_output, attn_output_weights = self.attn(q, k, v)
-        attn_output = self.effective_gain() * attn_output
+        attn_output = attn_output * self.effective_gain()
         attn_output = _to_b_c_h_w(attn_output, spatial)
 
         if self.resid:

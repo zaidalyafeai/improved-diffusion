@@ -60,6 +60,7 @@ def model_and_diffusion_defaults():
         txt_rezero=False,
         cross_attn_rezero=False,
         cross_attn_rezero_keeps_prenorm=False,
+        cross_attn_use_layerscale=False,
         verbose=False,
     )
 
@@ -111,6 +112,7 @@ def create_model_and_diffusion(
     txt_rezero=False,
     cross_attn_rezero=False,
     cross_attn_rezero_keeps_prenorm=False,
+    cross_attn_use_layerscale=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     model = create_model(
@@ -151,6 +153,7 @@ def create_model_and_diffusion(
         txt_rezero=txt_rezero,
         cross_attn_rezero=cross_attn_rezero,
         cross_attn_rezero_keeps_prenorm=cross_attn_rezero_keeps_prenorm,
+        cross_attn_use_layerscale=cross_attn_use_layerscale,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -208,6 +211,7 @@ def create_model(
     txt_rezero=False,
     cross_attn_rezero=False,
     cross_attn_rezero_keeps_prenorm=False,
+    cross_attn_use_layerscale=False,
 ):
     print(
         f"create_model: got txt={txt}, num_heads={num_heads}, channels_per_head={channels_per_head}, cross_attn_channels_per_head={cross_attn_channels_per_head}, text_lr_mult={text_lr_mult}"
@@ -283,7 +287,8 @@ def create_model(
         cross_attn_q_t_emb=cross_attn_q_t_emb,
         txt_rezero=txt_rezero,
         cross_attn_rezero=cross_attn_rezero,
-        cross_attn_rezero_keeps_prenorm=cross_attn_rezero_keeps_prenorm
+        cross_attn_rezero_keeps_prenorm=cross_attn_rezero_keeps_prenorm,
+        cross_attn_use_layerscale=cross_attn_use_layerscale
     )
 
 
