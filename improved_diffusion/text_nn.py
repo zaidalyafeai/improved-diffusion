@@ -150,7 +150,8 @@ class CrossAttention(nn.Module):
         avoid_groupnorm=False,
         orth_init=False,
         q_t_emb=False,
-        use_rezero=False
+        use_rezero=False,
+        rezero_keeps_prenorm=False
     ):
         super().__init__()
         print(
@@ -167,8 +168,9 @@ class CrossAttention(nn.Module):
         self.avoid_groupnorm = avoid_groupnorm
         self.q_t_emb = q_t_emb
         self.use_rezero = use_rezero
+        self.no_prenorm = use_rezero and not rezero_keeps_prenorm
 
-        if self.use_rezero:
+        if self.no_prenorm:
             self.src_ln = nn.Identity()
         else:
             self.src_ln = torch.nn.LayerNorm(self.text_dim)
@@ -193,9 +195,9 @@ class CrossAttention(nn.Module):
                 out_channels=self.dim,
                 num_groups=1,
                 nonlin_in=True,  # TODO: does this matter?
-                do_norm=not self.use_rezero,
+                do_norm=not self.no_prenorm,
             )
-        elif self.use_rezero:
+        elif self.no_prenorm:
             self.tgt_ln = nn.Identity()
         elif avoid_groupnorm:
             self.tgt_ln = torch.nn.LayerNorm(self.dim)
