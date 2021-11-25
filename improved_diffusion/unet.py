@@ -404,6 +404,7 @@ class UNetModel(nn.Module):
         cross_attn_orth_init=False,
         cross_attn_q_t_emb=False,
         txt_rezero=False,
+        cross_attn_rezero=False,
         verbose=False
     ):
         super().__init__()
@@ -531,6 +532,7 @@ class UNetModel(nn.Module):
                         avoid_groupnorm=txt_avoid_groupnorm,
                         orth_init=cross_attn_orth_init,
                         q_t_emb=cross_attn_q_t_emb,
+                        use_rezero=cross_attn_rezero
                     )
                     if txt_attn_before_attn and (ds in attention_resolutions):
                         layers.insert(-1, caa)
@@ -641,6 +643,7 @@ class UNetModel(nn.Module):
                         avoid_groupnorm=txt_avoid_groupnorm,
                         orth_init=cross_attn_orth_init,
                         q_t_emb=cross_attn_q_t_emb,
+                        use_rezero=cross_attn_rezero
                     )
                     if txt_attn_before_attn and (ds in attention_resolutions):
                         layers.insert(-1, caa)

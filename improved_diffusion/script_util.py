@@ -58,6 +58,7 @@ def model_and_diffusion_defaults():
         cross_attn_orth_init=False,
         cross_attn_q_t_emb=False,
         txt_rezero=False,
+        cross_attn_rezero=False,
         verbose=False,
     )
 
@@ -107,6 +108,7 @@ def create_model_and_diffusion(
     cross_attn_orth_init=False,
     cross_attn_q_t_emb=False,
     txt_rezero=False,
+    cross_attn_rezero=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     model = create_model(
@@ -145,6 +147,7 @@ def create_model_and_diffusion(
         cross_attn_orth_init=cross_attn_orth_init,
         cross_attn_q_t_emb=cross_attn_q_t_emb,
         txt_rezero=txt_rezero,
+        cross_attn_rezero=cross_attn_rezero,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -200,6 +203,7 @@ def create_model(
     cross_attn_orth_init=False,
     cross_attn_q_t_emb=False,
     txt_rezero=False,
+    cross_attn_rezero=False,
 ):
     print(
         f"create_model: got txt={txt}, num_heads={num_heads}, channels_per_head={channels_per_head}, cross_attn_channels_per_head={cross_attn_channels_per_head}, text_lr_mult={text_lr_mult}"
@@ -273,7 +277,8 @@ def create_model(
         txt_avoid_groupnorm=txt_avoid_groupnorm,
         cross_attn_orth_init=cross_attn_orth_init,
         cross_attn_q_t_emb=cross_attn_q_t_emb,
-        txt_rezero=txt_rezero
+        txt_rezero=txt_rezero,
+        cross_attn_rezero=cross_attn_rezero,
     )
 
 
