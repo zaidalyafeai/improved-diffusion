@@ -218,6 +218,12 @@ class CrossAttention(nn.Module):
         if lr_mult is not None:
             multiply_lr_via_hooks(self, lr_mult)
 
+    def effective_gain(self):
+        g = self.gain_scale * self.gain
+        if not self.use_rezero:
+            g = g.exp()
+        return g
+
     def forward(self, src, tgt, tgt_pos_embs=None, timestep_emb=None):
         def _to_b_hw_c(x, retdims=True):
             b, c, *spatial = x.shape
@@ -264,12 +270,8 @@ class CrossAttention(nn.Module):
 
         k, v = kv.chunk(2, dim=-1)
 
-        effective_gain = self.gain_scale * self.gain
-        if not self.use_rezero:
-            effective_gain = effective_gain.exp()
-
         attn_output, attn_output_weights = self.attn(q, k, v)
-        attn_output = effective_gain * attn_output
+        attn_output = self.effective_gain() * attn_output
         attn_output = _to_b_c_h_w(attn_output, spatial)
 
         if self.resid:
