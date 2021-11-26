@@ -120,7 +120,10 @@ class TrainLoop:
             weight_decay=self.weight_decay
         )
         if self.resume_step:
-            self._load_optimizer_state()
+            try:
+                self._load_optimizer_state()
+            except ValueError:
+                print("couldn't load opt")
             # Model was resumed, either due to a restart or a checkpoint
             # being specified at the command line.
             self.ema_params = [
