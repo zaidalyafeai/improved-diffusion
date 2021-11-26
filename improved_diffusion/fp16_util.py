@@ -90,7 +90,7 @@ def master_params_to_model_params(model_param_groups, master_params):
 
     model_params = [p for pg in model_param_groups for p in pg]
     for param, master_param in zip(
-        model_params, unflatten_master_params(model_params, master_params)
+        model_params, unflatten_master_params(model_param_groups, master_params)
     ):
         param.detach().copy_(master_param)
 
