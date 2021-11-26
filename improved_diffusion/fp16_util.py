@@ -56,7 +56,8 @@ def make_master_params(model_param_groups):
         for model_params in model_param_groups
     ]
     master_params = [nn.Parameter(mp) for mp in master_params]
-    master_params.requires_grad = True
+    for mp in master_params:
+        mp.requires_grad = True
     return master_params
 
 
