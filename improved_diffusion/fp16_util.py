@@ -83,7 +83,7 @@ def master_params_to_model_params(model_param_groups, master_params):
     """
     # Without copying to a list, if a generator is passed, this will
     # silently not copy any parameters.
-    master_param_groups = list(master_param_groups)
+    model_param_groups = list(model_param_groups)
 
     if isinstance(model_param_groups[0], nn.Parameter):
         model_param_groups = [model_param_groups]
