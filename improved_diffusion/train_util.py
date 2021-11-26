@@ -80,11 +80,15 @@ class TrainLoop:
 
         text_params, self.text_param_names = [], []
         xattn_params, self.xattn_param_names = [], []
+        gain_params, self.gain_param_names = [], []
         other_params, self.other_param_names = [], []
         for n, p in model.named_parameters():
             if 'text_encoder' in n:
                 self.text_param_names.append(n)
                 text_params.append(p)
+            elif "cross" in n and "gain" in n:
+                self.gain_param_names.append(n)
+                gain_params.append(p)
             elif "cross" in n:
                 self.xattn_param_names.append(n)
                 xattn_params.append(p)
@@ -92,9 +96,9 @@ class TrainLoop:
                 self.other_param_names.append(n)
                 other_params.append(p)
 
-        self.param_name_groups = [self.text_param_names, self.xattn_param_names, self.other_param_names]
+        self.param_name_groups = [self.text_param_names, self.xattn_param_names, self.gain_param_names, self.other_param_names]
         # self.model_params = list(self.model.parameters())
-        self.model_params = [text_params, xattn_params, other_params]
+        self.model_params = [text_params, xattn_params, gain_params, other_params]
 
         self.master_params = self.model_params
         self.lg_loss_scale = INITIAL_LOG_LOSS_SCALE
@@ -104,13 +108,13 @@ class TrainLoop:
         if self.use_fp16:
             self._setup_fp16()
 
-        for p, name in zip(self.master_params, ['text', 'xattn', 'other']):
+        for p, name in zip(self.master_params, ['text', 'xattn', 'xgain', 'other']):
             print(f"\t{np.product(p.shape)/1e6:.0f}M {name} params")
 
         self.opt = AdamW(
             [
                 {"params": params, "lr": lr}
-                for params, lr in zip(self.master_params, [self.text_lr, self.text_lr, self.lr])
+                for params, lr in zip(self.master_params, [self.text_lr, self.text_lr, self.text_lr, self.lr])
             ],
             lr=self.lr,
             weight_decay=self.weight_decay
@@ -313,7 +317,7 @@ class TrainLoop:
 
         gn_xattn, gn_text = None, None
 
-        for p, name in zip(self.master_params, ['text', 'xattn', 'other']):
+        for p, name in zip(self.master_params, ['text', 'xattn', 'xgain', 'other']):
             if p.grad is None:
                 continue
             gn = np.sqrt((p.grad ** 2).sum().item())
