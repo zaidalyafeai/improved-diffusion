@@ -209,10 +209,6 @@ class TrainLoop:
             if self.step % self.log_interval == 0:
                 t2 = time.time()
                 print(f"{t2-t1:.2f} sec")
-                # for n, m in self.model.named_modules():
-                #     if hasattr(m, 'gain'):
-                #         gain_val = (getattr(m, 'gain_scale') * getattr(m, 'gain')).exp().item()
-                #         print(f"gain {gain_val:.4f} | {n}")
                 t1 = t2
                 logger.dumpkvs()
             if (self.step % self.save_interval == 0) and (self.step > 0):
@@ -341,7 +337,7 @@ class TrainLoop:
                     gain_val = gain_val.item()
                 else:
                     gain_val = gain_val.detach().abs().mean().item()
-                short_name = ".".join(seg[:3] for seg in n.split("."))
+                short_name = ".".join(seg[:3] for seg in n.split(".") if seg[:3] != 'cro')
                 logger.logkv(f"gain_{short_name}", gain_val)
 
     def log_step(self):
