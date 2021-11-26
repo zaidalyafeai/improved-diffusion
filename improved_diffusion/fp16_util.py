@@ -77,7 +77,7 @@ def model_grads_to_master_grads(model_param_groups, master_params):
         )
 
 
-def master_params_to_model_params(model_params, master_param_groups):
+def master_params_to_model_params(model_param_groups, master_params):
     """
     Copy the master parameter data back into the model parameters.
     """
