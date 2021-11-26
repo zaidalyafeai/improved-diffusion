@@ -92,6 +92,10 @@ class TrainLoop:
                 self.other_param_names.append(n)
                 other_params.append(p)
 
+        print(self.text_param_names)
+        print(self.xattn_param_names)
+        print(self.other_param_names)
+
         self.param_name_groups = [self.text_param_names, self.xattn_param_names, self.other_param_names]
         # self.model_params = list(self.model.parameters())
         self.model_params = [text_params, xattn_params, other_params]
