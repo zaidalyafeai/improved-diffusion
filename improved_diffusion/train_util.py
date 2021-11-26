@@ -397,14 +397,15 @@ class TrainLoop:
         for i, name in enumerate(names_flat):
                 assert name in state_dict
                 state_dict[name] = master_params[i]
-                
+
         # for i, (name, _value) in enumerate(self.model.named_parameters()):
         #     assert name in state_dict
         #     state_dict[name] = master_params[i]
         return state_dict
 
     def _state_dict_to_master_params(self, state_dict):
-        params = [state_dict[name] for name, _ in self.model.named_parameters()]
+        # params = [state_dict[name] for name, _ in self.model.named_parameters()]
+        params = [[state_dict[name] for name in name_group] for name_group in self.param_name_groups]
         if self.use_fp16:
             return make_master_params(params)
         else:
