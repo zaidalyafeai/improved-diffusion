@@ -321,7 +321,7 @@ class TrainLoop:
                 gn_text = gn
             elif name == 'xattn':
                 gn_xattn = gn
-            logger.logkv_mean(f"grad_norm_{name}", )
+            logger.logkv_mean(f"grad_norm_{name}", gn)
 
         if (gn_text is not None) and (gn_xattn is not None):
             logger.logkv_mean(f"grad_norm_xt_ratio", gn_xattn / max(gn_text, 1e-8))
