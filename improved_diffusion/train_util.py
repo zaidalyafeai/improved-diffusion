@@ -311,10 +311,20 @@ class TrainLoop:
             sqsum += (p.grad ** 2).sum().item()
         logger.logkv_mean("grad_norm", np.sqrt(sqsum))
 
+        gn_xattn, gn_text = None, None
+
         for p, name in zip(self.master_params, ['text', 'xattn', 'other']):
             if p.grad is None:
                 continue
-            logger.logkv_mean(f"grad_norm_{name}", np.sqrt((p.grad ** 2).sum().item()))
+            gn = np.sqrt((p.grad ** 2).sum().item())
+            if name == 'text':
+                gn_text = gn
+            elif name == 'xattn':
+                gn_xattn = gn
+            logger.logkv_mean(f"grad_norm_{name}", )
+
+        if (gn_text is not None) and (gn_xattn is not None):
+            logger.logkv_mean(f"grad_norm_xt_ratio", gn_xattn / max(gn_text, 1e-8))
 
     def _anneal_lr(self):
         if not self.lr_anneal_steps:
