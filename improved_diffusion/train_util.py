@@ -314,7 +314,7 @@ class TrainLoop:
         for p, name in zip(self.master_params, ['text', 'other']):
             if p.grad is None:
                 continue
-            logger.logkv_mean(f"grad_norm_{name}", np.sqrt(p.grad ** 2).sum().cpu().item())
+            logger.logkv_mean(f"grad_norm_{name}", np.sqrt(p.grad ** 2.sum().item()))
 
     def _anneal_lr(self):
         if not self.lr_anneal_steps:
