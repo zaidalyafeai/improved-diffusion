@@ -41,39 +41,53 @@ def convert_module_to_f32(l):
             p.data = p.data.float()
 
 
-def make_master_params(model_params):
+def make_master_params(model_param_groups):
     """
     Copy model parameters into a (differently-shaped) list of full-precision
     parameters.
     """
-    master_params = _flatten_dense_tensors(
-        [param.detach().float() for param in model_params]
-    )
+    if isinstance(model_param_groups[0], nn.Parameter):
+        model_param_groups = [model_param_groups]
+
+    master_params = [
+        _flatten_dense_tensors(
+            [param.detach().float() for param in model_params]
+        )
+        for model_params in model_param_groups
+    ]
     master_params = nn.Parameter(master_params)
     master_params.requires_grad = True
-    return [master_params]
+    return master_params
 
 
-def model_grads_to_master_grads(model_params, master_params):
+def model_grads_to_master_grads(model_param_groups, master_params):
     """
     Copy the gradients from the model parameters into the master parameters
     from make_master_params().
     """
-    master_params[0].grad = _flatten_dense_tensors(
-        [param.grad.data.detach().float()
-         if param.grad is not None else None
-         for param in model_params]
-    )
+    if isinstance(model_param_groups[0], nn.Parameter):
+        model_param_groups = [model_param_groups]
+
+    for model_group, master_param in zip(model_param_groups, master_params):
+        master_param.grad = _flatten_dense_tensors(
+            [param.grad.data.detach().float()
+             if param.grad is not None else None
+             for param in model_group]
+        )
 
 
-def master_params_to_model_params(model_params, master_params):
+def master_params_to_model_params(model_params, master_param_groups):
     """
     Copy the master parameter data back into the model parameters.
     """
     # Without copying to a list, if a generator is passed, this will
     # silently not copy any parameters.
-    model_params = list(model_params)
+    master_param_groups = list(master_param_groups)
 
+    if isinstance(model_param_groups[0], nn.Parameter):
+        model_param_groups = [model_param_groups]
+
+    model_params = [p for pg in model_param_groups for p in pg]
     for param, master_param in zip(
         model_params, unflatten_master_params(model_params, master_params)
     ):
