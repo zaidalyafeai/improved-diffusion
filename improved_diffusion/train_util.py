@@ -283,7 +283,8 @@ class TrainLoop:
             return
 
         model_grads_to_master_grads(self.model_params, self.master_params)
-        self.master_params[0].grad.mul_(1.0 / (2 ** self.lg_loss_scale))
+        for mp in self.master_params:
+            mp.grad.mul_(1.0 / (2 ** self.lg_loss_scale))
         self._log_grad_norm()
         self._anneal_lr()
         self.opt.step()
