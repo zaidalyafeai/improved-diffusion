@@ -49,6 +49,7 @@ class TrainLoop:
         weight_decay=0.0,
         lr_anneal_steps=0,
         tokenizer=None,
+        text_lr=None
     ):
         self.model = model
         self.diffusion = diffusion
@@ -56,6 +57,8 @@ class TrainLoop:
         self.batch_size = batch_size
         self.microbatch = microbatch if microbatch > 0 else batch_size
         self.lr = lr
+        self.text_lr = text_lr if text_lr is not None else lr
+        print(f"train loop: text_lr={text_lr}")
         self.ema_rate = (
             [ema_rate]
             if isinstance(ema_rate, float)
@@ -75,7 +78,20 @@ class TrainLoop:
         self.resume_step = 0
         self.global_batch = self.batch_size * dist.get_world_size()
 
-        self.model_params = list(self.model.parameters())
+        text_params, self.text_param_names = [], []
+        other_params, self.other_param_names = [], []
+        for n, p in model.named_parameters():
+            if 'text_encoder' in n or "cross" in n:
+                self.text_param_names.append(n)
+                text_params.append(p)
+            else:
+                self.other_param_names.append(n)
+                other_params.append(p)
+
+        self.param_name_groups = [self.text_param_names, self.other_param_names]
+        # self.model_params = list(self.model.parameters())
+        self.model_params = [text_params, other_params]
+
         self.master_params = self.model_params
         self.lg_loss_scale = INITIAL_LOG_LOSS_SCALE
         self.sync_cuda = th.cuda.is_available()
@@ -84,7 +100,17 @@ class TrainLoop:
         if self.use_fp16:
             self._setup_fp16()
 
-        self.opt = AdamW(self.master_params, lr=self.lr, weight_decay=self.weight_decay)
+        print(f"len(self.master_params): {len(self.master_params)}")
+        print([p.shape for p in self.master_params])
+
+        self.opt = AdamW(
+            [
+                {"params": params, "lr": lr} 
+                for params, lr in zip(self.master_params, [self.text_lr, self.lr])
+            ],
+            lr=self.lr,
+            weight_decay=self.weight_decay
+        )
         if self.resume_step:
             self._load_optimizer_state()
             # Model was resumed, either due to a restart or a checkpoint

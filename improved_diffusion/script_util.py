@@ -213,6 +213,7 @@ def create_model(
     cross_attn_rezero_keeps_prenorm=False,
     cross_attn_use_layerscale=False,
 ):
+    text_lr_mult = 1.
     print(
         f"create_model: got txt={txt}, num_heads={num_heads}, channels_per_head={channels_per_head}, cross_attn_channels_per_head={cross_attn_channels_per_head}, text_lr_mult={text_lr_mult}"
     )
