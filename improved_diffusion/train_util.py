@@ -105,7 +105,7 @@ class TrainLoop:
 
         self.opt = AdamW(
             [
-                {"params": params, "lr": lr} 
+                {"params": params, "lr": lr}
                 for params, lr in zip(self.master_params, [self.text_lr, self.lr])
             ],
             lr=self.lr,
@@ -277,7 +277,7 @@ class TrainLoop:
                 loss.backward()
 
     def optimize_fp16(self):
-        if any(not th.isfinite(p.grad).all() for p in self.model_params if p.grad is not None):
+        if any(not th.isfinite(p.grad).all() for ps in self.model_params for p in ps if p.grad is not None):
             self.lg_loss_scale -= 1
             logger.log(f"Found NaN, decreased lg_loss_scale to {self.lg_loss_scale}")
             return
