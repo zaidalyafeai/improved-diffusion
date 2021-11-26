@@ -55,7 +55,7 @@ def make_master_params(model_param_groups):
         )
         for model_params in model_param_groups
     ]
-    master_params = nn.Parameter(master_params)
+    master_params = [nn.Parameter(mp) for mp in master_params]
     master_params.requires_grad = True
     return master_params
 
@@ -94,11 +94,16 @@ def master_params_to_model_params(model_params, master_param_groups):
         param.detach().copy_(master_param)
 
 
-def unflatten_master_params(model_params, master_params):
+def unflatten_master_params(model_param_groups, master_params):
     """
     Unflatten the master parameters to look like model_params.
     """
-    return _unflatten_dense_tensors(master_params[0].detach(), model_params)
+    if isinstance(model_param_groups[0], nn.Parameter):
+        model_param_groups = [model_param_groups]
+
+    return [p
+            for mp, model_params in zip(master_params, model_param_groups)
+            for p in _unflatten_dense_tensors(mp.detach(), model_params)]
 
 
 def zero_grad(model_params):
