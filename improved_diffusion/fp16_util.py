@@ -100,12 +100,13 @@ def unflatten_master_params(model_param_groups, master_params):
     Unflatten the master parameters to look like model_params.
     """
     if isinstance(model_param_groups[0], nn.Parameter):
+        print('in paramlist branch')
         model_param_groups = [model_param_groups]
 
     print((len(master_params), len(model_param_groups)))
     import numpy as np
     for mp, model_params in zip(master_params, model_param_groups):
-        print((np.product(mp.shape), sum(np.product(pp.shape for pp in model_params))))
+        print((np.product(mp.shape), sum(np.product(pp.shape) for pp in model_params)))
 
     return [p
             for mp, model_params in zip(master_params, model_param_groups)
