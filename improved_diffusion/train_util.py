@@ -79,18 +79,22 @@ class TrainLoop:
         self.global_batch = self.batch_size * dist.get_world_size()
 
         text_params, self.text_param_names = [], []
+        xattn_params, self.xattn_param_names = [], []
         other_params, self.other_param_names = [], []
         for n, p in model.named_parameters():
-            if 'text_encoder' in n or "cross" in n:
+            if 'text_encoder' in n:
                 self.text_param_names.append(n)
                 text_params.append(p)
+            elif "cross" in n:
+                self.xattn_param_names.append(n)
+                xattn_params.append(p)
             else:
                 self.other_param_names.append(n)
                 other_params.append(p)
 
-        self.param_name_groups = [self.text_param_names, self.other_param_names]
+        self.param_name_groups = [self.text_param_names, self.xattn_param_names, self.other_param_names]
         # self.model_params = list(self.model.parameters())
-        self.model_params = [text_params, other_params]
+        self.model_params = [text_params, xattn_params, other_params]
 
         self.master_params = self.model_params
         self.lg_loss_scale = INITIAL_LOG_LOSS_SCALE
@@ -106,7 +110,7 @@ class TrainLoop:
         self.opt = AdamW(
             [
                 {"params": params, "lr": lr}
-                for params, lr in zip(self.master_params, [self.text_lr, self.lr])
+                for params, lr in zip(self.master_params, [self.text_lr, self.text_lr, self.lr])
             ],
             lr=self.lr,
             weight_decay=self.weight_decay
@@ -311,7 +315,7 @@ class TrainLoop:
             sqsum += (p.grad ** 2).sum().item()
         logger.logkv_mean("grad_norm", np.sqrt(sqsum))
 
-        for p, name in zip(self.master_params, ['text', 'other']):
+        for p, name in zip(self.master_params, ['text', 'xattn', 'other']):
             if p.grad is None:
                 continue
             logger.logkv_mean(f"grad_norm_{name}", np.sqrt((p.grad ** 2).sum().item()))
