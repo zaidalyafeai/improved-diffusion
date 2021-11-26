@@ -92,10 +92,6 @@ class TrainLoop:
                 self.other_param_names.append(n)
                 other_params.append(p)
 
-        print(self.text_param_names)
-        print(self.xattn_param_names)
-        print(self.other_param_names)
-
         self.param_name_groups = [self.text_param_names, self.xattn_param_names, self.other_param_names]
         # self.model_params = list(self.model.parameters())
         self.model_params = [text_params, xattn_params, other_params]
@@ -108,8 +104,8 @@ class TrainLoop:
         if self.use_fp16:
             self._setup_fp16()
 
-        print(f"len(self.master_params): {len(self.master_params)}")
-        print([p.shape for p in self.master_params])
+        for p, name in zip(self.master_params, ['text', 'xattn', 'other']):
+            print(f"\t{np.product(p.shape)/1e6:.0f}M {name} params")
 
         self.opt = AdamW(
             [
