@@ -45,9 +45,17 @@ class TextTimestepBlock(nn.Module):
         """
 
 
-class CrossAttentionAdapter(CrossAttention, TextTimestepBlock):
+# class CrossAttentionAdapter(CrossAttention, TextTimestepBlock):
+#     def forward(self, x, emb, txt, tgt_pos_embs=None, timesteps=None):
+#         return super().forward(src=txt, tgt=x, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
+class CrossAttentionAdapter(TextTimestepBlock):
+    def __init__(*args, **kwargs):
+        super().__init__()
+        self.cross_attn = CrossAttention(*args, **kwargs)
+
     def forward(self, x, emb, txt, tgt_pos_embs=None, timesteps=None):
-        return super().forward(src=txt, tgt=x, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
+        return self.cross_attn.forward(src=txt, tgt=x, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
+
 
 
 class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
