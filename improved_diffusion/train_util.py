@@ -114,7 +114,7 @@ class TrainLoop:
         self.opt = AdamW(
             [
                 {"params": params, "lr": lr}
-                for params, lr in zip(self.master_params, [self.text_lr, self.text_lr, self.text_lr, self.lr])
+                for params, lr in zip(self.master_params, [self.text_lr, self.text_lr, self.lr, self.lr])
             ],
             lr=self.lr,
             weight_decay=self.weight_decay
