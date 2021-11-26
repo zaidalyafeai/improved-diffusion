@@ -107,9 +107,13 @@ def unflatten_master_params(model_param_groups, master_params):
             for p in _unflatten_dense_tensors(mp.detach(), model_params)]
 
 
-def zero_grad(model_params):
-    for param in model_params:
-        # Taken from https://pytorch.org/docs/stable/_modules/torch/optim/optimizer.html#Optimizer.add_param_group
-        if param.grad is not None:
-            param.grad.detach_()
-            param.grad.zero_()
+def zero_grad(model_param_groups):
+    if isinstance(model_param_groups[0], nn.Parameter):
+        model_param_groups = [model_param_groups]
+
+    for model_params in model_param_groups:
+        for param in model_params:
+            # Taken from https://pytorch.org/docs/stable/_modules/torch/optim/optimizer.html#Optimizer.add_param_group
+            if param.grad is not None:
+                param.grad.detach_()
+                param.grad.zero_()
