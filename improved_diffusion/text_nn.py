@@ -31,6 +31,21 @@ def multiply_lr_via_hooks(m: nn.Module, mult: float, debug=False) -> nn.Module:
     return m
 
 
+class LineEmbedding(nn.Module):
+    def __init__(self, dim, line_sep_id=5, max_lines=32):
+        super().__init__()
+        self.line_sep_id = line_sep_id
+        self.max_lines = max_lines
+
+        self.scale = dim ** -0.5
+        self.emb = nn.Embedding(max_lines, dim)
+
+    def forward(self, x):
+        n = (x == self.line_sep_id).to(torch.int).cumsum(dim=1).clamp(self.max_lines - 1)
+        pos_emb = self.emb(n)
+        return pos_emb * self.scale
+
+
 class TextEncoder(nn.Module):
     def __init__(self,
         inner_dim,           # model dim (default = w_dim)
@@ -47,6 +62,7 @@ class TextEncoder(nn.Module):
         encoder_kwargs = {},
         return_sequences=True,
         lr_mult=None,
+        use_line_emb=True,
     ):
         super().__init__()
 
@@ -57,6 +73,7 @@ class TextEncoder(nn.Module):
 
         self.use_encoder_decoder = use_encoder_decoder
         self.return_sequences = return_sequences
+        self.use_line_emb = use_line_emb
         self.dim = inner_dim
 
         if self.use_encoder_decoder:
@@ -89,6 +106,8 @@ class TextEncoder(nn.Module):
         else:
             self.token_emb = nn.Embedding(num_tokens, inner_dim)
             self.pos_emb = AbsolutePositionalEmbedding(inner_dim, max_seq_len)
+            if self.use_line_emb:
+                self.line_emb = LineEmbedding(dim=inner_dim)
             self.model = Encoder(
                 dim = inner_dim,
                 depth = depth,
@@ -122,6 +141,8 @@ class TextEncoder(nn.Module):
             x = tokens
             x = self.token_emb(x)
             x = x + self.pos_emb(x)
+            if self.use_line_emb:
+                x = x + self.line_emb(x)
 
             if timesteps is not None:
                 emb = self.time_embed(timestep_embedding(timesteps, self.dim))
