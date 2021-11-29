@@ -142,6 +142,8 @@ class TextEncoder(nn.Module):
             x = self.token_emb(x)
             x = x + self.pos_emb(x)
             if self.use_line_emb:
+                print(x.shape)
+                print(self.line_emb(x).shape)
                 x = x + self.line_emb(x)
 
             if timesteps is not None:
