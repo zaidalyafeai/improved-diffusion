@@ -134,6 +134,68 @@ class TextEncoder(nn.Module):
             return out
 
 
+class BetterMultiheadAttention(torch.nn.MultiheadAttention):
+    def __init__(self, src_embed_dim, tgt_embed_dim, num_heads, dropout=0., batch_first=True, device=None, dtype=None):
+        factory_kwargs = {'device': device, 'dtype': dtype}
+        super(torch.nn.MultiheadAttention, self).__init__()
+        self.src_embed_dim = src_embed_dim
+        self.tgt_embed_dim = tgt_embed_dim
+        self.embed_dim = self.src_embed_dim
+        self.kdim = src_embed_dim
+        self.vdim = src_embed_dim
+        self._qkv_same_embed_dim = self.src_embed_dim == self.tgt_embed_dim
+
+        self.num_heads = num_heads
+        self.dropout = dropout
+        self.batch_first = batch_first
+        self.head_dim = src_embed_dim // num_heads
+        assert self.head_dim * num_heads == self.src_embed_dim, "src_embed_dim must be divisible by num_heads"
+
+        self.q = torch.nn.Linear(tgt_embed_dim, src_embed_dim, bias=False)
+        self.k = torch.nn.Linear(src_embed_dim, src_embed_dim, bias=False)
+        self.v = torch.nn.Linear(src_embed_dim, src_embed_dim, bias=False)
+
+        self.q_proj_weight = self.k_proj_weight = self.v_proj_weight = torch.eye(src_embed_dim)
+        self.register_parameter('in_proj_weight', None)
+        self.register_parameter('in_proj_bias', None)
+
+        self.out_proj = torch.nn.modules.linear.NonDynamicallyQuantizableLinear(src_embed_dim, tgt_embed_dim, bias=False, **factory_kwargs)
+
+        self.bias_k = self.bias_v = None
+        self.add_zero_attn = False
+
+        self._reset_parameters()
+
+    def _reset_parameters(self):
+        torch.nn.init.xavier_uniform_(self.q.weight)
+        torch.nn.init.xavier_uniform_(self.k.weight)
+        torch.nn.init.xavier_uniform_(self.v.weight)
+
+    def forward(self, query, key, value,
+                need_weights: bool = True):
+        if self.batch_first:
+            query, key, value = [x.transpose(1, 0) for x in (query, key, value)]
+
+        query = self.q(query)
+        key = self.k(key)
+        value = self.v(value)
+
+        attn_output, attn_output_weights = torch.nn.functional.multi_head_attention_forward(
+            query, key, value, self.embed_dim, self.num_heads,
+            self.in_proj_weight, self.in_proj_bias,
+            self.bias_k, self.bias_v, self.add_zero_attn,
+            self.dropout, self.out_proj.weight, self.out_proj.bias,
+            training=self.training,
+            key_padding_mask=None, need_weights=need_weights,
+            attn_mask=None, use_separate_proj_weight=True,
+            q_proj_weight=self.q_proj_weight, k_proj_weight=self.k_proj_weight,
+            v_proj_weight=self.v_proj_weight)
+
+        if self.batch_first:
+            return attn_output.transpose(1, 0), attn_output_weights
+        else:
+            return attn_output, attn_output_weights
+
 class CrossAttention(nn.Module):
     def __init__(
         self,
@@ -165,7 +227,7 @@ class CrossAttention(nn.Module):
 
         # self.q = torch.nn.Linear(self.dim, self.dim, bias=False)
         self.kv = torch.nn.Linear(self.text_dim, 2*self.dim, bias=False)
-        self.attn = torch.nn.MultiheadAttention(self.dim, self.heads, batch_first=True)
+        self.attn = BetterMultiheadAttention(self.text_dim, self.dim, self.heads, batch_first=True)
 
         self.avoid_groupnorm = avoid_groupnorm
         self.q_t_emb = q_t_emb
