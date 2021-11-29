@@ -155,8 +155,8 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         self.k = torch.nn.Linear(src_embed_dim, src_embed_dim, bias=False)
         self.v = torch.nn.Linear(src_embed_dim, src_embed_dim, bias=False)
 
-        self.fake_proj_weight = torch.nn.Parameter(torch.eye(src_embed_dim))
-        self.fake_proj_weight.requires_grad_(False)
+        # self.fake_proj_weight = torch.nn.Parameter(torch.eye(src_embed_dim))
+        # self.fake_proj_weight.requires_grad_(False)
 
         self.register_parameter('in_proj_weight', None)
         self.register_parameter('in_proj_bias', None)
@@ -182,6 +182,8 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         key = self.k(key)
         value = self.v(value)
 
+        fake_proj_weight = torch.eye(src_embed_dim, dtype=query.dtype, device=query.device)
+
         attn_output, attn_output_weights = torch.nn.functional.multi_head_attention_forward(
             query, key, value, self.embed_dim, self.num_heads,
             self.in_proj_weight, self.in_proj_bias,
@@ -190,8 +192,9 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
             training=self.training,
             key_padding_mask=None, need_weights=need_weights,
             attn_mask=None, use_separate_proj_weight=True,
-            q_proj_weight=self.fake_proj_weight, k_proj_weight=self.fake_proj_weight,
-            v_proj_weight=self.fake_proj_weight)
+            q_proj_weight=fake_proj_weight, k_proj_weight=fake_proj_weight,
+            v_proj_weight=fake_proj_weight)
+        del fake_proj_weight
 
         if self.batch_first:
             return attn_output.transpose(1, 0), attn_output_weights
