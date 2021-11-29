@@ -226,7 +226,7 @@ class CrossAttention(nn.Module):
         self.text_dim = text_dim
 
         # self.q = torch.nn.Linear(self.dim, self.dim, bias=False)
-        self.kv = torch.nn.Linear(self.text_dim, 2*self.dim, bias=False)
+        # self.kv = torch.nn.Linear(self.text_dim, 2*self.dim, bias=False)
         self.attn = BetterMultiheadAttention(self.text_dim, self.dim, self.heads, batch_first=True)
 
         self.avoid_groupnorm = avoid_groupnorm
@@ -335,10 +335,11 @@ class CrossAttention(nn.Module):
         # q = self.q(tgt_in)
         q = tgt_in
 
-        src = self.src_ln(src)
-        kv = self.kv(src)
-
-        k, v = kv.chunk(2, dim=-1)
+        src_in = self.src_ln(src)
+        # kv = self.kv(src)
+        # k, v = kv.chunk(2, dim=-1)
+        k = src_in
+        v = src_in
 
         attn_output, attn_output_weights = self.attn(q, k, v)
         attn_output = attn_output * self.effective_gain()
