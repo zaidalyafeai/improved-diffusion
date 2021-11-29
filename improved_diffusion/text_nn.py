@@ -39,7 +39,7 @@ class TextEncoder(nn.Module):
         num_tokens = 2500,
         max_seq_len = 64,
         rotary_pos_emb = False,
-        ff_glu = True,
+        ff_glu = False,
         use_scalenorm = True,
         use_rezero = False,
         use_encoder_decoder = False,
