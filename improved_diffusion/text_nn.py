@@ -42,6 +42,7 @@ class LineEmbedding(nn.Module):
 
     def forward(self, x):
         n = (x == self.line_sep_id).to(torch.int).cumsum(dim=1).clamp(self.max_lines - 1)
+        print(n)
         pos_emb = self.emb(n)
         return pos_emb * self.scale
 
