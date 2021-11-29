@@ -155,7 +155,7 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         self.k = torch.nn.Linear(src_embed_dim, src_embed_dim, bias=False)
         self.v = torch.nn.Linear(src_embed_dim, src_embed_dim, bias=False)
 
-        self.fake_proj_weight = nn.Parameter(torch.eye(src_embed_dim))
+        self.fake_proj_weight = torch.nn.Parameter(torch.eye(src_embed_dim))
         self.fake_proj_weight.requires_grad_(False)
 
         self.register_parameter('in_proj_weight', None)
@@ -286,8 +286,8 @@ class CrossAttention(nn.Module):
             torch.nn.init.orthogonal_(self.kv.weight)
             torch.nn.init.orthogonal_(self.attn.out_proj.weight)
 
-        if lr_mult is not None:
-            multiply_lr_via_hooks(self, lr_mult)
+        # if lr_mult is not None:
+        #     multiply_lr_via_hooks(self, lr_mult)
 
     def effective_gain(self):
         g = self.gain_scale * self.gain
