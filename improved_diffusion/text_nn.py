@@ -182,7 +182,7 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         key = self.k(key)
         value = self.v(value)
 
-        fake_proj_weight = torch.eye(src_embed_dim, dtype=query.dtype, device=query.device)
+        fake_proj_weight = torch.eye(self.src_embed_dim, dtype=query.dtype, device=query.device)
 
         attn_output, attn_output_weights = torch.nn.functional.multi_head_attention_forward(
             query, key, value, self.embed_dim, self.num_heads,
