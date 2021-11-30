@@ -310,8 +310,9 @@ class CrossAttention(nn.Module):
         self.resid = resid
 
         if orth_init:
-            torch.nn.init.orthogonal_(self.q.weight)
-            torch.nn.init.orthogonal_(self.kv.weight)
+            torch.nn.init.orthogonal_(self.attn.q.weight)
+            torch.nn.init.orthogonal_(self.attn.k.weight)
+            torch.nn.init.orthogonal_(self.attn.v.weight)
             torch.nn.init.orthogonal_(self.attn.out_proj.weight)
 
         # if lr_mult is not None:
