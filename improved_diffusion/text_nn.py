@@ -151,8 +151,6 @@ class TextEncoder(nn.Module):
 
             attn_mask = tokens != 0
             my_attn_mask = torch.tile(attn_mask.unsqueeze(1).unsqueeze(1), (self.n_heads, tokens.shape[1], 1))
-            my_attn_mask = my_attn_mask.to(x.dtype) * max_neg_value(x)
-            print(my_attn_mask)
 
             out = self.model(x, attn_mask=my_attn_mask)
             if not self.return_sequences:
@@ -375,7 +373,9 @@ class CrossAttention(nn.Module):
 
         my_attn_mask = None
         if attn_mask is not None:
-            my_attn_mask = ~torch.tile(attn_mask.unsqueeze(1), (self.heads, q.shape[1], 1))
+            my_attn_mask = torch.tile(attn_mask.unsqueeze(1), (self.heads, q.shape[1], 1))
+            my_attn_mask = my_attn_mask.to(q.dtype) * max_neg_value(q)
+            print(my_attn_mask)
 
         attn_output, attn_output_weights = self.attn(q, k, v, attn_mask=my_attn_mask)
         attn_output = attn_output * self.effective_gain()
