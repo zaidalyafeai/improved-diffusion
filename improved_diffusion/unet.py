@@ -39,7 +39,7 @@ class TimestepBlock(nn.Module):
 
 class TextTimestepBlock(nn.Module):
     @abstractmethod
-    def forward(self, x, emb, txt, tgt_pos_embs=None):
+    def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None):
         """
         Apply the module to `x` given `txt` texts.
         """
@@ -53,8 +53,8 @@ class CrossAttentionAdapter(TextTimestepBlock):
         super().__init__()
         self.cross_attn = CrossAttention(*args, **kwargs)
 
-    def forward(self, x, emb, txt, tgt_pos_embs=None, timesteps=None):
-        return self.cross_attn.forward(src=txt, tgt=x, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
+    def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
+        return self.cross_attn.forward(src=txt, tgt=x, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
 
 
 
@@ -753,12 +753,12 @@ class UNetModel(nn.Module):
             h = self.mono_to_rgb(h)
         h = h.type(self.inner_dtype)
         for module in self.input_blocks:
-            h = module(h, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs)
+            h = module(h, emb, txt=txt, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
             hs.append(h)
-        h = self.middle_block(h, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs)
+        h = self.middle_block(h, emb, txt=txt, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
         for module in self.output_blocks:
             cat_in = th.cat([h, hs.pop()], dim=1)
-            h = module(cat_in, emb, txt=txt, tgt_pos_embs=self.tgt_pos_embs)
+            h = module(cat_in, emb, txt=txt, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
         h = h.type(x.dtype)
         h = self.out(h)
         if self.monochrome_adapter:

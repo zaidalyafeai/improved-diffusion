@@ -129,7 +129,7 @@ class TextEncoder(nn.Module):
         if lr_mult is not None:
             multiply_lr_via_hooks(self, lr_mult)
 
-    def forward(self, tokens, timesteps=None):
+    def forward(self, tokens, attn_mask=None, timesteps=None):
         if self.use_encoder_decoder:
             tgt = torch.zeros((tokens.shape[0], self.dec_max_seq_len), device=tokens.device, dtype=torch.int)
             enc = self.model.encoder(tokens, return_embeddings = True)
