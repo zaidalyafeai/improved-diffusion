@@ -150,7 +150,7 @@ class TextEncoder(nn.Module):
                 x = x + emb
 
             attn_mask = tokens != 0
-            attn_mask = attn_mask.unsqueeze(1).expand(-1, tokens.shape[1], -1, -1)
+            attn_mask = attn_mask.unsqueeze(1).expand(tokens.shape[0], tokens.shape[1], tokens.shape[1])
 
             out = self.model(x, attn_mask=attn_mask)
             if not self.return_sequences:
