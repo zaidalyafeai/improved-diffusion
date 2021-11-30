@@ -745,7 +745,7 @@ class UNetModel(nn.Module):
             emb = emb + self.label_emb(y)
 
         if txt is not None:
-            txt = self.text_encoder(txt, timesteps=timesteps)
+            txt, attn_mask = self.text_encoder(txt, timesteps=timesteps)
             txt = txt.type(self.inner_dtype)
 
         h = x

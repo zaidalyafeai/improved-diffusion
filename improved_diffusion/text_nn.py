@@ -149,10 +149,13 @@ class TextEncoder(nn.Module):
                 emb = emb.unsqueeze(1).tile((1, x.shape[1], 1))
                 x = x + emb
 
-            out = self.model(x)
+            attn_mask = tokens != 0
+            attn_mask = attn_mask.unsqueeze(1).expand(-1, tokens.shape[1], -1, -1)
+
+            out = self.model(x, attn_mask=attn_mask)
             if not self.return_sequences:
-                out = out[:, 0, :]
-            return out
+                out = out[:, 0, :], attn_mask
+            return out, attn_mask
 
 
 class BetterMultiheadAttention(torch.nn.MultiheadAttention):
