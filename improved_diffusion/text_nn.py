@@ -6,7 +6,7 @@ import torch.nn as nn
 from axial_positional_embedding import AxialPositionalEmbedding
 from einops import rearrange
 from x_transformers import TransformerWrapper, Encoder, XTransformer
-from x_transformers.x_transformers import AbsolutePositionalEmbedding
+from x_transformers.x_transformers import AbsolutePositionalEmbedding, max_neg_value
 
 from .nn import normalization_1group, timestep_embedding, SiLU, AdaGN
 
@@ -151,6 +151,8 @@ class TextEncoder(nn.Module):
 
             attn_mask = tokens != 0
             my_attn_mask = torch.tile(attn_mask.unsqueeze(1).unsqueeze(1), (self.n_heads, tokens.shape[1], 1))
+            my_attn_mask = my_attn_mask.to(x.dtype) * max_neg_value(x.dtype)
+            print(my_attn_mask)
 
             out = self.model(x, attn_mask=my_attn_mask)
             if not self.return_sequences:
