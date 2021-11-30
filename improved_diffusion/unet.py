@@ -69,7 +69,7 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
             if isinstance(layer, TimestepBlock):
                 x = layer(x, emb)
             elif isinstance(layer, TextTimestepBlock):
-                x = layer(x, emb, txt, attn_mask=None, tgt_pos_embs=tgt_pos_embs)
+                x = layer(x, emb, txt, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs)
             else:
                 x = layer(x)
         return x
