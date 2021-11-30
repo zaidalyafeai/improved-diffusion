@@ -376,7 +376,7 @@ class CrossAttention(nn.Module):
             print(q.shape)
             print(k.shape)
             print(attn_mask.shape)
-            my_attn_mask = ~torch.tile(attn_mask.unsqueeze(2), (self.heads, 1, q.shape[1]))
+            my_attn_mask = ~torch.tile(attn_mask.unsqueeze(1), (self.heads, q.shape[1], 1))
 
             print(my_attn_mask.shape)
 
