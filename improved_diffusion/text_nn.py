@@ -371,6 +371,7 @@ class CrossAttention(nn.Module):
         k = src_in
         v = src_in
 
+        my_attn_mask = None
         if attn_mask is not None:
             my_attn_mask = ~torch.tile(attn_mask.unsqueeze(1), (1, tokens.attn_mask[1], 1))
 
