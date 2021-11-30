@@ -226,6 +226,7 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         else:
             return attn_output, attn_output_weights
 
+
 class CrossAttention(nn.Module):
     def __init__(
         self,
@@ -282,7 +283,6 @@ class CrossAttention(nn.Module):
                 axial_shape=(emb_res, emb_res),
                 axial_dims=(pos_emb_dim, pos_emb_dim),
             )
-
 
         if self.q_t_emb:
             self.tgt_ln = AdaGN(
@@ -373,7 +373,12 @@ class CrossAttention(nn.Module):
 
         my_attn_mask = None
         if attn_mask is not None:
-            my_attn_mask = ~torch.tile(attn_mask.unsqueeze(1), (1, tokens.attn_mask[1], 1))
+            print(q.shape)
+            print(k.shape)
+            print(attn_mask.shape)
+            my_attn_mask = ~torch.tile(attn_mask.unsqueeze(2), (self.heads, 1, q.shape[1]))
+
+            print(my_attn_mask.shape)
 
         attn_output, attn_output_weights = self.attn(q, k, v, attn_mask=my_attn_mask)
         attn_output = attn_output * self.effective_gain()
