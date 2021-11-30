@@ -151,7 +151,7 @@ class TextEncoder(nn.Module):
 
             attn_mask = tokens != 0
             my_attn_mask = torch.tile(attn_mask.unsqueeze(1).unsqueeze(1), (self.n_heads, tokens.shape[1], 1))
-            my_attn_mask = my_attn_mask.to(x.dtype) * max_neg_value(x.dtype)
+            my_attn_mask = my_attn_mask.to(x.dtype) * max_neg_value(x)
             print(my_attn_mask)
 
             out = self.model(x, attn_mask=my_attn_mask)
