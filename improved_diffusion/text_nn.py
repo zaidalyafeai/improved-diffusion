@@ -152,6 +152,10 @@ class TextEncoder(nn.Module):
             attn_mask = tokens != 0
             attn_mask = torch.tile(attn_mask.unsqueeze(1), (1, tokens.shape[1], 1))
 
+            print(x.shape)
+            print(attn_mask.shape)
+            print(attn_mask)
+
             out = self.model(x, attn_mask=attn_mask)
             if not self.return_sequences:
                 out = out[:, 0, :], attn_mask
