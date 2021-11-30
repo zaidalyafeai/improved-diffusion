@@ -49,7 +49,8 @@ class TrainLoop:
         weight_decay=0.0,
         lr_anneal_steps=0,
         tokenizer=None,
-        text_lr=None
+        text_lr=None,
+        lg_loss_scale = INITIAL_LOG_LOSS_SCALE
     ):
         self.model = model
         self.diffusion = diffusion
@@ -101,7 +102,7 @@ class TrainLoop:
         self.model_params = [text_params, xattn_params, gain_params, other_params]
 
         self.master_params = self.model_params
-        self.lg_loss_scale = INITIAL_LOG_LOSS_SCALE
+        self.lg_loss_scale = lg_loss_scale
         self.sync_cuda = th.cuda.is_available()
 
         self._load_and_sync_parameters()

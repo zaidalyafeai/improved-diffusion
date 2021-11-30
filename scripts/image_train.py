@@ -89,6 +89,7 @@ def create_argparser():
         save_interval=10000,
         resume_checkpoint="",
         use_fp16=False,
+        lg_loss_scale=20,
         fp16_scale_growth=1e-3,
         channel_mult="",
         use_checkpoint_down=False,
