@@ -373,12 +373,7 @@ class CrossAttention(nn.Module):
 
         my_attn_mask = None
         if attn_mask is not None:
-            print(q.shape)
-            print(k.shape)
-            print(attn_mask.shape)
             my_attn_mask = ~torch.tile(attn_mask.unsqueeze(1), (self.heads, q.shape[1], 1))
-
-            print(my_attn_mask.shape)
 
         attn_output, attn_output_weights = self.attn(q, k, v, attn_mask=my_attn_mask)
         attn_output = attn_output * self.effective_gain()
