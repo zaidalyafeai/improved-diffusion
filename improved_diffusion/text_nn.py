@@ -6,7 +6,7 @@ import torch.nn as nn
 from axial_positional_embedding import AxialPositionalEmbedding
 from einops import rearrange
 from x_transformers import TransformerWrapper, Encoder, XTransformer
-from x_transformers.x_transformers import AbsolutePositionalEmbedding, max_neg_value
+from x_transformers.x_transformers import AbsolutePositionalEmbedding
 
 from .nn import normalization_1group, timestep_embedding, SiLU, AdaGN
 
@@ -375,7 +375,7 @@ class CrossAttention(nn.Module):
         my_attn_mask = None
         if attn_mask is not None:
             my_attn_mask = torch.tile(attn_mask.unsqueeze(1), (self.heads, q.shape[1], 1))
-            my_attn_mask = (~my_attn_mask).to(q.dtype) * max_neg_value(q)
+            my_attn_mask = (~my_attn_mask).to(q.dtype) * -10000.
 
         attn_output, attn_output_weights = self.attn(q, k, v, attn_mask=my_attn_mask)
         attn_output = attn_output * self.effective_gain()
