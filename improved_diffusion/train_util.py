@@ -2,6 +2,7 @@ import copy
 import functools
 import os
 import time
+from collections import defaultdict
 
 import blobfile as bf
 import numpy as np
@@ -79,14 +80,16 @@ class TrainLoop:
         self.resume_step = 0
         self.global_batch = self.batch_size * dist.get_world_size()
 
-        text_params, self.text_param_names = [], []
+        # text_params, self.text_param_names = [], []
+        text_params, text_param_names = defaultdict(list), defaultdict(list)
         xattn_params, self.xattn_param_names = [], []
         gain_params, self.gain_param_names = [], []
         other_params, self.other_param_names = [], []
         for n, p in model.named_parameters():
             if 'text_encoder' in n:
-                self.text_param_names.append(n)
-                text_params.append(p)
+                subname = 'text_encoder.' + n.partition('text_encoder.')[2].split('.')[0]
+                text_param_names[subname].append(n)
+                text_params[subname].append(p)
             elif "cross" in n and "gain" in n:
                 self.gain_param_names.append(n)
                 gain_params.append(p)
@@ -96,10 +99,13 @@ class TrainLoop:
             else:
                 self.other_param_names.append(n)
                 other_params.append(p)
+        text_mods = list(text_param_names.keys())
+        text_params = [text_params[n] for n in text_mods]
+        self.text_param_names = [text_param_names[n] for n in text_mods]
 
-        self.param_name_groups = [self.text_param_names, self.xattn_param_names, self.gain_param_names, self.other_param_names]
+        self.param_name_groups = [*self.text_param_names, self.xattn_param_names, self.gain_param_names, self.other_param_names]
         # self.model_params = list(self.model.parameters())
-        self.model_params = [text_params, xattn_params, gain_params, other_params]
+        self.model_params = [*text_params, xattn_params, gain_params, other_params]
 
         self.master_params = self.model_params
         self.lg_loss_scale = lg_loss_scale
@@ -109,7 +115,7 @@ class TrainLoop:
         if self.use_fp16:
             self._setup_fp16()
 
-        for p, name in zip(self.master_params, ['text', 'xattn', 'xgain', 'other']):
+        for p, name in zip(self.master_params, [*text_mods, 'xattn', 'xgain', 'other']):
             print(f"\t{np.product(p.shape)/1e6:.0f}M {name} params")
 
         self.opt = AdamW(
@@ -323,14 +329,14 @@ class TrainLoop:
             sqsum += (p.grad ** 2).sum().item()
         logger.logkv_mean("grad_norm", np.sqrt(sqsum))
 
-        gn_xattn, gn_text = None, None
+        gn_xattn, gn_text = None, 0.
 
-        for p, name in zip(self.master_params, ['text', 'xattn', 'xgain', 'other']):
+        for p, name in zip(self.master_params, [*text_mods, 'xattn', 'xgain', 'other']):
             if p.grad is None:
                 continue
             gn = np.sqrt((p.grad ** 2).sum().item())
-            if name == 'text':
-                gn_text = gn
+            if name in text_mods:
+                gn_text += gn
             elif name == 'xattn':
                 gn_xattn = gn
             logger.logkv_mean(f"grad_norm_{name}", gn)
