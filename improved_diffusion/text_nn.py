@@ -150,9 +150,9 @@ class TextEncoder(nn.Module):
                 x = x + emb
 
             attn_mask = tokens != 0
-            attn_mask = torch.tile(attn_mask.unsqueeze(1).unsqueeze(1), (self.n_heads, tokens.shape[1], 1))
+            my_attn_mask = torch.tile(attn_mask.unsqueeze(1).unsqueeze(1), (self.n_heads, tokens.shape[1], 1))
 
-            out = self.model(x, attn_mask=attn_mask)
+            out = self.model(x, attn_mask=my_attn_mask)
             if not self.return_sequences:
                 out = out[:, 0, :], attn_mask
             return out, attn_mask
@@ -198,6 +198,7 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         torch.nn.init.xavier_uniform_(self.v.weight)
 
     def forward(self, query, key, value,
+                attn_mask=None,
                 need_weights: bool = True):
         if self.batch_first:
             query, key, value = [x.transpose(1, 0) for x in (query, key, value)]
@@ -215,7 +216,7 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
             self.dropout, self.out_proj.weight, self.out_proj.bias,
             training=self.training,
             key_padding_mask=None, need_weights=need_weights,
-            attn_mask=None, use_separate_proj_weight=True,
+            attn_mask=attn_mask, use_separate_proj_weight=True,
             q_proj_weight=fake_proj_weight, k_proj_weight=fake_proj_weight,
             v_proj_weight=fake_proj_weight)
         del fake_proj_weight
@@ -370,7 +371,10 @@ class CrossAttention(nn.Module):
         k = src_in
         v = src_in
 
-        attn_output, attn_output_weights = self.attn(q, k, v)
+        if attn_mask is not None:
+            my_attn_mask = ~torch.tile(attn_mask.unsqueeze(1), (1, tokens.attn_mask[1], 1))
+
+        attn_output, attn_output_weights = self.attn(q, k, v, attn_mask=my_attn_mask)
         attn_output = attn_output * self.effective_gain()
         attn_output = _to_b_c_h_w(attn_output, spatial)
 
