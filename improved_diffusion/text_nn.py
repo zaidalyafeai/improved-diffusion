@@ -129,7 +129,7 @@ class TextEncoder(nn.Module):
         if lr_mult is not None:
             multiply_lr_via_hooks(self, lr_mult)
 
-    def forward(self, tokens, attn_mask=None, timesteps=None):
+    def forward(self, tokens, timesteps=None):
         if self.use_encoder_decoder:
             tgt = torch.zeros((tokens.shape[0], self.dec_max_seq_len), device=tokens.device, dtype=torch.int)
             enc = self.model.encoder(tokens, return_embeddings = True)
@@ -322,7 +322,7 @@ class CrossAttention(nn.Module):
             g = g.exp()
         return g
 
-    def forward(self, src, tgt, tgt_pos_embs=None, timestep_emb=None):
+    def forward(self, src, tgt, attn_mask=None, tgt_pos_embs=None, timestep_emb=None):
         def _to_b_hw_c(x, retdims=True):
             b, c, *spatial = x.shape
             xt = x.reshape(b, c, -1).transpose(1, 2)
