@@ -72,6 +72,7 @@ def main():
         weight_decay=args.weight_decay,
         lr_anneal_steps=args.lr_anneal_steps,
         tokenizer=tokenizer,
+        lg_loss_scale=args.lg_loss_scale,
     ).run_loop()
 
 
