@@ -69,7 +69,7 @@ class TextEncoder(nn.Module):
         head_dim = min(head_dim, inner_dim)
 
         assert inner_dim % head_dim == 0
-        n_heads = inner_dim // head_dim
+        self.n_heads = inner_dim // head_dim
 
         self.use_encoder_decoder = use_encoder_decoder
         self.return_sequences = return_sequences
@@ -79,7 +79,7 @@ class TextEncoder(nn.Module):
         if self.use_encoder_decoder:
             enc_kwargs = dict(
                 depth = depth,
-                heads = n_heads,
+                heads = self.n_heads,
                 rotary_pos_emb = rotary_pos_emb,
                 ff_glu = ff_glu,
                 use_scalenorm = use_scalenorm,
@@ -98,7 +98,7 @@ class TextEncoder(nn.Module):
                 dec_max_seq_len = self.dec_max_seq_len,
                 dim = inner_dim,
                 dec_depth = depth,
-                dec_heads = n_heads,
+                dec_heads = self.n_heads,
                 dec_rotary_pos_emb = rotary_pos_emb,
                 dec_ff_glu = ff_glu,
                 **enc_kwargs
@@ -111,7 +111,7 @@ class TextEncoder(nn.Module):
             self.model = Encoder(
                 dim = inner_dim,
                 depth = depth,
-                heads = n_heads,
+                heads = self.n_heads,
                 rotary_pos_emb = rotary_pos_emb,
                 ff_glu = ff_glu,
                 use_scalenorm = use_scalenorm,
@@ -150,7 +150,7 @@ class TextEncoder(nn.Module):
                 x = x + emb
 
             attn_mask = tokens != 0
-            attn_mask = torch.tile(attn_mask.unsqueeze(1), (1, tokens.shape[1], 1))
+            attn_mask = torch.tile(attn_mask.unsqueeze(1).unsqueeze(1), (self.n_heads, tokens.shape[1], 1))
 
             print(x.shape)
             print(attn_mask.shape)
