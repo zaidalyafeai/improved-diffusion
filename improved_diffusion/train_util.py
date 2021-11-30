@@ -344,7 +344,7 @@ class TrainLoop:
             if nz > 0:
                 logger.logkv_mean(f"nz_{name}", nz)
 
-        logger.logkv_mean(f"grad_norm_{name}", gn_text)
+        logger.logkv_mean(f"grad_norm_text", gn_text)
         if (gn_text is not None) and (gn_xattn is not None):
             logger.logkv_mean(f"grad_norm_xt_ratio", gn_xattn / max(gn_text, 1e-8))
 
