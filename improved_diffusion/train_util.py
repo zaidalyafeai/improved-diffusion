@@ -99,9 +99,9 @@ class TrainLoop:
             else:
                 self.other_param_names.append(n)
                 other_params.append(p)
-        text_mods = list(text_param_names.keys())
-        text_params = [text_params[n] for n in text_mods]
-        self.text_param_names = [text_param_names[n] for n in text_mods]
+        self.text_mods = list(text_param_names.keys())
+        text_params = [text_params[n] for n in self.text_mods]
+        self.text_param_names = [text_param_names[n] for n in self.text_mods]
 
         self.param_name_groups = [*self.text_param_names, self.xattn_param_names, self.gain_param_names, self.other_param_names]
         # self.model_params = list(self.model.parameters())
@@ -115,7 +115,7 @@ class TrainLoop:
         if self.use_fp16:
             self._setup_fp16()
 
-        for p, name in zip(self.master_params, [*text_mods, 'xattn', 'xgain', 'other']):
+        for p, name in zip(self.master_params, [*self.text_mods, 'xattn', 'xgain', 'other']):
             print(f"\t{np.product(p.shape)/1e6:.0f}M {name} params")
 
         self.opt = AdamW(
@@ -331,11 +331,11 @@ class TrainLoop:
 
         gn_xattn, gn_text = None, 0.
 
-        for p, name in zip(self.master_params, [*text_mods, 'xattn', 'xgain', 'other']):
+        for p, name in zip(self.master_params, [*self.text_mods, 'xattn', 'xgain', 'other']):
             if p.grad is None:
                 continue
             gn = np.sqrt((p.grad ** 2).sum().item())
-            if name in text_mods:
+            if name in self.text_mods:
                 gn_text += gn
             elif name == 'xattn':
                 gn_xattn = gn
