@@ -222,10 +222,6 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         key = self.k(key)
         value = self.v(value)
 
-        qnorm = (query.float() ** 2).sum().sqrt().item()
-        kvnorm = (key.float() ** 2).sum().sqrt().item()
-        print((qnorm, kvnorm))
-
         query = self.scale * query
 
         fake_proj_weight = torch.eye(self.src_embed_dim, dtype=query.dtype, device=query.device)
