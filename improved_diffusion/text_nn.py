@@ -405,7 +405,7 @@ class CrossAttention(nn.Module):
 
             eql = 1./attn_output_weights.shape[-1]
             print(('max_over_src',
-                   'spd', f"{(max_over_src.max() - max_over_src.min()).item() / eql:.4f}",
+                   'avg', f"{(max_over_src.mean()).item():.4f}",
                    'max', f"{max_over_src.max().item() / eql:.4f}",
                    'min', f"{max_over_src.min().item() / eql:.4f}",
                    'tmx', f"{max_over_src.max().item():.4f}",
