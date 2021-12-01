@@ -356,7 +356,7 @@ class TrainLoop:
             sqsum += (p.grad ** 2).sum().item()
         logger.logkv_mean("grad_norm", np.sqrt(sqsum))
 
-        gn_xattn, gn_text = None, 0.
+        gn_xattn, gn_text = 0., 0.
 
         for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, 'xgain', 'other']):
             if p.grad is None:
@@ -365,7 +365,7 @@ class TrainLoop:
             # nz = (p.grad == 0.).sum().item()
             if name in self.text_mods:
                 gn_text += gn**2
-            elif name == 'xattn':
+            elif name in self.xattn_mods:
                 gn_xattn += gn**2
             logger.logkv_mean(f"grad_norm_{name}", gn)
             # logger.logkv_mean(f"nz_{name}", nz)
