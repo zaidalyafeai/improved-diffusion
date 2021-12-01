@@ -118,8 +118,15 @@ class TrainLoop:
         if self.use_fp16:
             self._setup_fp16()
 
+        text_params = 0
         for p, name in zip(self.master_params, [*self.text_mods, 'xattn', 'xgain', 'other']):
-            print(f"\t{np.product(p.shape)/1e6:.0f}M {name} params")
+            nparams = np.product(p.shape)
+            prefix = '\t'
+            if name in self.text_mods:
+                text_params += nparams
+                prefix += '\t'
+            print(f"{prefix}{nparams/1e6:.0f}M {name} params")
+        print(f"\t{text_params/1e6:.0f}M text params")
 
         self.opt = AdamW(
             [
