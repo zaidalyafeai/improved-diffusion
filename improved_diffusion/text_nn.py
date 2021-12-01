@@ -389,9 +389,9 @@ class CrossAttention(nn.Module):
         k = src_in
         v = src_in
 
-        qnorm = (q.float() ** 2).sum().sqrt().item()
-        kvnorm = (k.float() ** 2).sum().sqrt().item()
-        print((q.shape, qnorm, k.shape, kvnorm))
+        qnorm = (q.float() ** 2).sum().sqrt().item() / np.product(q.shape)
+        kvnorm = (k.float() ** 2).sum().sqrt().item() / np.product(k.shape)
+        print((qnorm, kvnorm))
 
         my_attn_mask = None
         if attn_mask is not None:
