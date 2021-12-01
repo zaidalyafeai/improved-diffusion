@@ -396,7 +396,7 @@ class CrossAttention(nn.Module):
         attn_output = attn_output * self.effective_gain()
         attn_output = _to_b_c_h_w(attn_output, spatial)
 
-        if False and self.heads == 1:
+        if True and self.heads == 1:
             # attn_output_weights: (bsz, num_heads, tgt_len, src_len)
             max_over_src = attn_output_weights.max(dim=-1).values
 
