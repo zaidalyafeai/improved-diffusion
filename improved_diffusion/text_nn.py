@@ -117,6 +117,9 @@ class TextEncoder(nn.Module):
                 use_scalenorm = use_scalenorm,
                 use_rezero = use_rezero,
             )
+
+            nn.init.kaiming_normal_(self.token_emb.weight)
+
         if hasattr(self.model, "to_logits"):
             del self.model.to_logits
 
@@ -125,6 +128,8 @@ class TextEncoder(nn.Module):
             SiLU(),
             nn.Linear(inner_dim, inner_dim),
         )
+
+
 
         # if lr_mult is not None:
         #     multiply_lr_via_hooks(self, lr_mult)
