@@ -372,7 +372,7 @@ class CrossAttention(nn.Module):
 
             tgt_in_norm1 = (tgt_in.float() ** 2).sum().sqrt().item()
             pos_emb_norm = (pos_emb.float() ** 2).sum().sqrt().item()
-            ts_emb_norm = (timestep_emb.float() ** 2).sum().sqrt().item()
+            ts_emb_norm = (self.tgt_ln.emb_layers(timestep_emb).float() ** 2).sum().sqrt().item()
 
             print(("ins", tgt_in_norm1, ts_emb_norm, pos_emb_norm))
 
