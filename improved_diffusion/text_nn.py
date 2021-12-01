@@ -370,25 +370,7 @@ class CrossAttention(nn.Module):
             pos_emb = tgt_pos_emb(_to_b_hw_c(tgt_in, retdims=False))
             pos_emb = _to_b_c_h_w(pos_emb, spatial)
 
-            shapenorm = np.product(tgt_in.shape)
-
-            tgt_in_norm1 = (tgt_in.float() ** 2).sum().sqrt().item()
-            pos_emb_norm = (pos_emb.float() ** 2).sum().sqrt().item() / (np.product(pos_emb.shape) / shapenorm)
-            tsemb_in = self.tgt_ln.emb_layers(timestep_emb)
-            ts_emb_norm = (tsemb_in.float() ** 2).sum().sqrt().item() / (np.product(tsemb_in.shape) / shapenorm)
-
-            print(("ins", tgt_in_norm1, ts_emb_norm, pos_emb_norm))
-
             tgt_in = self.tgt_ln(h=tgt_in, emb=timestep_emb, side_emb=pos_emb)
-            tgt_in_norm2 = (tgt_in.float() ** 2).sum().sqrt().item()
-
-            no_pos = self.tgt_ln(h=tgt_in, emb=timestep_emb)
-            no_ts = self.tgt_ln(h=tgt_in, emb=torch.zeros_like(timestep_emb), side_emb=pos_emb)
-
-            dpos_norm = ((tgt_in - no_pos).float() ** 2).sum().sqrt().item()
-            dts_norm = ((tgt_in - no_ts).float() ** 2).sum().sqrt().item()
-
-            print((tgt_in_norm2, dpos_norm, dts_norm))
 
             tgt_in, b, c, spatial = _to_b_hw_c(tgt_in)
         else:
