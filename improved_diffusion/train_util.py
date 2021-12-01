@@ -88,7 +88,7 @@ class TrainLoop:
         for n, p in model.named_parameters():
             if 'text_encoder' in n:
                 if 'text_encoder.model.layers.' in n:
-                    subname = 'textl.' + n.partition('text_encoder.model.layers.')[2].split('.')[0]
+                    subname = 'textl.' + '.'.join(n.partition('text_encoder.model.layers.')[2].split('.')[:2])
                 else:
                     subname = 'text.' + n.partition('text_encoder.')[2].split('.')[0]
                 text_param_names[subname].append(n)
@@ -338,13 +338,13 @@ class TrainLoop:
             if p.grad is None:
                 continue
             gn = np.sqrt((p.grad ** 2).sum().item())
-            nz = (p.grad == 0.).sum().item()
+            # nz = (p.grad == 0.).sum().item()
             if name in self.text_mods:
                 gn_text += gn
             elif name == 'xattn':
                 gn_xattn = gn
             logger.logkv_mean(f"grad_norm_{name}", gn)
-            logger.logkv_mean(f"nz_{name}", nz)
+            # logger.logkv_mean(f"nz_{name}", nz)
 
         logger.logkv_mean(f"grad_norm_text", gn_text)
         if (gn_text is not None) and (gn_xattn is not None):
