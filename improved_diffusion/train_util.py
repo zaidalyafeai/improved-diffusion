@@ -340,13 +340,13 @@ class TrainLoop:
             gn = np.sqrt((p.grad ** 2).sum().item())
             # nz = (p.grad == 0.).sum().item()
             if name in self.text_mods:
-                gn_text += gn
+                gn_text += gn**2
             elif name == 'xattn':
                 gn_xattn = gn
             logger.logkv_mean(f"grad_norm_{name}", gn)
             # logger.logkv_mean(f"nz_{name}", nz)
 
-        logger.logkv_mean(f"grad_norm_text", gn_text)
+        logger.logkv_mean(f"grad_norm_text", np.sqrt(gn_text))
         if (gn_text is not None) and (gn_xattn is not None):
             logger.logkv_mean(f"grad_norm_xt_ratio", gn_xattn / max(gn_text, 1e-8))
 
