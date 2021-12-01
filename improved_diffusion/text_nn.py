@@ -193,7 +193,8 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         self.v = torch.nn.Linear(src_embed_dim, src_embed_dim, bias=False)
 
         # using sqrt(head_dim) made things too equal, not scaling made things about right (?)
-        self.scale = 1. # self.head_dim ** -0.5
+        # self.scale = 1. # self.head_dim ** -0.5
+        self.scale = self.head_dim ** -0.5
 
         self.register_parameter('in_proj_weight', None)
         self.register_parameter('in_proj_bias', None)
