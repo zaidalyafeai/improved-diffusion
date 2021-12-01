@@ -124,6 +124,7 @@ class TextEncoder(nn.Module):
             del self.model.to_logits
 
         self.time_embed = nn.Linear(inner_dim, inner_dim)
+        self.time_embed_scale = inner_dim ** -0.5
         # self.time_embed = nn.Sequential(
         #     nn.Linear(inner_dim, inner_dim),
         #     SiLU(),
@@ -154,7 +155,7 @@ class TextEncoder(nn.Module):
                 x = x + le
 
             if timesteps is not None:
-                emb = self.time_embed(timestep_embedding(timesteps, self.dim))
+                emb = self.time_embed_scale * self.time_embed(timestep_embedding(timesteps, self.dim))
                 emb = emb.unsqueeze(1).tile((1, x.shape[1], 1))
                 te_norm = (emb ** 2).sum().sqrt().item()
                 x = x + emb
