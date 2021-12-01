@@ -126,8 +126,8 @@ class TextEncoder(nn.Module):
             nn.Linear(inner_dim, inner_dim),
         )
 
-        if lr_mult is not None:
-            multiply_lr_via_hooks(self, lr_mult)
+        # if lr_mult is not None:
+        #     multiply_lr_via_hooks(self, lr_mult)
 
     def forward(self, tokens, timesteps=None):
         if self.use_encoder_decoder:
