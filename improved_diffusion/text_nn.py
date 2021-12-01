@@ -360,10 +360,12 @@ class CrossAttention(nn.Module):
             raise ValueError('must pass tgt_pos_emb')
 
         if self.avoid_groupnorm:
+            print("in avoid_groupnorm branch")
             tgt_in, b, c, spatial = _to_b_hw_c(tgt)
             tgt_in = tgt_in + tgt_pos_emb(tgt_in)
             tgt_in = self.tgt_ln(tgt_in)
         elif self.q_t_emb:
+            print("in q_t_emb branch")
             tgt_in = tgt
 
             b, c, *spatial = tgt_in.shape
@@ -377,6 +379,7 @@ class CrossAttention(nn.Module):
 
             tgt_in, b, c, spatial = _to_b_hw_c(tgt_in)
         else:
+            print("in other branch")
             tgt_in = tgt
             tgt_in = self.tgt_ln(tgt_in)
             tgt_in, b, c, spatial = _to_b_hw_c(tgt_in)
