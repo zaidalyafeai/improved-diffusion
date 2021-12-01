@@ -192,7 +192,7 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         self.k = torch.nn.Linear(src_embed_dim, src_embed_dim, bias=False)
         self.v = torch.nn.Linear(src_embed_dim, src_embed_dim, bias=False)
 
-        self.scale = self.head_dim ** -0.5
+        self.scale = 1. # self.head_dim ** -0.5
 
         # self.fake_proj_weight = torch.nn.Parameter(torch.eye(src_embed_dim))
         # self.fake_proj_weight.requires_grad_(False)
