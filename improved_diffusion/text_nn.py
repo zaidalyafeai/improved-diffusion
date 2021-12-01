@@ -410,9 +410,9 @@ class CrossAttention(nn.Module):
                    'eql', 1./attn_output_weights.shape[-1]))
 
             print(('max_over_tgt',
-                   'eq1', (max_over_src==1).mean().item(),
-                   'eq0', (max_over_src==0).mean().item(),
-                   'avg', max_over_src.mean().item(),
+                   'eq1', (max_over_tgt==1).mean().item(),
+                   'eq0', (max_over_tgt==0).mean().item(),
+                   'avg', max_over_tgt.mean().item(),
                    'eql', 1./attn_output_weights.shape[-2]))
 
         if self.resid:
