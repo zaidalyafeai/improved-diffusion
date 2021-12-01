@@ -407,6 +407,7 @@ class CrossAttention(nn.Module):
                    'spd', f"{(max_over_src.max() - max_over_src.min()).item() / eql:.4f}",
                    'max', f"{max_over_src.max().item() / eql:.4f}",
                    'min', f"{max_over_src.min().item() / eql:.4f}",
+                   'tmx', f"{max_over_src.max().item():.4f}",
                    ))
 
         if self.resid:
