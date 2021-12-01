@@ -82,7 +82,8 @@ class TrainLoop:
 
         # text_params, self.text_param_names = [], []
         text_params, text_param_names = defaultdict(list), defaultdict(list)
-        xattn_params, self.xattn_param_names = [], []
+        # xattn_params, self.xattn_param_names = [], []
+        xattn_params, xattn_param_names = defaultdict(list), defaultdict(list)
         gain_params, self.gain_param_names = [], []
         other_params, self.other_param_names = [], []
         for n, p in model.named_parameters():
@@ -93,12 +94,15 @@ class TrainLoop:
                     subname = 'text.' + n.partition('text_encoder.')[2].split('.')[0]
                 text_param_names[subname].append(n)
                 text_params[subname].append(p)
-            elif "cross" in n and "gain" in n:
+            elif "cross_attn" in n and "gain" in n:
                 self.gain_param_names.append(n)
                 gain_params.append(p)
-            elif "cross" in n:
-                self.xattn_param_names.append(n)
-                xattn_params.append(p)
+            elif "cross_attn" in n:
+                subname = 'xattn.' + '.'.join(n.partition('cross_attn.')[2].split('.')[:2])
+                xattn_param_names[subname].append(n)
+                xattn_params[subname].append(p)
+                # self.xattn_param_names.append(n)
+                # xattn_params.append(p)
             else:
                 self.other_param_names.append(n)
                 other_params.append(p)
@@ -106,9 +110,13 @@ class TrainLoop:
         text_params = [text_params[n] for n in self.text_mods]
         self.text_param_names = [text_param_names[n] for n in self.text_mods]
 
-        self.param_name_groups = [*self.text_param_names, self.xattn_param_names, self.gain_param_names, self.other_param_names]
+        self.xattn_mods = list(xattn_param_names.keys())
+        xattn_params = [xattn_params[n] for n in self.xattn_mods]
+        self.xattn_param_names = [xattn_param_names[n] for n in self.xattn_mods]
+
+        self.param_name_groups = [*self.text_param_names, *self.xattn_param_names, self.gain_param_names, self.other_param_names]
         # self.model_params = list(self.model.parameters())
-        self.model_params = [*text_params, xattn_params, gain_params, other_params]
+        self.model_params = [*text_params, *xattn_params, gain_params, other_params]
 
         self.master_params = self.model_params
         self.lg_loss_scale = lg_loss_scale
@@ -118,23 +126,32 @@ class TrainLoop:
         if self.use_fp16:
             self._setup_fp16()
 
-        text_params = 0
-        for p, name in zip(self.master_params, [*self.text_mods, 'xattn', 'xgain', 'other']):
+        text_nparams = 0
+        xattn_nparams = 0
+        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, 'xgain', 'other']):
             nparams = np.product(p.shape)
             prefix = '\t'
             if name in self.text_mods:
-                text_params += nparams
+                text_nparams += nparams
+                prefix += '\t'
+            if name in self.xattn_mods:
+                xattn_nparams += nparams
                 prefix += '\t'
             print(f"{prefix}{nparams/1e6:.0f}M {name} params")
-        print(f"\t{text_params/1e6:.0f}M text params")
+        print(f"\t{text_nparams/1e6:.0f}M text params")
+        print(f"\t{xattn_nparams/1e6:.0f}M xattn params")
 
         self.opt = AdamW(
             [
                 {"params": params, "lr": lr, "weight_decay": wd}
                 for params, lr, wd in zip(
                     self.master_params,
-                    [*[self.text_lr for _ in self.text_mods], self.text_lr, self.lr, self.lr],
-                    [*[0. for _ in self.text_mods], 0., 0., self.weight_decay]
+                    [*[self.text_lr for _ in self.text_mods],
+                     *[self.text_lr for _ in self.text_mods],
+                      self.lr, self.lr],
+                    [*[0. for _ in self.text_mods],
+                     *[0. for _ in self.text_mods],
+                      0., self.weight_decay]
                 )
             ],
             lr=self.lr,
@@ -341,7 +358,7 @@ class TrainLoop:
 
         gn_xattn, gn_text = None, 0.
 
-        for p, name in zip(self.master_params, [*self.text_mods, 'xattn', 'xgain', 'other']):
+        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, 'xgain', 'other']):
             if p.grad is None:
                 continue
             gn = np.sqrt((p.grad ** 2).sum().item())
@@ -349,12 +366,16 @@ class TrainLoop:
             if name in self.text_mods:
                 gn_text += gn**2
             elif name == 'xattn':
-                gn_xattn = gn
+                gn_xattn += gn**2
             logger.logkv_mean(f"grad_norm_{name}", gn)
             # logger.logkv_mean(f"nz_{name}", nz)
 
         gn_text = np.sqrt(gn_text)
         logger.logkv_mean(f"grad_norm_text", gn_text)
+
+        gn_xattn = np.sqrt(gn_xattn)
+        logger.logkv_mean(f"grad_norm_xattn", gn_xattn)
+
         if (gn_text is not None) and (gn_xattn is not None):
             logger.logkv_mean(f"grad_norm_xt_ratio", gn_xattn / max(gn_text, 1e-8))
 
