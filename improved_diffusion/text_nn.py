@@ -192,8 +192,7 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         self.k = torch.nn.Linear(src_embed_dim, src_embed_dim, bias=False)
         self.v = torch.nn.Linear(src_embed_dim, src_embed_dim, bias=False)
 
-        # torch MHA scales down by sqrt(E) so we need to compensate
-        self.scale = self.num_heads ** 0.5
+        # self.scale = self.num_heads ** 0.5
 
         self.register_parameter('in_proj_weight', None)
         self.register_parameter('in_proj_bias', None)
@@ -220,7 +219,11 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         key = self.k(key)
         value = self.v(value)
 
-        query = self.scale * query
+        # torch MHA scales down by sqrt(bs) so we need to compensate
+        bs = query.shape[1]
+        bscale = np.sqrt(bs)
+
+        query = bscale * query
 
         fake_proj_weight = torch.eye(self.src_embed_dim, dtype=query.dtype, device=query.device)
 
