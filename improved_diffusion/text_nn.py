@@ -406,12 +406,14 @@ class CrossAttention(nn.Module):
             print(('max_over_src',
                    'max', max_over_src.max().item(),
                    'med', max_over_src.median().item(),
-                   'min', max_over_src.min().item(), ))
+                   'min', max_over_src.min().item(),
+                   'eql', attn_output_weights.shape[-1]))
 
            print(('max_over_tgt',
                   'max', max_over_tgt.max().item(),
                   'med', max_over_tgt.median().item(),
-                  'min', max_over_tgt.min().item(), ))
+                  'min', max_over_tgt.min().item(),
+                  'eql', attn_output_weights.shape[-2]))
 
         if self.resid:
             return tgt + attn_output
