@@ -123,8 +123,8 @@ class TrainLoop:
                 {"params": params, "lr": lr, "weight_decay": wd}
                 for params, lr, wd in zip(
                     self.master_params,
-                    [self.text_lr, self.text_lr, self.lr, self.lr],
-                    [0., 0., 0., self.weight_decay]
+                    [*[self.text_lr for _ in self.text_mods], self.text_lr, self.lr, self.lr],
+                    [*[0. for _ in self.text_mods]., 0., 0., self.weight_decay]
                 )
             ],
             lr=self.lr,
