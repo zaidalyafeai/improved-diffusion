@@ -222,6 +222,10 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         key = self.k(key)
         value = self.v(value)
 
+        qnorm = (query.float() ** 2).sum().sqrt().item()
+        kvnorm = (key.float() ** 2).sum().sqrt().item()
+        print((qnorm, kvnorm))
+
         query = self.scale * query
 
         fake_proj_weight = torch.eye(self.src_embed_dim, dtype=query.dtype, device=query.device)
@@ -388,10 +392,6 @@ class CrossAttention(nn.Module):
         # k, v = kv.chunk(2, dim=-1)
         k = src_in
         v = src_in
-
-        qnorm = (q.float() ** 2).sum().sqrt().item() / np.product(q.shape)
-        kvnorm = (k.float() ** 2).sum().sqrt().item() / np.product(k.shape)
-        print((qnorm, kvnorm))
 
         my_attn_mask = None
         if attn_mask is not None:
