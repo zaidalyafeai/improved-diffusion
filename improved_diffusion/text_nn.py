@@ -398,6 +398,21 @@ class CrossAttention(nn.Module):
         attn_output = attn_output * self.effective_gain()
         attn_output = _to_b_c_h_w(attn_output, spatial)
 
+        if self.heads == 1:
+            # attn_output_weights: (bsz, num_heads, tgt_len, src_len)
+            max_over_src = attn_output_weights.max(dim=-1)
+            max_over_tgt = attn_output_weights.max(dim=-2)
+
+            print(('max_over_src',
+                   'max', max_over_src.max().item(),
+                   'med', max_over_src.median().item(),
+                   'min', max_over_src.min().item(), ))
+
+           print(('max_over_tgt',
+                  'max', max_over_tgt.max().item(),
+                  'med', max_over_tgt.median().item(),
+                  'min', max_over_tgt.min().item(), ))
+
         if self.resid:
             return tgt + attn_output
 
