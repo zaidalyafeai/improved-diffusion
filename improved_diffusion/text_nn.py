@@ -192,10 +192,8 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         self.k = torch.nn.Linear(src_embed_dim, src_embed_dim, bias=False)
         self.v = torch.nn.Linear(src_embed_dim, src_embed_dim, bias=False)
 
+        # using sqrt(head_dim) made things too equal, not scaling made things about right (?)
         self.scale = 1. # self.head_dim ** -0.5
-
-        # self.fake_proj_weight = torch.nn.Parameter(torch.eye(src_embed_dim))
-        # self.fake_proj_weight.requires_grad_(False)
 
         self.register_parameter('in_proj_weight', None)
         self.register_parameter('in_proj_bias', None)
@@ -398,7 +396,7 @@ class CrossAttention(nn.Module):
         attn_output = attn_output * self.effective_gain()
         attn_output = _to_b_c_h_w(attn_output, spatial)
 
-        if self.heads == 1:
+        if False and self.heads == 1:
             # attn_output_weights: (bsz, num_heads, tgt_len, src_len)
             max_over_src = attn_output_weights.max(dim=-1).values
 
