@@ -380,7 +380,7 @@ class CrossAttention(nn.Module):
             tgt_in_norm2 = (tgt_in.float() ** 2).sum().sqrt().item()
 
             no_pos = self.tgt_ln(h=tgt_in, emb=timestep_emb)
-            no_ts = self.tgt_ln(h=tgt_in, emb=pos_emb)
+            no_ts = self.tgt_ln(h=tgt_in, emb=torch.zeros_like(timestep_emb), side_emb=pos_emb)
 
             dpos_norm = ((tgt_in - no_pos).float() ** 2).sum().sqrt().item()
             dts_norm = ((tgt_in - no_ts).float() ** 2).sum().sqrt().item()
