@@ -370,7 +370,10 @@ class CrossAttention(nn.Module):
             pos_emb = tgt_pos_emb(_to_b_hw_c(tgt_in, retdims=False))
             pos_emb = _to_b_c_h_w(pos_emb, spatial)
 
+            tgt_in_norm1 = (tgt_in.float() ** 2).sum().sqrt().item()
             tgt_in = self.tgt_ln(h=tgt_in, emb=timestep_emb, side_emb=pos_emb)
+            tgt_in_norm2 = (tgt_in.float() ** 2).sum().sqrt().item()
+            print((tgt_in_norm2, tgt_in_norm1))
 
             tgt_in, b, c, spatial = _to_b_hw_c(tgt_in)
         else:
