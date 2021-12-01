@@ -520,14 +520,13 @@ class UNetModel(nn.Module):
 
                     emb_res = image_size // ds
                     if emb_res not in self.tgt_pos_embs:
-                        pos_emb_dim = ch // 2
+                        pos_emb_dim = ch
                         # pos emb in AdaGN
                         if (not txt_avoid_groupnorm) and cross_attn_q_t_emb:
                             pos_emb_dim *= 2
                         self.tgt_pos_embs[str(emb_res)] = AxialPositionalEmbedding(
-                            dim=2*pos_emb_dim,
+                            dim=pos_emb_dim,
                             axial_shape=(emb_res, emb_res),
-                            axial_dims=(pos_emb_dim, pos_emb_dim),
                         )
                     caa = CrossAttentionAdapter(
                         dim=ch,
@@ -633,14 +632,13 @@ class UNetModel(nn.Module):
 
                     emb_res = image_size // ds
                     if emb_res not in self.tgt_pos_embs:
-                        pos_emb_dim = ch // 2
+                        pos_emb_dim = ch
                         # pos emb in AdaGN
                         if (not txt_avoid_groupnorm) and cross_attn_q_t_emb:
                             pos_emb_dim *= 2
                         self.tgt_pos_embs[str(emb_res)] = AxialPositionalEmbedding(
-                            dim=2*pos_emb_dim,
+                            dim=pos_emb_dim,
                             axial_shape=(emb_res, emb_res),
-                            axial_dims=(pos_emb_dim, pos_emb_dim),
                         )
                     caa = CrossAttentionAdapter(
                         dim=ch,
