@@ -402,10 +402,11 @@ class CrossAttention(nn.Module):
             # attn_output_weights: (bsz, num_heads, tgt_len, src_len)
             max_over_src = attn_output_weights.max(dim=-1).values
 
+            eql = 1./attn_output_weights.shape[-1]
             print(('max_over_src',
-                   'spd', (max_over_src.max() - max_over_src.min()).item(),
-                   'max', max_over_src.max().item() - 1./attn_output_weights.shape[-1],
-                   'min', max_over_src.min().item() - 1./attn_output_weights.shape[-1],
+                   'spd', f"{(max_over_src.max() - max_over_src.min()).item() / eql:.4f}",
+                   'max', f"{max_over_src.max().item() / eql:.4f}",
+                   'min', f"{max_over_src.min().item() / eql:.4f}",
                    ))
 
         if self.resid:
