@@ -140,14 +140,22 @@ class TextEncoder(nn.Module):
         else:
             x = tokens
             x = self.token_emb(x)
-            x = x + self.pos_emb(x)
+            tok_norm = (x ** 2).sum().sqrt().item()
+            pe = self.pos_emb(x)
+            pe_norm = (pe ** 2).sum().sqrt().item()
+            x = x + pe
             if self.use_line_emb:
-                x = x + self.line_emb(tokens)
+                le = self.line_emb(tokens)
+                le_norm = (le ** 2).sum().sqrt().item()
+                x = x + le
 
             if timesteps is not None:
                 emb = self.time_embed(timestep_embedding(timesteps, self.dim))
                 emb = emb.unsqueeze(1).tile((1, x.shape[1], 1))
+                te_norm = (emb ** 2).sum().sqrt().item()
                 x = x + emb
+
+            print((te_norm, tok_norm, pe_norm, le_norm))
 
             attn_mask = tokens != 0
             my_attn_mask = torch.tile(attn_mask.unsqueeze(1).unsqueeze(1), (self.n_heads, tokens.shape[1], 1))
