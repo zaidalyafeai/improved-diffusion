@@ -215,6 +215,10 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         if self.batch_first:
             query, key, value = [x.transpose(1, 0) for x in (query, key, value)]
 
+        print(query[:, 0, :])
+        print(key[:, 0, :])
+        print()
+
         query = self.q(query)
         key = self.k(key)
         value = self.v(value)
