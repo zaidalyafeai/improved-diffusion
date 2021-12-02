@@ -123,13 +123,12 @@ class TextEncoder(nn.Module):
         if hasattr(self.model, "to_logits"):
             del self.model.to_logits
 
-        self.time_embed = nn.Linear(inner_dim, inner_dim)
+        # self.time_embed = nn.Linear(inner_dim, inner_dim)
         self.time_embed_scale = inner_dim ** -0.5
-        # self.time_embed = nn.Sequential(
-        #     nn.Linear(inner_dim, inner_dim),
-        #     SiLU(),
-        #     nn.Linear(inner_dim, inner_dim),
-        # )
+        self.time_embed = nn.Sequential(
+            SiLU(),
+            nn.Linear(inner_dim, inner_dim),
+        )
 
         # if lr_mult is not None:
         #     multiply_lr_via_hooks(self, lr_mult)
