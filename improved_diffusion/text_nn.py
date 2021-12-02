@@ -412,8 +412,6 @@ class CrossAttention(nn.Module):
 
         if self.resid:
             tgt = tgt + attn_output
-            tgt_norm2 = (tgt.float() ** 2).sum().sqrt().item()
-            print(("tgt_norm2", tgt_norm2))
             return tgt
 
         return attn_output
