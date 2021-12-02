@@ -385,6 +385,9 @@ class CrossAttention(nn.Module):
         k = src_in
         v = src_in
 
+        print(("src_in", (src_in.float() ** 2).sum().sqrt().item()))
+        print(("tgt_in", (tgt_in.float() ** 2).sum().sqrt().item()))
+
         my_attn_mask = None
         if attn_mask is not None:
             my_attn_mask = torch.tile(attn_mask.unsqueeze(1), (self.heads, q.shape[1], 1))
@@ -393,6 +396,8 @@ class CrossAttention(nn.Module):
         attn_output, attn_output_weights = self.attn(q, k, v, attn_mask=my_attn_mask)
         attn_output = attn_output * self.effective_gain()
         attn_output = _to_b_c_h_w(attn_output, spatial)
+
+        print(("attn_output", (attn_output.float() ** 2).sum().sqrt().item()))
 
         if False and self.heads == 1:
             # attn_output_weights: (bsz, num_heads, tgt_len, src_len)
