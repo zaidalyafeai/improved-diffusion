@@ -99,8 +99,8 @@ class TrainLoop:
                 self.gain_param_names.append(n)
                 gain_params.append(p)
             elif "cross_attn" in n:
-                subname = 'xattn'
-                # subname = 'xattn.' + '.'.join(n.partition('cross_attn.')[2].split('.')[:2])
+                # subname = 'xattn'
+                subname = 'xattn.' + '.'.join(n.partition('cross_attn.')[2].split('.')[:2])
                 xattn_param_names[subname].append(n)
                 xattn_params[subname].append(p)
                 # self.xattn_param_names.append(n)
