@@ -365,8 +365,6 @@ class TrainLoop:
                 continue
             gn_sq = (p.grad.float() ** 2).sum().item()
             gn = np.sqrt(gn_sq)
-            if gn_sq == 0:
-                print((name, p.grad))
             # nz = (p.grad == 0.).sum().item()
             if name in self.text_mods:
                 gn_text += gn_sq
