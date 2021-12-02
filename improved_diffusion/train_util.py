@@ -360,14 +360,16 @@ class TrainLoop:
 
         for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, 'xgain', 'other']):
             if p.grad is None:
-                print(f"None grad for {name}")
                 continue
-            gn = np.sqrt((p.grad ** 2).sum().item())
+            gn_sq = (p.grad.float() ** 2).sum().item()
+            gn = np.sqrt(gn_sq)
+            if gn_sq == 0:
+                print((name, p.grad))
             # nz = (p.grad == 0.).sum().item()
             if name in self.text_mods:
-                gn_text += gn**2
+                gn_text += gn_sq
             elif name in self.xattn_mods:
-                gn_xattn += gn**2
+                gn_xattn += gn_sq
             logger.logkv_mean(f"grad_norm_{name}", gn)
             # logger.logkv_mean(f"nz_{name}", nz)
 
