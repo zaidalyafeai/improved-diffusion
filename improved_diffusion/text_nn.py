@@ -413,11 +413,8 @@ class CrossAttention(nn.Module):
         print(("tgt_norm1", tgt_norm1))
         print(("attn_norm", attn_norm))
 
-        print(attn_output)
-        print(attn_output.max().item())
-
         if self.resid:
-            tgt_norm2 = (tgt ** 2).sum().sqrt().item()
+            tgt_norm2 = (tgt.float() ** 2).sum().sqrt().item()
             print(("tgt_norm2", tgt_norm2))
             tgt = tgt + attn_output
             return tgt
