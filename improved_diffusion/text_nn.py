@@ -208,6 +208,7 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         torch.nn.init.xavier_uniform_(self.q.weight)
         torch.nn.init.xavier_uniform_(self.k.weight)
         torch.nn.init.xavier_uniform_(self.v.weight)
+        torch.nn.init.xavier_uniform_(self.out_proj.weight)
 
     def forward(self, query, key, value,
                 attn_mask=None,
