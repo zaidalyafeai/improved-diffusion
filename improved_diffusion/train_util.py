@@ -88,19 +88,19 @@ class TrainLoop:
         other_params, self.other_param_names = [], []
         for n, p in model.named_parameters():
             if 'text_encoder' in n:
-                subname = 'text'
-                # if 'text_encoder.model.layers.' in n:
-                #     subname = 'textl.' + '.'.join(n.partition('text_encoder.model.layers.')[2].split('.')[:2])
-                # else:
-                #     subname = 'text.' + n.partition('text_encoder.')[2].split('.')[0]
+                # subname = 'text'
+                if 'text_encoder.model.layers.' in n:
+                    subname = 'textl.' + '.'.join(n.partition('text_encoder.model.layers.')[2].split('.')[:2])
+                else:
+                    subname = 'text.' + n.partition('text_encoder.')[2].split('.')[0]
                 text_param_names[subname].append(n)
                 text_params[subname].append(p)
             elif "cross_attn" in n and "gain" in n:
                 self.gain_param_names.append(n)
                 gain_params.append(p)
             elif "cross_attn" in n:
-                # subname = 'xattn'
-                subname = 'xattn.' + '.'.join(n.partition('cross_attn.')[2].split('.')[:2])
+                subname = 'xattn'
+                # subname = 'xattn.' + '.'.join(n.partition('cross_attn.')[2].split('.')[:2])
                 xattn_param_names[subname].append(n)
                 xattn_params[subname].append(p)
                 # self.xattn_param_names.append(n)
