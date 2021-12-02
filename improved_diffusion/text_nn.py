@@ -410,9 +410,6 @@ class CrossAttention(nn.Module):
         tgt_norm1 = (tgt.float() ** 2).sum().sqrt().item()
         attn_norm = (attn_output.float() ** 2).sum().sqrt().item()
 
-        print(("tgt_norm1", tgt_norm1))
-        print(("attn_norm", attn_norm))
-
         if self.resid:
             tgt = tgt + attn_output
             tgt_norm2 = (tgt.float() ** 2).sum().sqrt().item()
