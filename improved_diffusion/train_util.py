@@ -359,9 +359,9 @@ class TrainLoop:
         gn_xattn, gn_text = 0., 0.
 
         for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, 'xgain', 'other']):
+            print(f"None grad for {name}")
             if p.grad is None:
                 continue
-            print(f"None grad for {name}")
             gn = np.sqrt((p.grad ** 2).sum().item())
             # nz = (p.grad == 0.).sum().item()
             if name in self.text_mods:
