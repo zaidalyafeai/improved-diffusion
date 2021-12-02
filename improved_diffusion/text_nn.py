@@ -202,7 +202,7 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         self.bias_k = self.bias_v = None
         self.add_zero_attn = False
 
-        self._reset_parameters()
+        # self._reset_parameters()
 
     def _reset_parameters(self):
         torch.nn.init.xavier_uniform_(self.q.weight)
