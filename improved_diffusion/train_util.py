@@ -51,7 +51,9 @@ class TrainLoop:
         lr_anneal_steps=0,
         tokenizer=None,
         text_lr=None,
-        lg_loss_scale = INITIAL_LOG_LOSS_SCALE
+        lg_loss_scale = INITIAL_LOG_LOSS_SCALE,
+        beta1=0.9,
+        beta2=0.999,
     ):
         self.model = model
         self.diffusion = diffusion
@@ -157,7 +159,8 @@ class TrainLoop:
                 )
             ],
             lr=self.lr,
-            weight_decay=self.weight_decay
+            weight_decay=self.weight_decay,
+            betas=(beta1, beta2)
         )
         if self.resume_step:
             try:
