@@ -139,9 +139,9 @@ class TrainLoop:
             if name in self.xattn_mods:
                 xattn_nparams += nparams
                 prefix += '\t'
-            print(f"{prefix}{nparams/1e6:.0f}M {name} params")
-        print(f"\t{text_nparams/1e6:.0f}M text params")
-        print(f"\t{xattn_nparams/1e6:.0f}M xattn params")
+            print(f"{prefix}{nparams/1e6:.1f}M {name} params")
+        print(f"\t{text_nparams/1e6:.1f}M text params")
+        print(f"\t{xattn_nparams/1e6:.1f}M xattn params")
 
         self.opt = AdamW(
             [
