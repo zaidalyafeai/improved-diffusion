@@ -122,6 +122,8 @@ def main():
         label_arr = np.concatenate(all_labels, axis=0)
         label_arr = label_arr[: args.num_samples]
     if args.txt:
+        maxlen = max(len(t) for t in all_txts)
+        all_txts = [list(t) + (maxlen - len(t)) * [tokenizer.pad_token_id] for t in all_txts]
         txt_arr = np.concatenate(all_txts, axis=0)
         txt_arr = txt_arr[: args.num_samples]
     if dist.get_rank() == 0:
