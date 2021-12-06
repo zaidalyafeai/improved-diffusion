@@ -80,6 +80,7 @@ def main():
         th.manual_seed(args.seed)
     all_images = []
     all_labels = []
+    all_txts = []
 
     while len(all_images) * args.batch_size < args.num_samples:
         if (args.seed > -1) and using_text_dir:
@@ -95,7 +96,9 @@ def main():
         if args.txt:
             this_text = args.batch_size * [next(text_gen)]
             tokenizer = load_tokenizer(max_seq_len=model.text_encoder.pos_emb.emb.num_embeddings)
-            txt = th.as_tensor(tokenize(tokenizer, this_text)).to(dist_util.dev())
+            txt = tokenize(tokenizer, this_text)
+            all_txts.append(txt)
+            txt = th.as_tensor(txt).to(dist_util.dev())
             model_kwargs["txt"] = txt
         sample_fn = (
             diffusion.p_sample_loop if not args.use_ddim else diffusion.ddim_sample_loop
@@ -128,12 +131,17 @@ def main():
     if args.class_cond:
         label_arr = np.concatenate(all_labels, axis=0)
         label_arr = label_arr[: args.num_samples]
+    if args.txt:
+        txt_arr = np.concatenate(all_txts, axis=0)
+        txt_arr = txt_arr[: args.num_samples]
     if dist.get_rank() == 0:
         shape_str = "x".join([str(x) for x in arr.shape])
         out_path = os.path.join(logger.get_dir(), f"samples_{shape_str}.npz")
         logger.log(f"saving to {out_path}")
         if args.class_cond:
             np.savez(out_path, arr, label_arr)
+        elif args.txt:
+            np.savez(out_path, arr, txt_arr)
         else:
             np.savez(out_path, arr)
 
