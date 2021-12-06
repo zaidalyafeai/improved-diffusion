@@ -327,6 +327,7 @@ def sr_create_model_and_diffusion(
     rescale_learned_sigmas,
     use_checkpoint,
     use_scale_shift_norm,
+    resblock_updown,
     channels_per_head,
     channels_per_head_upsample,
     channel_mult="",
