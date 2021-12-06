@@ -7,7 +7,7 @@ import argparse
 import torch.nn.functional as F
 
 from improved_diffusion import dist_util, logger
-from improved_diffusion.image_datasets import load_data
+from improved_diffusion.image_datasets import load_data, load_tokenizer
 from improved_diffusion.resample import create_named_schedule_sampler
 from improved_diffusion.script_util import (
     sr_model_and_diffusion_defaults,
@@ -42,6 +42,10 @@ def main():
         monochrome=args.monochrome,
     )
 
+    tokenizer = None
+    if args.txt:
+        tokenizer = load_tokenizer(max_seq_len=args.max_seq_len)
+
     logger.log("training...")
     TrainLoop(
         model=model,
@@ -59,6 +63,7 @@ def main():
         schedule_sampler=schedule_sampler,
         weight_decay=args.weight_decay,
         lr_anneal_steps=args.lr_anneal_steps,
+        tokenizer=tokenizer,
     ).run_loop()
 
 
