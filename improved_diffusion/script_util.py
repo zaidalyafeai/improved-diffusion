@@ -404,6 +404,10 @@ def sr_create_model_and_diffusion(
         rescale_learned_sigmas=rescale_learned_sigmas,
         timestep_respacing=timestep_respacing,
     )
+    if verbose:
+        print(model)
+    n_params = sum([np.product(p.shape) for p in model.parameters()])
+    print(f"{n_params/1e6:.0f}M params")
     return model, diffusion
 
 
