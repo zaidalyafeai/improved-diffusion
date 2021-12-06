@@ -37,7 +37,7 @@ def main():
     model.eval()
 
     logger.log("loading data...")
-    data = load_data_for_worker(args.base_samples, args.batch_size, args.class_cond)
+    data = load_data_for_worker(args.base_samples, args.batch_size, args.class_cond, args.txt)
 
     logger.log("creating samples...")
     all_images = []
@@ -72,11 +72,11 @@ def main():
     logger.log("sampling complete")
 
 
-def load_data_for_worker(base_samples, batch_size, class_cond):
+def load_data_for_worker(base_samples, batch_size, class_cond, txt):
     with bf.BlobFile(base_samples, "rb") as f:
         obj = np.load(f)
         image_arr = obj["arr_0"]
-        if class_cond:
+        if class_cond or txt:
             label_arr = obj["arr_1"]
     rank = dist.get_rank()
     num_ranks = dist.get_world_size()
@@ -85,15 +85,16 @@ def load_data_for_worker(base_samples, batch_size, class_cond):
     while True:
         for i in range(rank, len(image_arr), num_ranks):
             buffer.append(image_arr[i])
-            if class_cond:
+            if class_cond or txt:
                 label_buffer.append(label_arr[i])
             if len(buffer) == batch_size:
                 batch = th.from_numpy(np.stack(buffer)).float()
                 batch = batch / 127.5 - 1.0
                 batch = batch.permute(0, 3, 1, 2)
                 res = dict(low_res=batch)
-                if class_cond:
-                    res["y"] = th.from_numpy(np.stack(label_buffer))
+                if class_cond or txt:
+                    key = "txt" if txt else "y"
+                    res[key] = th.from_numpy(np.stack(label_buffer))
                 yield res
                 buffer, label_buffer = [], []
 

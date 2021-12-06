@@ -42,7 +42,6 @@ def main():
 
     using_text_dir = False
     batch_texts = n_texts * [args.text_input]
-    # noise = None
 
     if args.text_dir and os.path.exists(args.text_dir):
         using_text_dir = True
@@ -54,21 +53,12 @@ def main():
             if entry.endswith('.txt')
         ][args.text_dir_offset:args.text_dir_offset + n_texts]
 
-        # debug
-        # text_files = n_texts * [text_files[0]]
-
         batch_texts = []
         for i, path_txt in enumerate(text_files):
             with bf.BlobFile(path_txt, "r") as f:
                 text = f.read()
             batch_texts.append(text)
             print(f"text {i}: {repr(text)}")
-
-        # # constant noise
-        # shape = (1, 3, args.image_size, args.image_size)
-        # device = next(model.parameters()).device
-        # noise = th.randn(*shape, device=device)
-        # noise = th.tile(noise, (args.batch_size, 1, 1, 1))
     else:
         print(f"text_input: {args.text_input}")
 
