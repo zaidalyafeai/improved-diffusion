@@ -38,6 +38,8 @@ def main():
         large_size=args.large_size,
         small_size=args.small_size,
         class_cond=args.class_cond,
+        txt=args.txt,
+        monochrome=args.monochrome,
     )
 
     logger.log("training...")
@@ -60,12 +62,14 @@ def main():
     ).run_loop()
 
 
-def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=False):
+def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=False, txt=False, monochrome=False):
     data = load_data(
         data_dir=data_dir,
         batch_size=batch_size,
         image_size=large_size,
         class_cond=class_cond,
+        txt=txt,
+        monochrome=monochrome,
     )
     for large_batch, model_kwargs in data:
         model_kwargs["low_res"] = F.interpolate(large_batch, small_size, mode="area")

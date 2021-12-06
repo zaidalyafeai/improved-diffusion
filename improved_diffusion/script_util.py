@@ -1,5 +1,6 @@
 import argparse
 import inspect
+from functools import partial
 
 import numpy as np
 
@@ -212,6 +213,8 @@ def create_model(
     cross_attn_rezero=False,
     cross_attn_rezero_keeps_prenorm=False,
     cross_attn_use_layerscale=False,
+    small_size=None,
+    model_cls=UNetModel,
 ):
     text_lr_mult = 1.
     print(
@@ -251,7 +254,7 @@ def create_model(
         in_channels = 3
         out_channels = (3 if not learn_sigma else 6)
 
-    return UNetModel(
+    return model_cls(
         in_channels=in_channels,
         model_channels=num_channels,
         out_channels=out_channels,
@@ -352,7 +355,7 @@ def sr_create_model_and_diffusion(
     return model, diffusion
 
 
-def sr_create_model(
+def _sr_create_model(
     large_size,
     small_size,
     num_channels,
@@ -393,6 +396,10 @@ def sr_create_model(
         num_heads_upsample=num_heads_upsample,
         use_scale_shift_norm=use_scale_shift_norm,
     )
+
+
+def sr_create_model(large_size, small_size, **kwargs):
+    return create_model(image_size=large_size, model_cls=SuperResModel, **kwargs)
 
 
 def create_gaussian_diffusion(
