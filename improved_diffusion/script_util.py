@@ -359,8 +359,8 @@ def sr_create_model_and_diffusion(
     model = sr_create_model(
         large_size,
         small_size,
-        num_channels,
-        num_res_blocks,
+        num_channels=num_channels,
+        num_res_blocks=num_res_blocks,
         learn_sigma=learn_sigma,
         class_cond=class_cond,
         use_checkpoint=use_checkpoint,
