@@ -49,7 +49,7 @@ def main():
             txt=args.txt,
             monochrome=args.monochrome,
             deterministic=True,
-            offset=base_data_offset,
+            offset=args.base_data_offset,
         )
     else:
         data = load_data_for_worker(args.base_samples, args.batch_size, args.class_cond, args.txt)
