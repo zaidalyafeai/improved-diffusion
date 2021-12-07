@@ -3,6 +3,7 @@ import blobfile as bf
 from mpi4py import MPI
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
+import torch.nn.functional as F
 
 import tokenizers
 
@@ -20,7 +21,7 @@ def tokenize(tokenizer, txt):
 
 def load_data(
     *, data_dir, batch_size, image_size, class_cond=False, deterministic=False,
-    txt=False, monochrome=False,
+    txt=False, monochrome=False, offset=0
 ):
     """
     For a dataset, create a generator over (images, kwargs) pairs.
@@ -42,6 +43,7 @@ def load_data(
         raise ValueError("unspecified data directory")
     all_files, image_file_to_text_file = _list_image_files_recursively(data_dir, txt=txt)
     print(f"found {len(all_files)} images, {len(image_file_to_text_file)} texts")
+    all_files = all_files[offset:]
 
     classes = None
     if class_cond:
@@ -70,6 +72,23 @@ def load_data(
         )
     while True:
         yield from loader
+
+
+def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=False, txt=False, monochrome=False,
+                       deterministic=False, offset=0):
+    data = load_data(
+        data_dir=data_dir,
+        batch_size=batch_size,
+        image_size=large_size,
+        class_cond=class_cond,
+        txt=txt,
+        monochrome=monochrome,
+        deterministic=deterministic,
+        offset=offset
+    )
+    for large_batch, model_kwargs in data:
+        model_kwargs["low_res"] = F.interpolate(large_batch, small_size, mode="area")
+        yield large_batch, model_kwargs
 
 
 def _list_image_files_recursively(data_dir, txt=False):

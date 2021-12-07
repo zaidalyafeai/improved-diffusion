@@ -7,7 +7,7 @@ import argparse
 import torch.nn.functional as F
 
 from improved_diffusion import dist_util, logger
-from improved_diffusion.image_datasets import load_data, load_tokenizer
+from improved_diffusion.image_datasets import load_superres_data, load_tokenizer
 from improved_diffusion.resample import create_named_schedule_sampler
 from improved_diffusion.script_util import (
     sr_model_and_diffusion_defaults,
@@ -65,20 +65,6 @@ def main():
         lr_anneal_steps=args.lr_anneal_steps,
         tokenizer=tokenizer,
     ).run_loop()
-
-
-def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=False, txt=False, monochrome=False):
-    data = load_data(
-        data_dir=data_dir,
-        batch_size=batch_size,
-        image_size=large_size,
-        class_cond=class_cond,
-        txt=txt,
-        monochrome=monochrome,
-    )
-    for large_batch, model_kwargs in data:
-        model_kwargs["low_res"] = F.interpolate(large_batch, small_size, mode="area")
-        yield large_batch, model_kwargs
 
 
 def create_argparser():

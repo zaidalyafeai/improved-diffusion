@@ -18,6 +18,7 @@ from improved_diffusion.script_util import (
     args_to_dict,
     add_dict_to_argparser,
 )
+from improved_diffusion.image_datasets import load_superres_data, load_tokenizer
 
 
 def main():
@@ -37,7 +38,21 @@ def main():
     model.eval()
 
     logger.log("loading data...")
-    data = load_data_for_worker(args.base_samples, args.batch_size, args.class_cond, args.txt)
+    using_ground_truth = args.base_data_dir != "" and os.path.exists(args.base_data_dir)
+    if using_ground_truth:
+        data = load_superres_data(
+            args.base_data_dir,
+            args.batch_size,
+            large_size=args.large_size,
+            small_size=args.small_size,
+            class_cond=args.class_cond,
+            txt=args.txt,
+            monochrome=args.monochrome,
+            deterministic=True,
+            offset=base_data_offset,
+        )
+    else:
+        data = load_data_for_worker(args.base_samples, args.batch_size, args.class_cond, args.txt)
 
     logger.log("creating samples...")
     all_images = []
@@ -107,6 +122,8 @@ def create_argparser():
         batch_size=16,
         use_ddim=False,
         base_samples="",
+        base_data_dir="",
+        base_data_offset=0,
         model_path="",
         log_interval=None,  # ignored
     )
