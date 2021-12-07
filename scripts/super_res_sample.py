@@ -56,8 +56,10 @@ def main():
             offset=args.base_data_offset,
         )
         data = (model_kwargs for _, model_kwargs in data)
+        tokenizer = load_tokenizer(max_seq_len=model.text_encoder.pos_emb.emb.num_embeddings)
     else:
         data = load_data_for_worker(args.base_samples, args.batch_size, args.class_cond, args.txt)
+        tokenizer = None
 
     logger.log("creating samples...")
     if args.seed > -1:
@@ -69,6 +71,10 @@ def main():
     while len(all_images) * args.batch_size < args.num_samples:
         model_kwargs = next(data)
         if using_ground_truth:
+            txt = tokenize(tokenizer, model_kwargs["txt"])
+            txt = th.as_tensor(txt).to(dist_util.dev())
+            model_kwargs["txt"] = txt
+
             for k, v in model_kwargs.items():
                 print((k, v.shape))
             model_kwargs['low_res'] = th.cat([model_kwargs['low_res'] for _ in range(args.batch_size)])
