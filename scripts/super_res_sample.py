@@ -55,6 +55,10 @@ def main():
         data = load_data_for_worker(args.base_samples, args.batch_size, args.class_cond, args.txt)
 
     logger.log("creating samples...")
+    if args.seed > -1:
+        print(f"setting seed to {args.seed}")
+        th.manual_seed(args.seed)
+
     all_images = []
     image_channels = 1 if args.monochrome else 3
     while len(all_images) * args.batch_size < args.num_samples:
@@ -126,6 +130,7 @@ def create_argparser():
         base_data_offset=0,
         model_path="",
         log_interval=None,  # ignored
+        seed=-1,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
