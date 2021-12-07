@@ -41,12 +41,13 @@ def main():
 
     logger.log("creating samples...")
     all_images = []
+    image_channels = 1 if args.monochrome else 3
     while len(all_images) * args.batch_size < args.num_samples:
         model_kwargs = next(data)
         model_kwargs = {k: v.to(dist_util.dev()) for k, v in model_kwargs.items()}
         sample = diffusion.p_sample_loop(
             model,
-            (args.batch_size, 3, args.large_size, args.large_size),
+            (args.batch_size, image_channels, args.large_size, args.large_size),
             clip_denoised=args.clip_denoised,
             model_kwargs=model_kwargs,
         )
