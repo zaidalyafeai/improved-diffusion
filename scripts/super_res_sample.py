@@ -73,7 +73,7 @@ def main():
         if using_ground_truth:
             print(f"text: {repr(model_kwargs['txt'])}")
             if args.txt_override != "":
-                model_kwargs['txt'] = args.txt_override
+                model_kwargs['txt'] = [args.txt_override for _ in model_kwargs['txt']]
                 print(f"overridden with: {repr(model_kwargs['txt'])}")
             txt = tokenize(tokenizer, model_kwargs["txt"])
             txt = th.as_tensor(txt).to(dist_util.dev())
