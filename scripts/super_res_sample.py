@@ -39,6 +39,7 @@ def main():
 
     logger.log("loading data...")
     using_ground_truth = args.base_data_dir != "" and os.path.exists(args.base_data_dir)
+    print(f"args.base_data_dir: {args.base_data_dir} | using_ground_truth: {using_ground_truth}")
     n_texts = args.num_samples // args.batch_size
     if n_texts > 1:
         raise ValueError("num_samples != bs TODO")
