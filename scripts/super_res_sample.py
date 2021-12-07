@@ -71,6 +71,7 @@ def main():
     while len(all_images) * args.batch_size < args.num_samples:
         model_kwargs = next(data)
         if using_ground_truth:
+            print(f"text: {repr(model_kwargs['txt'])}")
             txt = tokenize(tokenizer, model_kwargs["txt"])
             txt = th.as_tensor(txt).to(dist_util.dev())
             model_kwargs["txt"] = txt
