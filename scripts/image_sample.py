@@ -87,7 +87,7 @@ def main():
             this_text = args.batch_size * [next(text_gen)]
             tokenizer = load_tokenizer(max_seq_len=model.text_encoder.pos_emb.emb.num_embeddings)
             txt = tokenize(tokenizer, this_text)
-            all_txts.append(txt)
+            all_txts.extend(txt)
             txt = th.as_tensor(txt).to(dist_util.dev())
             model_kwargs["txt"] = txt
         sample_fn = (
