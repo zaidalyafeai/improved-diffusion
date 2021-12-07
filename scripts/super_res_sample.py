@@ -39,10 +39,14 @@ def main():
 
     logger.log("loading data...")
     using_ground_truth = args.base_data_dir != "" and os.path.exists(args.base_data_dir)
+    n_texts = args.num_samples // args.batch_size
+    if n_texts > 1:
+        raise ValueError("num_samples != bs TODO")
+
     if using_ground_truth:
         data = load_superres_data(
             args.base_data_dir,
-            args.batch_size,
+            batch_size=n_texts,
             large_size=args.large_size,
             small_size=args.small_size,
             class_cond=args.class_cond,
@@ -51,6 +55,7 @@ def main():
             deterministic=True,
             offset=args.base_data_offset,
         )
+        data = (model_kwargs for _, model_kwargs in data)
     else:
         data = load_data_for_worker(args.base_samples, args.batch_size, args.class_cond, args.txt)
 
@@ -63,6 +68,13 @@ def main():
     image_channels = 1 if args.monochrome else 3
     while len(all_images) * args.batch_size < args.num_samples:
         model_kwargs = next(data)
+        if using_ground_truth:
+            for k, v in model_kwargs.items():
+                print((k, v.shape))
+            model_kwargs['low_res'] = th.cat([model_kwargs['low_res'] for _ in range(args.batch_size)])
+            model_kwargs['txt'] = th.cat([model_kwargs['txt'] for _ in range(args.batch_size)])
+            for k, v in model_kwargs.items():
+                print((k, v.shape))
         model_kwargs = {k: v.to(dist_util.dev()) for k, v in model_kwargs.items()}
         sample = diffusion.p_sample_loop(
             model,
