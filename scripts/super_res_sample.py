@@ -72,6 +72,9 @@ def main():
         model_kwargs = next(data)
         if using_ground_truth:
             print(f"text: {repr(model_kwargs['txt'])}")
+            if args.txt_override != "":
+                model_kwargs['txt'] = args.txt_override
+                print(f"overridden with: {repr(model_kwargs['txt'])}")
             txt = tokenize(tokenizer, model_kwargs["txt"])
             txt = th.as_tensor(txt).to(dist_util.dev())
             model_kwargs["txt"] = txt
@@ -150,6 +153,7 @@ def create_argparser():
         model_path="",
         log_interval=None,  # ignored
         seed=-1,
+        txt_override="",
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
