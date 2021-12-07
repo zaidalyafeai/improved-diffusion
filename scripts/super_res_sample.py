@@ -18,7 +18,7 @@ from improved_diffusion.script_util import (
     args_to_dict,
     add_dict_to_argparser,
 )
-from improved_diffusion.image_datasets import load_superres_data, load_tokenizer
+from improved_diffusion.image_datasets import load_superres_data, load_tokenizer, tokenize
 
 
 def main():
