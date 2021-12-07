@@ -124,6 +124,7 @@ def main():
     if args.txt:
         maxlen = max(len(t) for t in all_txts)
         all_txts = [list(t) + (maxlen - len(t)) * [tokenizer.padding['pad_id']] for t in all_txts]
+        all_txts = [np.array(t).reshape(-1, 1) for t in all_txts]
         txt_arr = np.concatenate(all_txts, axis=0)
         # txt_arr = txt_arr[: args.num_samples]
     if dist.get_rank() == 0:
