@@ -107,6 +107,7 @@ def create_argparser():
         use_ddim=False,
         base_samples="",
         model_path="",
+        log_interval=None,  # ignored
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
