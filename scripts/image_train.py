@@ -31,9 +31,16 @@ def main():
         args.text_lr_mult = None
     print(f"args.text_lr_mult: {args.text_lr_mult}")
 
+    tokenizer = None
+    if args.txt:
+        tokenizer = load_tokenizer(max_seq_len=args.max_seq_len, char_level=args.char_level)
+
+
     logger.log("creating model and diffusion...")
+    model_diffusion_args = args_to_dict(args, model_and_diffusion_defaults().keys()),
+    model_diffusion_args['tokenizer'] = tokenizer
     model, diffusion = create_model_and_diffusion(
-        **args_to_dict(args, model_and_diffusion_defaults().keys()),
+        **model_diffusion_args
         # verbose=False
     )
     model.to(dist_util.dev())
@@ -48,10 +55,6 @@ def main():
         txt=args.txt,
         monochrome=args.monochrome,
     )
-
-    tokenizer = None
-    if args.txt:
-        tokenizer = load_tokenizer(max_seq_len=args.max_seq_len, char_level=args.char_level)
 
     logger.log("training...")
     TrainLoop(
