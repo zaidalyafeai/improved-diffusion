@@ -51,7 +51,7 @@ def main():
 
     tokenizer = None
     if args.txt:
-        tokenizer = load_tokenizer(max_seq_len=args.max_seq_len)
+        tokenizer = load_tokenizer(max_seq_len=args.max_seq_len, char_level=args.char_level)
 
     logger.log("training...")
     TrainLoop(
@@ -105,6 +105,7 @@ def create_argparser():
         beta1=0.9,
         beta2=0.999,
         verbose=False,
+        char_level=False,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

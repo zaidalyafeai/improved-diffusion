@@ -57,7 +57,7 @@ def main():
             offset=args.base_data_offset,
         )
         data = (model_kwargs for _, model_kwargs in data)
-        tokenizer = load_tokenizer(max_seq_len=model.text_encoder.pos_emb.emb.num_embeddings)
+        tokenizer = load_tokenizer(max_seq_len=model.text_encoder.pos_emb.emb.num_embeddings, char_level=args.char_level)
     else:
         data = load_data_for_worker(args.base_samples, args.batch_size, args.class_cond, args.txt)
         tokenizer = None
@@ -155,6 +155,7 @@ def create_argparser():
         log_interval=None,  # ignored
         seed=-1,
         txt_override="",
+        char_level=False,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

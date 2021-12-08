@@ -8,8 +8,17 @@ import torch.nn.functional as F
 import tokenizers
 
 
-def load_tokenizer(tokenizer_path  = "tokenizer_file", max_seq_len=64):
-    tokenizer = tokenizers.Tokenizer.from_file(tokenizer_path)
+def make_char_level_tokenizer():
+    tokenizer = tokenizers.Tokenizer(tokenizers.models.BPE(unk_token="<unk>"))
+    trainer = tokenizers.trainers.BpeTrainer(special_tokens=["<s>", "</s>", "<unk>", "<pad>", "<mask>"])
+    tokenizer.train_from_iterator([[c] for c in string.printable], trainer)
+
+
+def load_tokenizer(tokenizer_path  = "tokenizer_file", max_seq_len=64, char_level=False):
+    if char_level:
+        tokenizer = make_char_level_tokenizer()
+    else:
+        tokenizer = tokenizers.Tokenizer.from_file(tokenizer_path)
     tokenizer.enable_truncation(max_seq_len)
     tokenizer.enable_padding()
     return tokenizer

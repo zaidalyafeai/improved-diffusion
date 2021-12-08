@@ -85,7 +85,7 @@ def main():
             model_kwargs["y"] = classes
         if args.txt:
             this_text = args.batch_size * [next(text_gen)]
-            tokenizer = load_tokenizer(max_seq_len=model.text_encoder.pos_emb.emb.num_embeddings)
+            tokenizer = load_tokenizer(max_seq_len=model.text_encoder.pos_emb.emb.num_embeddings, char_level=args.char_level)
             txt = tokenize(tokenizer, this_text)
             all_txts.extend(txt)
             txt = th.as_tensor(txt).to(dist_util.dev())
@@ -154,6 +154,7 @@ def create_argparser():
         text_dir_offset=0,
         log_interval=10,  # ignored
         seed=-1,
+        char_level=False,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

@@ -62,6 +62,7 @@ def model_and_diffusion_defaults():
         cross_attn_rezero=False,
         cross_attn_rezero_keeps_prenorm=False,
         cross_attn_use_layerscale=False,
+        tokenizer=None,
         verbose=False,
     )
 
@@ -114,6 +115,7 @@ def create_model_and_diffusion(
     cross_attn_rezero=False,
     cross_attn_rezero_keeps_prenorm=False,
     cross_attn_use_layerscale=False,
+    tokenizer=None,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     model = create_model(
@@ -155,6 +157,7 @@ def create_model_and_diffusion(
         cross_attn_rezero=cross_attn_rezero,
         cross_attn_rezero_keeps_prenorm=cross_attn_rezero_keeps_prenorm,
         cross_attn_use_layerscale=cross_attn_use_layerscale,
+        tokenizer=tokenizer,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -215,6 +218,7 @@ def create_model(
     cross_attn_use_layerscale=False,
     small_size=None,
     model_cls=UNetModel,
+    tokenizer=None,
 ):
     text_lr_mult = 1.
     print(
@@ -292,7 +296,8 @@ def create_model(
         txt_rezero=txt_rezero,
         cross_attn_rezero=cross_attn_rezero,
         cross_attn_rezero_keeps_prenorm=cross_attn_rezero_keeps_prenorm,
-        cross_attn_use_layerscale=cross_attn_use_layerscale
+        cross_attn_use_layerscale=cross_attn_use_layerscale,
+        tokenizer=tokenizer
     )
 
 

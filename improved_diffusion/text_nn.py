@@ -63,6 +63,7 @@ class TextEncoder(nn.Module):
         return_sequences=True,
         lr_mult=None,
         use_line_emb=True,
+        tokenizer=None,
     ):
         super().__init__()
 
@@ -75,6 +76,10 @@ class TextEncoder(nn.Module):
         self.return_sequences = return_sequences
         self.use_line_emb = use_line_emb
         self.dim = inner_dim
+
+        if tokenizer is not None:
+            num_tokens = tokenizer.get_vocab_size()
+        print(f"TextEncoder: using num_tokens={num_tokens}")
 
         if self.use_encoder_decoder:
             enc_kwargs = dict(

@@ -415,6 +415,7 @@ class UNetModel(nn.Module):
         cross_attn_rezero=False,
         cross_attn_rezero_keeps_prenorm=False,
         cross_attn_use_layerscale=False,
+        tokenizer=None,
         verbose=False
     ):
         super().__init__()
@@ -463,6 +464,7 @@ class UNetModel(nn.Module):
                 lr_mult=text_lr_mult,
                 use_rezero=txt_rezero,
                 use_scalenorm=not txt_rezero,
+                tokenizer=tokenizer,
             )
 
         self.tgt_pos_embs = nn.ModuleDict({})

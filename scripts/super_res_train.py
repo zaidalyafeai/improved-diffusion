@@ -44,7 +44,7 @@ def main():
 
     tokenizer = None
     if args.txt:
-        tokenizer = load_tokenizer(max_seq_len=args.max_seq_len)
+        tokenizer = load_tokenizer(max_seq_len=args.max_seq_len, char_level=args.char_level)
 
     logger.log("training...")
     TrainLoop(
@@ -82,6 +82,7 @@ def create_argparser():
         resume_checkpoint="",
         use_fp16=False,
         fp16_scale_growth=1e-3,
+        char_level=False,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
