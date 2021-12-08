@@ -112,7 +112,7 @@ class TextEncoder(nn.Module):
             self.token_emb = nn.Embedding(num_tokens, inner_dim)
             self.pos_emb = AbsolutePositionalEmbedding(inner_dim, max_seq_len)
             if self.use_line_emb:
-                self.line_emb = LineEmbedding(dim=inner_dim)
+                self.line_emb = LineEmbedding(dim=inner_dim, line_sep_id=tokenizer.get_vocab()['\n'])
             self.model = Encoder(
                 dim = inner_dim,
                 depth = depth,
