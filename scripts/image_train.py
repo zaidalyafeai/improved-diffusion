@@ -35,7 +35,6 @@ def main():
     if args.txt:
         tokenizer = load_tokenizer(max_seq_len=args.max_seq_len, char_level=args.char_level)
 
-
     logger.log("creating model and diffusion...")
     model_diffusion_args = args_to_dict(args, model_and_diffusion_defaults().keys())
     model_diffusion_args['tokenizer'] = tokenizer

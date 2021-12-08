@@ -27,9 +27,16 @@ def main():
     dist_util.setup_dist()
     logger.configure()
 
+    using_ground_truth = args.base_data_dir != "" and os.path.exists(args.base_data_dir)
+    tokenizer = None
+    if using_ground_truth:
+        load_tokenizer(max_seq_len=args.max_seq_len, char_level=args.char_level)
+
     logger.log("creating model...")
+    model_diffusion_args = args_to_dict(args, sr_model_and_diffusion_defaults().keys())
+    model_diffusion_args['tokenizer'] = tokenizer
     model, diffusion = sr_create_model_and_diffusion(
-        **args_to_dict(args, sr_model_and_diffusion_defaults().keys())
+        **model_diffusion_args
     )
     model.load_state_dict(
         dist_util.load_state_dict(args.model_path, map_location="cpu")
@@ -38,7 +45,6 @@ def main():
     model.eval()
 
     logger.log("loading data...")
-    using_ground_truth = args.base_data_dir != "" and os.path.exists(args.base_data_dir)
     print(f"args.base_data_dir: {args.base_data_dir} | using_ground_truth: {using_ground_truth}")
     n_texts = args.num_samples // args.batch_size
     if n_texts > 1:
@@ -57,7 +63,6 @@ def main():
             offset=args.base_data_offset,
         )
         data = (model_kwargs for _, model_kwargs in data)
-        tokenizer = load_tokenizer(max_seq_len=model.text_encoder.pos_emb.emb.num_embeddings, char_level=args.char_level)
     else:
         data = load_data_for_worker(args.base_samples, args.batch_size, args.class_cond, args.txt)
         tokenizer = None

@@ -25,8 +25,14 @@ def main():
     logger.configure()
 
     logger.log("creating model...")
+    tokenizer = None
+    if args.txt:
+        tokenizer = load_tokenizer(max_seq_len=args.max_seq_len, char_level=args.char_level)
+
+    model_diffusion_args = args_to_dict(args, sr_model_and_diffusion_defaults().keys())
+    model_diffusion_args['tokenizer'] = tokenizer
     model, diffusion = sr_create_model_and_diffusion(
-        **args_to_dict(args, sr_model_and_diffusion_defaults().keys())
+        **model_diffusion_args
     )
     model.to(dist_util.dev())
     schedule_sampler = create_named_schedule_sampler(args.schedule_sampler, diffusion)
@@ -41,10 +47,6 @@ def main():
         txt=args.txt,
         monochrome=args.monochrome,
     )
-
-    tokenizer = None
-    if args.txt:
-        tokenizer = load_tokenizer(max_seq_len=args.max_seq_len, char_level=args.char_level)
 
     logger.log("training...")
     TrainLoop(

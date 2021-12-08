@@ -29,8 +29,14 @@ def main():
     logger.configure()
 
     logger.log("creating model and diffusion...")
+    tokenizer = None
+    if args.txt:
+        tokenizer = load_tokenizer(max_seq_len=args.max_seq_len, char_level=args.char_level)
+    model_diffusion_args = args_to_dict(args, model_and_diffusion_defaults().keys())
+    model_diffusion_args['tokenizer'] = tokenizer
     model, diffusion = create_model_and_diffusion(
-        **args_to_dict(args, model_and_diffusion_defaults().keys())
+        **model_diffusion_args
+        # verbose=False
     )
     model.load_state_dict(
         dist_util.load_state_dict(args.model_path, map_location="cpu")
@@ -85,7 +91,6 @@ def main():
             model_kwargs["y"] = classes
         if args.txt:
             this_text = args.batch_size * [next(text_gen)]
-            tokenizer = load_tokenizer(max_seq_len=model.text_encoder.pos_emb.emb.num_embeddings, char_level=args.char_level)
             txt = tokenize(tokenizer, this_text)
             all_txts.extend(txt)
             txt = th.as_tensor(txt).to(dist_util.dev())
@@ -155,6 +160,7 @@ def create_argparser():
         log_interval=10,  # ignored
         seed=-1,
         char_level=False,
+        max_seq_len=64,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
