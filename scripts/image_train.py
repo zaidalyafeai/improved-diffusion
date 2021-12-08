@@ -37,7 +37,7 @@ def main():
 
 
     logger.log("creating model and diffusion...")
-    model_diffusion_args = args_to_dict(args, model_and_diffusion_defaults().keys()),
+    model_diffusion_args = args_to_dict(args, model_and_diffusion_defaults().keys())
     model_diffusion_args['tokenizer'] = tokenizer
     model, diffusion = create_model_and_diffusion(
         **model_diffusion_args
