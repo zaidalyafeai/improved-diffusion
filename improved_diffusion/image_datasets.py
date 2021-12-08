@@ -13,6 +13,7 @@ def make_char_level_tokenizer():
     tokenizer = tokenizers.Tokenizer(tokenizers.models.BPE(unk_token="<unk>"))
     trainer = tokenizers.trainers.BpeTrainer(special_tokens=["<s>", "</s>", "<unk>", "<pad>", "<mask>"])
     tokenizer.train_from_iterator([[c] for c in string.printable], trainer)
+    return tokenizer
 
 
 def load_tokenizer(tokenizer_path  = "tokenizer_file", max_seq_len=64, char_level=False):
