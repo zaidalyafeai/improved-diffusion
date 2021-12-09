@@ -64,6 +64,7 @@ class TextEncoder(nn.Module):
         lr_mult=None,
         use_line_emb=True,
         tokenizer=None,
+        rel_pos_bias=False,
     ):
         super().__init__()
 
@@ -121,6 +122,7 @@ class TextEncoder(nn.Module):
                 ff_glu = ff_glu,
                 use_scalenorm = use_scalenorm,
                 use_rezero = use_rezero,
+                rel_pos_bias = rel_pos_bias
             )
 
             nn.init.kaiming_normal_(self.token_emb.weight)
