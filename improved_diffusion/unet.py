@@ -418,6 +418,7 @@ class UNetModel(nn.Module):
         tokenizer=None,
         verbose=False,
         txt_t5=False,
+        txt_rotary=False,
     ):
         super().__init__()
 
@@ -466,7 +467,8 @@ class UNetModel(nn.Module):
                 use_rezero=txt_rezero,
                 use_scalenorm=not txt_rezero,
                 tokenizer=tokenizer,
-                rel_pos_bias=txt_t5
+                rel_pos_bias=txt_t5,
+                rotary_pos_emb=txt_rotary,
             )
 
         self.tgt_pos_embs = nn.ModuleDict({})

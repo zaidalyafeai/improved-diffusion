@@ -80,7 +80,7 @@ class TextEncoder(nn.Module):
 
         if tokenizer is not None:
             num_tokens = tokenizer.get_vocab_size()
-        print(f"TextEncoder: using num_tokens={num_tokens}, rel_pos_bias={rel_pos_bias}")
+        print(f"TextEncoder: using num_tokens={num_tokens}, rotary_pos_emb={rotary_pos_emb}, rel_pos_bias={rel_pos_bias}")
 
         if self.use_encoder_decoder:
             enc_kwargs = dict(

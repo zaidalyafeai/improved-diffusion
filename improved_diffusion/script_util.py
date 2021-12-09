@@ -65,6 +65,7 @@ def model_and_diffusion_defaults():
         tokenizer=None,
         verbose=False,
         txt_t5=False,
+        txt_rotary=False,
     )
 
 
@@ -118,6 +119,7 @@ def create_model_and_diffusion(
     cross_attn_use_layerscale=False,
     tokenizer=None,
     txt_t5=False,
+    txt_rotary=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     model = create_model(
@@ -161,6 +163,7 @@ def create_model_and_diffusion(
         cross_attn_use_layerscale=cross_attn_use_layerscale,
         tokenizer=tokenizer,
         txt_t5=txt_t5,
+        txt_rotary=txt_rotary,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -223,6 +226,7 @@ def create_model(
     model_cls=UNetModel,
     tokenizer=None,
     txt_t5=False,
+    txt_rotary=False,
 ):
     text_lr_mult = 1.
     print(
@@ -303,6 +307,7 @@ def create_model(
         cross_attn_use_layerscale=cross_attn_use_layerscale,
         tokenizer=tokenizer,
         txt_t5=txt_t5,
+        txt_rotary=txt_rotary,
     )
 
 
