@@ -13,6 +13,9 @@ def make_char_level_tokenizer():
     tokenizer = tokenizers.Tokenizer(tokenizers.models.BPE(unk_token="<unk>"))
     trainer = tokenizers.trainers.BpeTrainer(special_tokens=["<s>", "</s>", "<unk>", "<pad>", "<mask>"])
     tokenizer.train_from_iterator([[c] for c in string.printable], trainer)
+    tokenizer.post_processor = tokenizers.processors.TemplateProcessing(
+        "<s> $0 </s>", special_tokens=[("<s>", 0), ("</s>", 1)]
+    )
     return tokenizer
 
 
