@@ -29,8 +29,8 @@ def main():
 
     using_ground_truth = args.base_data_dir != "" and os.path.exists(args.base_data_dir)
     tokenizer = None
-    if using_ground_truth:
-        load_tokenizer(max_seq_len=args.max_seq_len, char_level=args.char_level)
+    if True: # using_ground_truth:
+        tokenizer = load_tokenizer(max_seq_len=args.max_seq_len, char_level=args.char_level)
 
     logger.log("creating model...")
     model_diffusion_args = args_to_dict(args, sr_model_and_diffusion_defaults().keys())
