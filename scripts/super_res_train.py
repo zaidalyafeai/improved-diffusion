@@ -66,6 +66,8 @@ def main():
         weight_decay=args.weight_decay,
         lr_anneal_steps=args.lr_anneal_steps,
         tokenizer=tokenizer,
+        beta1=args.beta1,
+        beta2=args.beta2,
     ).run_loop()
 
 
@@ -85,6 +87,8 @@ def create_argparser():
         use_fp16=False,
         fp16_scale_growth=1e-3,
         char_level=False,
+        beta1=0.9,
+        beta2=0.999,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

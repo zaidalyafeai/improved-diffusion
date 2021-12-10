@@ -75,6 +75,8 @@ def main():
         lr_anneal_steps=args.lr_anneal_steps,
         tokenizer=tokenizer,
         lg_loss_scale=args.lg_loss_scale,
+        beta1=args.beta1,
+        beta2=args.beta2,
     ).run_loop()
 
 
