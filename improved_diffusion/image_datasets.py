@@ -89,7 +89,7 @@ def load_data(
 
 
 def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=False, txt=False, monochrome=False,
-                       deterministic=False, offset=0):
+                       deterministic=False, offset=0, colorize=False):
     data = load_data(
         data_dir=data_dir,
         batch_size=batch_size,
@@ -102,6 +102,8 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
     )
     for large_batch, model_kwargs in data:
         model_kwargs["low_res"] = F.interpolate(large_batch, small_size, mode="area")
+        if colorize:
+            model_kwargs["low_res"] = model_kwargs["low_res"].mean(dim=1, keepdim=True)
         yield large_batch, model_kwargs
 
 

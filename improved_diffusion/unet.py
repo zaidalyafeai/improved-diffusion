@@ -419,6 +419,7 @@ class UNetModel(nn.Module):
         verbose=False,
         txt_t5=False,
         txt_rotary=False,
+        colorize=False,
     ):
         super().__init__()
 
@@ -457,6 +458,7 @@ class UNetModel(nn.Module):
         self.txt_resolutions = txt_resolutions
 
         self.monochrome_adapter = monochrome_adapter
+        self.colorize = colorize
 
         if self.txt:
             self.text_encoder = TextEncoder(
@@ -810,7 +812,7 @@ class SuperResModel(UNetModel):
     """
 
     def __init__(self, in_channels, *args, **kwargs):
-        super().__init__(in_channels * 2, *args, **kwargs)
+        super().__init__(in_channels + 1 if kwargs.get('colorize') else in_channels * 2, *args, **kwargs)
 
     def forward(self, x, timesteps, low_res=None, **kwargs):
         _, _, new_height, new_width = x.shape

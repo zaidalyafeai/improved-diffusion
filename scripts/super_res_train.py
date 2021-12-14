@@ -46,6 +46,7 @@ def main():
         class_cond=args.class_cond,
         txt=args.txt,
         monochrome=args.monochrome,
+        colorize=args.colorize,
     )
 
     logger.log("training...")
@@ -89,6 +90,7 @@ def create_argparser():
         char_level=False,
         beta1=0.9,
         beta2=0.999,
+        colorize=False,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

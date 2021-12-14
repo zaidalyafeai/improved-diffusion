@@ -66,6 +66,7 @@ def model_and_diffusion_defaults():
         verbose=False,
         txt_t5=False,
         txt_rotary=False,
+        colorize=False,
     )
 
 
@@ -315,6 +316,7 @@ def sr_model_and_diffusion_defaults():
     res = model_and_diffusion_defaults()
     res["large_size"] = 256
     res["small_size"] = 64
+    res["colorize"] = False
     arg_names = inspect.getfullargspec(sr_create_model_and_diffusion)[0]
     for k in res.copy().keys():
         if k not in arg_names:
@@ -373,6 +375,7 @@ def sr_create_model_and_diffusion(
     tokenizer=None,
     txt_t5=False,
     txt_rotary=False,
+    colorize=False,
 ):
     model = sr_create_model(
         large_size,
@@ -414,6 +417,7 @@ def sr_create_model_and_diffusion(
         tokenizer=tokenizer,
         txt_t5=txt_t5,
         txt_rotary=txt_rotary,
+        colorize=colorize,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
