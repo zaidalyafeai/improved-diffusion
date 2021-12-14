@@ -123,7 +123,7 @@ def _list_image_files_recursively(data_dir, txt=False):
                     pass
                     # raise ValueError(path_txt)
         elif bf.isdir(full_path):
-            next_results, next_map = _list_image_files_recursively(full_path)
+            next_results, next_map = _list_image_files_recursively(full_path, txt=txt)
             results.extend(next_results)
             image_file_to_text_file.update(next_map)
     return results, image_file_to_text_file
