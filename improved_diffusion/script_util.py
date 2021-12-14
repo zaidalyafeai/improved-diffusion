@@ -121,6 +121,7 @@ def create_model_and_diffusion(
     tokenizer=None,
     txt_t5=False,
     txt_rotary=False,
+    colorize=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     model = create_model(
