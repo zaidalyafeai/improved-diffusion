@@ -64,7 +64,7 @@ def main():
         )
         data = (model_kwargs for _, model_kwargs in data)
     else:
-        data = load_data_for_worker(args.base_samples, args.batch_size, args.class_cond, args.txt)
+        data = load_data_for_worker(args.base_samples, args.batch_size, args.class_cond, args.txt, colorize=args.colorize)
         tokenizer = None
 
     logger.log("creating samples...")
@@ -120,7 +120,7 @@ def main():
     logger.log("sampling complete")
 
 
-def load_data_for_worker(base_samples, batch_size, class_cond, txt):
+def load_data_for_worker(base_samples, batch_size, class_cond, txt, colorize=False):
     with bf.BlobFile(base_samples, "rb") as f:
         obj = np.load(f)
         image_arr = obj["arr_0"]
@@ -139,6 +139,8 @@ def load_data_for_worker(base_samples, batch_size, class_cond, txt):
                 batch = th.from_numpy(np.stack(buffer)).float()
                 batch = batch / 127.5 - 1.0
                 batch = batch.permute(0, 3, 1, 2)
+                if colorize:
+                    batch = batch.mean(dim=1, keepdim=True)
                 res = dict(low_res=batch)
                 if class_cond or txt:
                     key = "txt" if txt else "y"
