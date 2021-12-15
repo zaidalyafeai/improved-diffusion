@@ -350,6 +350,32 @@ class MonochromeAdapter(nn.Module):
         return out
 
 
+class DropinRGBAdapter(nn.Module):
+    def __init__(self, is_output, needs_var=False):
+        super().__init__()
+        dims = (3, 3)
+        w_init = 1/3.
+
+        self.linear_mean = nn.Linear(*dims)
+        nn.init.constant_(self.linear_mean.weight, w_init)
+        nn.init.constant_(self.linear_mean.bias, 0.)
+
+        self.needs_var = needs_var
+        if needs_var:
+            self.linear_var = nn.Linear(*dims)
+            nn.init.constant_(self.linear_var.weight, w_init)
+            nn.init.constant_(self.linear_var.bias, 0.)
+
+    def forward(self, x):
+        segs = th.split(x, 3, dim=1)
+        out = self.linear_mean(segs[0].transpose(1, 3))
+        if self.needs_var and len(segs) > 1:
+            out_var = self.linear_var(segs[1].transpose(1, 3))
+            out = th.cat([out, out_var], dim=3)
+        out = out.transpose(1, 3)
+        return out
+
+
 class UNetModel(nn.Module):
     """
     The full UNet model with attention and timestep embedding.
@@ -420,6 +446,7 @@ class UNetModel(nn.Module):
         txt_t5=False,
         txt_rotary=False,
         colorize=False,
+        rgb_adapter=False,
     ):
         super().__init__()
 
@@ -457,7 +484,10 @@ class UNetModel(nn.Module):
         self.txt = txt
         self.txt_resolutions = txt_resolutions
 
+        if monochrome_adapter and rgb_adapter:
+            raise ValueError("can have at most one of monochrome_adapter and rgb_adapter")
         self.monochrome_adapter = monochrome_adapter
+        self.rgb_adapter = rgb_adapter
         self.colorize = colorize
 
         if self.txt:
@@ -487,6 +517,9 @@ class UNetModel(nn.Module):
 
         if monochrome_adapter:
             self.mono_to_rgb = MonochromeAdapter(to_mono=False, needs_var=False)
+
+        if rgb_adapter:
+            self.rgb_to_input = DropinRGBAdapter(needs_var=False)
 
         self.input_blocks = nn.ModuleList(
             [
@@ -698,6 +731,9 @@ class UNetModel(nn.Module):
         if monochrome_adapter:
             self.rgb_to_mono = MonochromeAdapter(to_mono=True, needs_var=out_channels>3)
 
+        if rgb_adapter:
+            self.output_to_rgb = DropinRGBAdapter(needs_var=out_channels>3)
+
     def convert_to_fp16(self):
         """
         Convert the torso of the model to float16.
@@ -755,8 +791,12 @@ class UNetModel(nn.Module):
             txt = txt.type(self.inner_dtype)
 
         h = x
+
         if self.monochrome_adapter:
             h = self.mono_to_rgb(h)
+        elif self.rgb_adapter:
+            h = self.rgb_to_input(h)
+
         h = h.type(self.inner_dtype)
         for module in self.input_blocks:
             h = module(h, emb, txt=txt, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
@@ -767,8 +807,12 @@ class UNetModel(nn.Module):
             h = module(cat_in, emb, txt=txt, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
         h = h.type(x.dtype)
         h = self.out(h)
+
         if self.monochrome_adapter:
             h = self.rgb_to_mono(h)
+        elif self.rgb_adapter:
+            h = self.output_to_rgb(h)
+
         return h
 
     def get_feature_vectors(self, x, timesteps, y=None):
