@@ -351,10 +351,11 @@ class MonochromeAdapter(nn.Module):
 
 
 class DropinRGBAdapter(nn.Module):
-    def __init__(self, needs_var=False):
+    def __init__(self, needs_var=False, scale=1.0e2):
         super().__init__()
+        self.scale = scale
         dims = (3, 3)
-        w_init = 1/3.
+        w_init = (1/3.) / self.scale
 
         self.linear_mean = nn.Linear(*dims)
         nn.init.constant_(self.linear_mean.weight, w_init)
@@ -368,9 +369,19 @@ class DropinRGBAdapter(nn.Module):
 
     def forward(self, x):
         segs = th.split(x, 3, dim=1)
-        out = self.linear_mean(segs[0].transpose(1, 3))
+        # out = self.linear_mean(segs[0].transpose(1, 3))
+        out = F.linear(
+            segs[0].transpose(1, 3),
+            self.scale * self.linear_mean.weight,
+            self.scale * self.linear_mean.bias
+        )
         if self.needs_var and len(segs) > 1:
-            out_var = self.linear_var(segs[1].transpose(1, 3))
+            # out_var = self.linear_var(segs[1].transpose(1, 3))
+            out_var = F.linear(
+                segs[0].transpose(1, 3),
+                self.scale * self.linear_var.weight,
+                self.scale * self.linear_var.bias
+            )
             out = th.cat([out, out_var], dim=3)
         out = out.transpose(1, 3)
         return out
