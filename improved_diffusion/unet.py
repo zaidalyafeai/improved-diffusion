@@ -359,7 +359,7 @@ class DropinRGBAdapter(nn.Module):
         w_init = w_init / self.scale
 
         self.linear_mean_w = nn.Parameter(w_init)
-        self.linear_mean_b = nn.Parameter(torch.zeros((3,)))
+        self.linear_mean_b = nn.Parameter(th.zeros((3,)))
         # self.linear_mean = nn.Linear(*dims)
         # nn.init.constant_(self.linear_mean.weight, w_init)
         # nn.init.constant_(self.linear_mean.bias, 0.)
@@ -367,7 +367,7 @@ class DropinRGBAdapter(nn.Module):
         self.needs_var = needs_var
         if needs_var:
             self.linear_var_w = nn.Parameter(w_init)
-            self.linear_var_b = nn.Parameter(torch.zeros((3,)))
+            self.linear_var_b = nn.Parameter(th.zeros((3,)))
             # self.linear_var = nn.Linear(*dims)
             # nn.init.constant_(self.linear_var.weight, w_init)
             # nn.init.constant_(self.linear_var.bias, 0.)
