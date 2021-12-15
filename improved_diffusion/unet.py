@@ -485,7 +485,7 @@ class UNetModel(nn.Module):
         self.txt_resolutions = txt_resolutions
 
         if monochrome_adapter and rgb_adapter:
-            raise ValueError("can have at most one of monochrome_adapter and rgb_adapter")
+            print("using both monochrome_adapter and rgb_adapter, make sure this is intentional!")
         self.monochrome_adapter = monochrome_adapter
         self.rgb_adapter = rgb_adapter
         self.colorize = colorize
@@ -794,7 +794,7 @@ class UNetModel(nn.Module):
 
         if self.monochrome_adapter:
             h = self.mono_to_rgb(h)
-        elif self.rgb_adapter:
+        if self.rgb_adapter:
             h = self.rgb_to_input(h)
 
         h = h.type(self.inner_dtype)
@@ -808,10 +808,10 @@ class UNetModel(nn.Module):
         h = h.type(x.dtype)
         h = self.out(h)
 
+        if self.rgb_adapter:
+            h = self.output_to_rgb(h)
         if self.monochrome_adapter:
             h = self.rgb_to_mono(h)
-        elif self.rgb_adapter:
-            h = self.output_to_rgb(h)
 
         return h
 
