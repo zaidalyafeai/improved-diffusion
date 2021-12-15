@@ -351,7 +351,7 @@ class MonochromeAdapter(nn.Module):
 
 
 class DropinRGBAdapter(nn.Module):
-    def __init__(self, is_output, needs_var=False):
+    def __init__(self, needs_var=False):
         super().__init__()
         dims = (3, 3)
         w_init = 1/3.
