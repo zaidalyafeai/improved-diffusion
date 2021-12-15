@@ -351,11 +351,12 @@ class MonochromeAdapter(nn.Module):
 
 
 class DropinRGBAdapter(nn.Module):
-    def __init__(self, needs_var=False, scale=5.0e1):
+    def __init__(self, needs_var=False, scale=1.0e1, diag_w=0.1):
         super().__init__()
         self.scale = scale
         dims = (3, 3)
-        w_init = (1/3.) / self.scale
+        w_init = diag_w * torch.eye(3) + (1 - diag_w) * (1/3.) * torch.ones((3, 3))
+        w_init = w_init / self.scale
 
         self.linear_mean = nn.Linear(*dims)
         nn.init.constant_(self.linear_mean.weight, w_init)
