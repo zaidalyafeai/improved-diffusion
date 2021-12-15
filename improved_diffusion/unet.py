@@ -358,30 +358,34 @@ class DropinRGBAdapter(nn.Module):
         w_init = diag_w * th.eye(3) + (1 - diag_w) * (1/3.) * th.ones((3, 3))
         w_init = w_init / self.scale
 
-        self.linear_mean = nn.Linear(*dims)
-        nn.init.constant_(self.linear_mean.weight, w_init)
-        nn.init.constant_(self.linear_mean.bias, 0.)
+        self.linear_mean_w = nn.Parameter(w_init)
+        self.linear_mean_b = nn.Parameter(torch.zeros((3,)))
+        # self.linear_mean = nn.Linear(*dims)
+        # nn.init.constant_(self.linear_mean.weight, w_init)
+        # nn.init.constant_(self.linear_mean.bias, 0.)
 
         self.needs_var = needs_var
         if needs_var:
-            self.linear_var = nn.Linear(*dims)
-            nn.init.constant_(self.linear_var.weight, w_init)
-            nn.init.constant_(self.linear_var.bias, 0.)
+            self.linear_var_w = nn.Parameter(w_init)
+            self.linear_var_b = nn.Parameter(torch.zeros((3,)))
+            # self.linear_var = nn.Linear(*dims)
+            # nn.init.constant_(self.linear_var.weight, w_init)
+            # nn.init.constant_(self.linear_var.bias, 0.)
 
     def forward(self, x):
         segs = th.split(x, 3, dim=1)
         # out = self.linear_mean(segs[0].transpose(1, 3))
         out = F.linear(
             segs[0].transpose(1, 3),
-            self.scale * self.linear_mean.weight,
-            self.linear_mean.bias
+            self.scale * self.linear_mean_w,
+            self.linear_mean_b
         )
         if self.needs_var and len(segs) > 1:
             # out_var = self.linear_var(segs[1].transpose(1, 3))
             out_var = F.linear(
                 segs[0].transpose(1, 3),
-                self.scale * self.linear_var.weight,
-                self.linear_var.bias
+                self.scale * self.linear_var_w,
+                self.linear_var_b
             )
             out = th.cat([out, out_var], dim=3)
         out = out.transpose(1, 3)
