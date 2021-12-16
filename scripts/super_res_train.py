@@ -2,8 +2,9 @@
 Train a super-resolution model.
 """
 
-import argparse
+import argparse, os
 
+import torch as th
 import torch.nn.functional as F
 
 from improved_diffusion import dist_util, logger
@@ -36,6 +37,20 @@ def main():
     )
     model.to(dist_util.dev())
     schedule_sampler = create_named_schedule_sampler(args.schedule_sampler, diffusion)
+
+    if args.text_encoder_warmstart != "" and os.path.exists(args.text_encoder_warmstart):
+        sd = th.load(args.text_encoder_warmstart)
+        sd = {k.partition("text_encoder.")[2]: v for k, v in sd.items() if k.startswith("text_encoder.")}
+        ks = list(sd.keys())[0]
+        exk = ks[0]
+        print((exk, sd[exk]))
+        for n, p in model.named_parameters():
+            if n == exk:
+                print((n, p))
+        model.text_encoder.load_state_dict(sd)
+        for n, p in model.named_parameters():
+            if n == exk:
+                print((n, p))
 
     logger.log("creating data loader...")
     data = load_superres_data(
@@ -91,6 +106,7 @@ def create_argparser():
         beta1=0.9,
         beta2=0.999,
         colorize=False,
+        text_encoder_warmstart="",
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
