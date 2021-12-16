@@ -43,14 +43,14 @@ def main():
         sd = {k.partition("text_encoder.")[2]: v for k, v in sd.items() if k.startswith("text_encoder.")}
         ks = list(sd.keys())
         exk = ks[0]
-        print((exk, sd[exk]))
+        print(('state_dict', exk, sd[exk]))
         for n, p in model.text_encoder.named_parameters():
             if n == exk:
-                print((n, p))
+                print(('model (before)', n, p))
         model.text_encoder.load_state_dict(sd)
         for n, p in model.text_encoder.named_parameters():
             if n == exk:
-                print((n, p))
+                print(('model (after)', n, p))
 
     logger.log("creating data loader...")
     data = load_superres_data(
