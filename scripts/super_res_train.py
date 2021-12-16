@@ -41,16 +41,16 @@ def main():
     if args.text_encoder_warmstart != "" and os.path.exists(args.text_encoder_warmstart):
         sd = th.load(args.text_encoder_warmstart)
         sd = {k.partition("text_encoder.")[2]: v for k, v in sd.items() if k.startswith("text_encoder.")}
-        # ks = list(sd.keys())
-        # exk = ks[0]
-        # print(('state_dict', exk, sd[exk]))
-        # for n, p in model.text_encoder.named_parameters():
-        #     if n == exk:
-        #         print(('model (before)', n, p))
+        ks = list(sd.keys())
+        exk = ks[0]
+        print(('state_dict', exk, sd[exk]))
+        for n, p in model.text_encoder.named_parameters():
+            if n == exk:
+                print(('model (before)', n, p))
         model.text_encoder.load_state_dict(sd)
-        # for n, p in model.text_encoder.named_parameters():
-        #     if n == exk:
-        #         print(('model (after)', n, p))
+        for n, p in model.text_encoder.named_parameters():
+            if n == exk:
+                print(('model (after)', n, p))
 
     logger.log("creating data loader...")
     data = load_superres_data(
