@@ -44,11 +44,11 @@ def main():
         ks = list(sd.keys())
         exk = ks[0]
         print((exk, sd[exk]))
-        for n, p in model.named_parameters():
+        for n, p in model.text_encoder.named_parameters():
             if n == exk:
                 print((n, p))
         model.text_encoder.load_state_dict(sd)
-        for n, p in model.named_parameters():
+        for n, p in model.text_encoder.named_parameters():
             if n == exk:
                 print((n, p))
 
