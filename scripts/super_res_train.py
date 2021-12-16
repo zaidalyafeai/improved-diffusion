@@ -41,7 +41,7 @@ def main():
     if args.text_encoder_warmstart != "" and os.path.exists(args.text_encoder_warmstart):
         sd = th.load(args.text_encoder_warmstart)
         sd = {k.partition("text_encoder.")[2]: v for k, v in sd.items() if k.startswith("text_encoder.")}
-        ks = list(sd.keys())[0]
+        ks = list(sd.keys())
         exk = ks[0]
         print((exk, sd[exk]))
         for n, p in model.named_parameters():
