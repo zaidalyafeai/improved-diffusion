@@ -66,7 +66,6 @@ def model_and_diffusion_defaults():
         verbose=False,
         txt_t5=False,
         txt_rotary=False,
-        colorize=False,
         rgb_adapter=False,
     )
 
@@ -122,7 +121,6 @@ def create_model_and_diffusion(
     tokenizer=None,
     txt_t5=False,
     txt_rotary=False,
-    colorize=False,
     rgb_adapter=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
@@ -233,6 +231,7 @@ def create_model(
     txt_t5=False,
     txt_rotary=False,
     rgb_adapter=False,
+    colorize=False,
 ):
     text_lr_mult = 1.
     print(
@@ -315,6 +314,7 @@ def create_model(
         txt_t5=txt_t5,
         txt_rotary=txt_rotary,
         rgb_adapter=rgb_adapter,
+        colorize=colorize,
     )
 
 
