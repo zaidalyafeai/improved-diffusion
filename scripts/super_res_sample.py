@@ -45,7 +45,7 @@ def main():
     model.eval()
 
     logger.log("loading data...")
-    print(f"args.base_data_dir: {args.base_data_dir} | using_ground_truth: {using_ground_truth}")
+    print(f"args.base_data_dir: {repr(args.base_data_dir)} | using_ground_truth: {using_ground_truth} | colorize: {args.colorize}")
     n_texts = args.num_samples // args.batch_size
     if n_texts > 1:
         raise ValueError("num_samples != bs TODO")
@@ -163,6 +163,7 @@ def create_argparser():
         seed=-1,
         txt_override="",
         char_level=False,
+        colorize=False,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
