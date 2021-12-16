@@ -61,6 +61,7 @@ def main():
             monochrome=args.monochrome,
             deterministic=True,
             offset=args.base_data_offset,
+            colorize=args.colorize
         )
         data = (model_kwargs for _, model_kwargs in data)
     else:
