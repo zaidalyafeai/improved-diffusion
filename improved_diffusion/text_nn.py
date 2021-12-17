@@ -178,28 +178,25 @@ class TextEncoder(nn.Module):
 
 
 class BetterMultiheadAttention(torch.nn.MultiheadAttention):
-    def __init__(self, src_embed_dim, tgt_embed_dim, num_heads, dropout=0., batch_first=True, device=None, dtype=None,
-                 qk_embed_dim=None):
+    def __init__(self, src_embed_dim, tgt_embed_dim, num_heads, dropout=0., batch_first=True, device=None, dtype=None):
         factory_kwargs = {'device': device, 'dtype': dtype}
         super(torch.nn.MultiheadAttention, self).__init__()
         self.src_embed_dim = src_embed_dim
         self.tgt_embed_dim = tgt_embed_dim
-        if qk_embed_dim is None:
-            qk_embed_dim = src_embed_dim
-        self.embed_dim = qk_embed_dim
-        self.kdim = qk_embed_dim
-        self.vdim = qk_embed_dim
-        self._qkv_same_embed_dim = False #qk_embed_dim == self.tgt_embed_dim
+        self.embed_dim = self.src_embed_dim
+        self.kdim = src_embed_dim
+        self.vdim = src_embed_dim
+        self._qkv_same_embed_dim = self.src_embed_dim == self.tgt_embed_dim
 
         self.num_heads = num_heads
         self.dropout = dropout
         self.batch_first = batch_first
-        self.head_dim = qk_embed_dim // num_heads
-        assert self.head_dim * num_heads == qk_embed_dim, "qk_embed_dim must be divisible by num_heads"
+        self.head_dim = src_embed_dim // num_heads
+        assert self.head_dim * num_heads == self.src_embed_dim, "src_embed_dim must be divisible by num_heads"
 
-        self.q = torch.nn.Linear(tgt_embed_dim, qk_embed_dim, bias=False)
-        self.k = torch.nn.Linear(src_embed_dim, qk_embed_dim, bias=False)
-        self.v = torch.nn.Linear(src_embed_dim, qk_embed_dim, bias=False)
+        self.q = torch.nn.Linear(tgt_embed_dim, src_embed_dim, bias=False)
+        self.k = torch.nn.Linear(src_embed_dim, src_embed_dim, bias=False)
+        self.v = torch.nn.Linear(src_embed_dim, src_embed_dim, bias=False)
 
         # self.scale = self.num_heads ** 0.5
 
@@ -229,7 +226,7 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         key = self.k(key)
         value = self.v(value)
 
-        fake_proj_weight = torch.zeros((self.embed_dim, self.src_embed_dim), dtype=query.dtype, device=query.device)
+        fake_proj_weight = torch.eye(self.src_embed_dim, dtype=query.dtype, device=query.device)
 
         attn_output, attn_output_weights = torch.nn.functional.multi_head_attention_forward(
             query, key, value, self.embed_dim, self.num_heads,
@@ -448,7 +445,7 @@ class ImageToTextCrossAttention(nn.Module):
         self.heads = heads
         self.text_dim = text_dim
 
-        self.attn = BetterMultiheadAttention(self.image_dim, self.text_dim, self.heads, batch_first=True, qk_embed_dim=self.text_dim)
+        self.attn = BetterMultiheadAttention(self.image_dim, self.text_dim, self.heads, batch_first=True)
 
         self.use_rezero = use_rezero
         self.use_layerscale = use_layerscale
