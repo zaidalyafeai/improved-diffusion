@@ -388,6 +388,7 @@ def sr_create_model_and_diffusion(
     txt_rotary=False,
     colorize=False,
     rgb_adapter=False,
+    weave_attn=False
 ):
     model = sr_create_model(
         large_size,
@@ -431,6 +432,7 @@ def sr_create_model_and_diffusion(
         txt_rotary=txt_rotary,
         colorize=colorize,
         rgb_adapter=rgb_adapter,
+        weave_attn=weave_attn
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
