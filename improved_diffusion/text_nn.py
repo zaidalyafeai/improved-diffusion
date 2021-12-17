@@ -6,7 +6,7 @@ import torch.nn as nn
 from axial_positional_embedding import AxialPositionalEmbedding
 from einops import rearrange
 from x_transformers import TransformerWrapper, Encoder, XTransformer
-from x_transformers.x_transformers import AbsolutePositionalEmbedding
+from x_transformers.x_transformers import AbsolutePositionalEmbedding, Attention, FeedForward
 
 from .nn import normalization_1group, timestep_embedding, SiLU, AdaGN
 
@@ -431,11 +431,9 @@ class ImageToTextCrossAttention(nn.Module):
         emb_res,
         time_embed_dim,
         text_dim,
-        needs_src_pos_emb=True,
         orth_init=False,
         q_t_emb=False,
         use_rezero=False,
-        rezero_keeps_prenorm=False,
         use_layerscale=False,
         layerscale_init=1e-5,
     ):
@@ -522,3 +520,66 @@ class ImageToTextCrossAttention(nn.Module):
 
         tgt = tgt + attn_output
         return tgt
+
+
+class WeaveAttention(nn.Module):
+    def __init__(
+        self,
+        image_dim,
+        heads,
+        emb_res,
+        time_embed_dim,
+        text_dim,
+        n_layers=1,
+        orth_init=True,
+        q_t_emb=True,
+        use_rezero=False,
+        rezero_keeps_prenorm=False,
+        use_layerscale=False,
+        layerscale_init=1e-5,
+        **text_to_image_kwargs,
+    ):
+        super().__init__()
+
+        shared_args = dict(
+            heads=heads,
+            emb_res=emb_res,
+            time_embed_dim=time_embed_dim,
+            text_dim=text_dim,
+            orth_init=orth_init,
+            use_rezero=use_rezero,
+            use_layerscale=use_layerscale,
+            layerscale_init=layerscale_init,
+        )
+
+        text_to_image_kwargs.update(
+            dict(
+                dim=image_dim,
+                q_t_emb=q_t_emb,
+                rezero_keeps_prenorm=rezero_keeps_prenorm,
+                **shared_args
+            )
+        )
+
+        image_to_text_kwargs = dict(
+            image_dim=image_dim,
+            **shared_args
+        )
+
+        self.image_to_text_layers = nn.Sequential(
+            *[ImageToTextCrossAttention(**image_to_text_kwargs) for _ in range(n_layers)]
+        )
+
+        self.text_to_image_layers = nn.Sequential(
+            *[CrossAttention(**text_to_image_kwargs) for _ in range(n_layers)]
+        )
+    ]
+
+    def forward(self, text, image, attn_mask=None, image_pos_embs=None, timestep_emb=None):
+        shared_kwargs = dict(attn_mask=attn_mask, image_pos_embs=image_pos_embs, timestep_emb=timestep_emb)
+
+        for i_to_t, t_to_i in zip(self.image_to_text_layers, self.text_to_image_layers):
+            text = i_to_t(src=image, tgt=text, **shared_kwargs)
+            image = t_to_i(src=text, tgt=image, **shared_kwargs)
+
+        return image
