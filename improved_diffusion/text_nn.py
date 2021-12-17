@@ -443,6 +443,8 @@ class ImageToTextCrossAttention(nn.Module):
         use_ff=True,
         ff_rezero=True,
         ff_force_prenorm=False,
+        ff_mult=4,
+        ff_glu=False,
         qkv_dim=None,
     ):
         super().__init__()
@@ -484,7 +486,7 @@ class ImageToTextCrossAttention(nn.Module):
         self.use_ff = use_ff
         self.ff = None
         if use_ff:
-            ff = FeedForward(dim=text_dim)
+            ff = FeedForward(dim=text_dim, mult=ff_mult, glu=ff_glu)
             if ff_rezero:
                 ff = Rezero(ff)
             self.ff = ff
@@ -571,6 +573,8 @@ class WeaveAttention(nn.Module):
         use_ff=True,
         ff_rezero=True,
         ff_force_prenorm=False,
+        ff_mult=4,
+        ff_glu=False,
         qkv_dim_always_text=False,
         **text_to_image_kwargs,
     ):
@@ -602,6 +606,8 @@ class WeaveAttention(nn.Module):
             use_ff=use_ff,
             ff_rezero=ff_rezero,
             ff_force_prenorm=ff_force_prenorm,
+            ff_mult=ff_mult,
+            ff_glu=ff_glu,
             qkv_dim=text_dim if qkv_dim_always_text else None,
             **shared_args
         )

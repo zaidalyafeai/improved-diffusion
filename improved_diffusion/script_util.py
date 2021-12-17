@@ -71,6 +71,8 @@ def model_and_diffusion_defaults():
         weave_use_ff=True,
         weave_ff_rezero=True,
         weave_ff_force_prenorm=False,
+        weave_ff_mult=4,
+        weave_ff_glu=False,
         weave_qkv_dim_always_text=False,
     )
 
@@ -131,6 +133,8 @@ def create_model_and_diffusion(
     weave_use_ff=True,
     weave_ff_rezero=True,
     weave_ff_force_prenorm=False,
+    weave_ff_mult=4,
+    weave_ff_glu=False,
     weave_qkv_dim_always_text=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
@@ -181,6 +185,8 @@ def create_model_and_diffusion(
         weave_use_ff=weave_use_ff,
         weave_ff_rezero=weave_ff_rezero,
         weave_ff_force_prenorm=weave_ff_force_prenorm,
+        weave_ff_mult=weave_ff_mult,
+        weave_ff_glu=weave_ff_glu,
         weave_qkv_dim_always_text=weave_qkv_dim_always_text,
     )
     diffusion = create_gaussian_diffusion(
@@ -251,6 +257,8 @@ def create_model(
     weave_use_ff=True,
     weave_ff_rezero=True,
     weave_ff_force_prenorm=False,
+    weave_ff_mult=4,
+    weave_ff_glu=False,
     weave_qkv_dim_always_text=False,
 ):
     text_lr_mult = 1.
@@ -339,6 +347,8 @@ def create_model(
         weave_use_ff=weave_use_ff,
         weave_ff_rezero=weave_ff_rezero,
         weave_ff_force_prenorm=weave_ff_force_prenorm,
+        weave_ff_mult=weave_ff_mult,
+        weave_ff_glu=weave_ff_glu,
         weave_qkv_dim_always_text=weave_qkv_dim_always_text,
     )
 
@@ -412,6 +422,8 @@ def sr_create_model_and_diffusion(
     weave_use_ff=True,
     weave_ff_rezero=True,
     weave_ff_force_prenorm=False,
+    weave_ff_mult=4,
+    weave_ff_glu=False,
     weave_qkv_dim_always_text=False,
 ):
     model = sr_create_model(
@@ -460,6 +472,8 @@ def sr_create_model_and_diffusion(
         weave_use_ff=weave_use_ff,
         weave_ff_rezero=weave_ff_rezero,
         weave_ff_force_prenorm=weave_ff_force_prenorm,
+        weave_ff_mult=weave_ff_mult,
+        weave_ff_glu=weave_ff_glu,
         weave_qkv_dim_always_text=weave_qkv_dim_always_text,
     )
     diffusion = create_gaussian_diffusion(
