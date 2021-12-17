@@ -22,7 +22,7 @@ from .nn import (
     checkpoint,
 )
 
-from .text_nn import TextEncoder, CrossAttention
+from .text_nn import TextEncoder, CrossAttention, WeaveAttention
 
 
 class TimestepBlock(nn.Module):
@@ -45,9 +45,6 @@ class TextTimestepBlock(nn.Module):
         """
 
 
-# class CrossAttentionAdapter(CrossAttention, TextTimestepBlock):
-#     def forward(self, x, emb, txt, tgt_pos_embs=None, timesteps=None):
-#         return super().forward(src=txt, tgt=x, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
 class CrossAttentionAdapter(TextTimestepBlock):
     def __init__(self, *args, **kwargs):
         super().__init__()
@@ -56,6 +53,14 @@ class CrossAttentionAdapter(TextTimestepBlock):
     def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
         return self.cross_attn.forward(src=txt, tgt=x, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
 
+
+class WeaveAttentionAdapter(TextTimestepBlock):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        self.weave_attn = WeaveAttention(*args, **kwargs)
+
+    def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
+        return self.weave_attn.forward(text=txt, image=x, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
 
 
 class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
@@ -463,6 +468,7 @@ class UNetModel(nn.Module):
         txt_rotary=False,
         colorize=False,
         rgb_adapter=False,
+        weave_attn=False
     ):
         super().__init__()
 
@@ -585,7 +591,7 @@ class UNetModel(nn.Module):
                             dim=pos_emb_dim,
                             axial_shape=(emb_res, emb_res),
                         )
-                    caa = CrossAttentionAdapter(
+                    caa_args = dict(
                         dim=ch,
                         time_embed_dim=time_embed_dim,
                         heads=num_heads_here,
@@ -602,6 +608,11 @@ class UNetModel(nn.Module):
                         rezero_keeps_prenorm=cross_attn_rezero_keeps_prenorm,
                         use_layerscale=cross_attn_use_layerscale,
                     )
+                    if weave_attn:
+                        caa_args['image_dim'] = caa_args.pop('dim')
+                        caa = WeaveAttentionAdapter(**caa_args)
+                    else:
+                        caa = CrossAttentionAdapter(**caa_args)
                     if txt_attn_before_attn and (ds in attention_resolutions):
                         layers.insert(-1, caa)
                     else:
@@ -697,7 +708,7 @@ class UNetModel(nn.Module):
                             dim=pos_emb_dim,
                             axial_shape=(emb_res, emb_res),
                         )
-                    caa = CrossAttentionAdapter(
+                    caa_args = dict(
                         dim=ch,
                         time_embed_dim=time_embed_dim,
                         heads=num_heads_here,
@@ -714,6 +725,11 @@ class UNetModel(nn.Module):
                         rezero_keeps_prenorm=cross_attn_rezero_keeps_prenorm,
                         use_layerscale=cross_attn_use_layerscale,
                     )
+                    if weave_attn:
+                        caa_args['image_dim'] = caa_args.pop('dim')
+                        caa = WeaveAttentionAdapter(**caa_args)
+                    else:
+                        caa = CrossAttentionAdapter(**caa_args)
                     if txt_attn_before_attn and (ds in attention_resolutions):
                         layers.insert(-1, caa)
                     else:
