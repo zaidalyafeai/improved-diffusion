@@ -84,6 +84,7 @@ def main():
         tokenizer=tokenizer,
         beta1=args.beta1,
         beta2=args.beta2,
+        weave_legacy_param_names=args.weave_legacy_param_names,
     ).run_loop()
 
 
@@ -107,6 +108,7 @@ def create_argparser():
         beta2=0.999,
         colorize=False,
         text_encoder_warmstart="",
+        weave_legacy_param_names=False,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

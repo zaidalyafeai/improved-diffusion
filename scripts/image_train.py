@@ -92,6 +92,7 @@ def main():
         lg_loss_scale=args.lg_loss_scale,
         beta1=args.beta1,
         beta2=args.beta2,
+        weave_legacy_param_names=args.weave_legacy_param_names,
     ).run_loop()
 
 
@@ -126,6 +127,7 @@ def create_argparser():
         verbose=False,
         char_level=False,
         text_encoder_warmstart="",
+        weave_legacy_param_names=False,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

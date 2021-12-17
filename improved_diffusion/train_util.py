@@ -54,6 +54,7 @@ class TrainLoop:
         lg_loss_scale = INITIAL_LOG_LOSS_SCALE,
         beta1=0.9,
         beta2=0.999,
+        weave_legacy_param_names=False
     ):
         self.model = model
         self.diffusion = diffusion
@@ -104,14 +105,16 @@ class TrainLoop:
             elif "cross_attn" in n or "weave_attn.text_to_image_layers" in n:
                 # subname = 'xattn'
                 prefix = "cross_attn." if "cross_attn." in n else "weave_attn.text_to_image_layers."
-                subname = 'xattn.' + '.'.join(n.partition(prefix)[2].split('.')[:2])
+                nsegs = 2 if weave_legacy_param_names else 3
+                subname = 'xattn.' + '.'.join(n.partition(prefix)[2].split('.')[:nsegs])
                 xattn_param_names[subname].append(n)
                 xattn_params[subname].append(p)
                 # self.xattn_param_names.append(n)
                 # xattn_params.append(p)
             elif "weave_attn.image_to_text_layers" in n:
                 prefix = 'weave_attn.image_to_text_layers.'
-                subname = 'itot.' + '.'.join(n.partition(prefix)[2].split('.')[:2])
+                nsegs = 2 if weave_legacy_param_names else 3
+                subname = 'itot.' + '.'.join(n.partition(prefix)[2].split('.')[:nsegs])
                 itot_param_names[subname].append(n)
                 itot_params[subname].append(p)
             else:
