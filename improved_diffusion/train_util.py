@@ -112,7 +112,7 @@ class TrainLoop:
             elif "weave_attn.image_to_text_layers" in n:
                 prefix = 'weave_attn.image_to_text_layers.'
                 subname = 'itot.' + '.'.join(n.partition(prefix)[2].split('.')[:2])
-                itot_params[subname].append(n)
+                itot_param_names[subname].append(n)
                 itot_params[subname].append(p)
             else:
                 self.other_param_names.append(n)
