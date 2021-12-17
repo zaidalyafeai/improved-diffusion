@@ -178,32 +178,33 @@ class TextEncoder(nn.Module):
 
 
 class BetterMultiheadAttention(torch.nn.MultiheadAttention):
-    def __init__(self, src_embed_dim, tgt_embed_dim, num_heads, dropout=0., batch_first=True, device=None, dtype=None):
+    def __init__(self, src_embed_dim, tgt_embed_dim, num_heads, qkv_dim=None, dropout=0., batch_first=True, device=None, dtype=None):
         factory_kwargs = {'device': device, 'dtype': dtype}
         super(torch.nn.MultiheadAttention, self).__init__()
         self.src_embed_dim = src_embed_dim
         self.tgt_embed_dim = tgt_embed_dim
         self.embed_dim = self.src_embed_dim
-        self.kdim = src_embed_dim
-        self.vdim = src_embed_dim
-        self._qkv_same_embed_dim = self.src_embed_dim == self.tgt_embed_dim
+        if qkv_dim is None:
+            qkv_dim = src_embed_dim
+        self.qkv_dim = qkv_dim
+        # self._qkv_same_embed_dim = self.src_embed_dim == self.tgt_embed_dim  # ??
 
         self.num_heads = num_heads
         self.dropout = dropout
         self.batch_first = batch_first
-        self.head_dim = src_embed_dim // num_heads
-        assert self.head_dim * num_heads == self.src_embed_dim, "src_embed_dim must be divisible by num_heads"
+        self.head_dim = self.qkv_dim // num_heads
+        assert self.head_dim * num_heads == self.qkv_dim, "qkv_dim must be divisible by num_heads"
 
-        self.q = torch.nn.Linear(tgt_embed_dim, src_embed_dim, bias=False)
-        self.k = torch.nn.Linear(src_embed_dim, src_embed_dim, bias=False)
-        self.v = torch.nn.Linear(src_embed_dim, src_embed_dim, bias=False)
+        self.q = torch.nn.Linear(tgt_embed_dim, self.qkv_dim, bias=False)
+        self.k = torch.nn.Linear(src_embed_dim, self.qkv_dim, bias=False)
+        self.v = torch.nn.Linear(src_embed_dim, self.qkv_dim, bias=False)
 
         # self.scale = self.num_heads ** 0.5
 
         self.register_parameter('in_proj_weight', None)
         self.register_parameter('in_proj_bias', None)
 
-        self.out_proj = torch.nn.modules.linear.NonDynamicallyQuantizableLinear(src_embed_dim, tgt_embed_dim, bias=False, **factory_kwargs)
+        self.out_proj = torch.nn.modules.linear.NonDynamicallyQuantizableLinear(self.qkv_dim, tgt_embed_dim, bias=False, **factory_kwargs)
 
         self.bias_k = self.bias_v = None
         self.add_zero_attn = False
@@ -226,10 +227,10 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         key = self.k(key)
         value = self.v(value)
 
-        fake_proj_weight = torch.eye(self.src_embed_dim, dtype=query.dtype, device=query.device)
+        fake_proj_weight = torch.eye(self.qkv_dim, dtype=query.dtype, device=query.device)
 
         attn_output, attn_output_weights = torch.nn.functional.multi_head_attention_forward(
-            query, key, value, self.embed_dim, self.num_heads,
+            query, key, value, self.qkv_dim, self.num_heads,
             self.in_proj_weight, self.in_proj_bias,
             self.bias_k, self.bias_v, self.add_zero_attn,
             self.dropout, self.out_proj.weight, self.out_proj.bias,
