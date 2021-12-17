@@ -448,7 +448,7 @@ class ImageToTextCrossAttention(nn.Module):
         self.heads = heads
         self.text_dim = text_dim
 
-        self.attn = BetterMultiheadAttention(self.image_dim, self.text_dim, self.heads, batch_first=True)
+        self.attn = BetterMultiheadAttention(self.image_dim, self.text_dim, self.heads, batch_first=True, qk_embed_dim=self.text_dim)
 
         self.use_rezero = use_rezero
         self.use_layerscale = use_layerscale
