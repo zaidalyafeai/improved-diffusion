@@ -432,6 +432,7 @@ class ImageToTextCrossAttention(nn.Module):
         time_embed_dim,
         text_dim,
         gain_scale=1.,
+        init_gain=1.,
         orth_init=False,
         q_t_emb=False,
         use_rezero=False,
