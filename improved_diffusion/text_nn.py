@@ -473,7 +473,7 @@ class ImageToTextCrossAttention(nn.Module):
         self.use_ff = use_ff
         self.ff = None
         if use_ff:
-            self.ff = FeedForward(dim=text_dim, heads=heads)
+            self.ff = FeedForward(dim=text_dim)
 
         if orth_init:
             torch.nn.init.orthogonal_(self.attn.q.weight)
