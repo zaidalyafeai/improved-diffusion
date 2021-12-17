@@ -97,12 +97,13 @@ class TrainLoop:
                     subname = 'text.' + n.partition('text_encoder.')[2].split('.')[0]
                 text_param_names[subname].append(n)
                 text_params[subname].append(p)
-            elif "cross_attn" in n and "gain" in n:
+            elif ("cross_attn" in n or "weave_attn.text_to_image_layers") and "gain" in n:
                 self.gain_param_names.append(n)
                 gain_params.append(p)
-            elif "cross_attn" in n:
+            elif "cross_attn" in n or "weave_attn.text_to_image_layers" in n:
                 # subname = 'xattn'
-                subname = 'xattn.' + '.'.join(n.partition('cross_attn.')[2].split('.')[:2])
+                prefix = "cross_attn." if "cross_attn." in n else "weave_attn.text_to_image_layers."
+                subname = 'xattn.' + '.'.join(n.partition(prefix)[2].split('.')[:2])
                 xattn_param_names[subname].append(n)
                 xattn_params[subname].append(p)
                 # self.xattn_param_names.append(n)
