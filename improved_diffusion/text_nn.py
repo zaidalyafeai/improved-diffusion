@@ -421,3 +421,104 @@ class CrossAttention(nn.Module):
             return tgt
 
         return attn_output
+
+
+class ImageToTextCrossAttention(nn.Module):
+    def __init__(
+        self,
+        image_dim,
+        heads,
+        emb_res,
+        time_embed_dim,
+        text_dim,
+        needs_src_pos_emb=True,
+        orth_init=False,
+        q_t_emb=False,
+        use_rezero=False,
+        rezero_keeps_prenorm=False,
+        use_layerscale=False,
+        layerscale_init=1e-5,
+    ):
+        super().__init__()
+        self.image_dim = image_dim
+        self.heads = heads
+        self.text_dim = text_dim
+
+        self.attn = BetterMultiheadAttention(self.image_dim, self.text_dim, self.heads, batch_first=True)
+
+        self.use_rezero = use_rezero
+        self.use_layerscale = use_layerscale
+
+        self.tgt_ln = torch.nn.LayerNorm(self.text_dim)
+
+        self.emb_res = emb_res
+
+        self.src_ln = AdaGN(
+            emb_channels=time_embed_dim,
+            out_channels=self.image_dim,
+            num_groups=1,
+            nonlin_in=True,  # TODO: does this matter?
+            do_norm=True,
+        )
+
+        self.gain_scale = gain_scale
+        if self.use_layerscale:
+            self.gain = torch.nn.Parameter(layerscale_init * torch.ones(self.dim))
+        elif self.use_rezero:
+            self.gain = torch.nn.Parameter(torch.zeros(1))
+        else:
+            self.gain = torch.nn.Parameter(torch.as_tensor(np.log(init_gain) / gain_scale))
+
+        if orth_init:
+            torch.nn.init.orthogonal_(self.attn.q.weight)
+            torch.nn.init.orthogonal_(self.attn.k.weight)
+            torch.nn.init.orthogonal_(self.attn.v.weight)
+            torch.nn.init.orthogonal_(self.attn.out_proj.weight)
+
+    def effective_gain(self):
+        g = self.gain_scale * self.gain
+        if not (self.use_rezero or self.use_layerscale):
+            g = g.exp()
+        return g
+
+    def forward(self, src, tgt, attn_mask=None, image_pos_embs=None, timestep_emb=None):
+        def _to_b_hw_c(x, retdims=True):
+            b, c, *spatial = x.shape
+            xt = x.reshape(b, c, -1).transpose(1, 2)
+            if retdims:
+                return xt, b, c, spatial
+            return xt
+
+        def _to_b_c_h_w(x, spatial):
+            return rearrange(x, 'b (h w) c -> b c h w', h=spatial[0])
+
+        src_pos_emb = image_pos_embs[str(self.emb_res)]
+
+        # image
+        src_in = src
+
+        b, c, *spatial = src_in.shape
+        pos_emb = src_pos_emb(_to_b_hw_c(src_in, retdims=False))
+        pos_emb = _to_b_c_h_w(pos_emb, spatial)
+
+        src_in = self.src_ln(h=src_in, emb=timestep_emb, side_emb=pos_emb)
+
+        src_in, b, c, spatial = _to_b_hw_c(src_in)
+
+        k = src_in
+        v = src_in
+
+        # text
+        tgt_in = self.tgt_ln(tgt)
+        q = tgt_in
+
+        my_attn_mask = None
+        if attn_mask is not None:
+            my_attn_mask = torch.tile(attn_mask.unsqueeze(1), (self.heads, 1, k.shape[1]))
+            my_attn_mask = (~my_attn_mask).to(q.dtype) * -10000.
+
+        attn_output, attn_output_weights = self.attn(q, k, v, attn_mask=my_attn_mask)
+        attn_output = attn_output * self.effective_gain()
+
+        tgt = tgt + attn_output
+        return tgt
