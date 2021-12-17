@@ -184,9 +184,9 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         super(torch.nn.MultiheadAttention, self).__init__()
         self.src_embed_dim = src_embed_dim
         self.tgt_embed_dim = tgt_embed_dim
-        self.embed_dim = self.src_embed_dim
         if qk_embed_dim is None:
             qk_embed_dim = src_embed_dim
+        self.embed_dim = qk_embed_dim
         self.kdim = qk_embed_dim
         self.vdim = qk_embed_dim
         self._qkv_same_embed_dim = qk_embed_dim == self.tgt_embed_dim
