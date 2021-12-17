@@ -123,12 +123,6 @@ class TrainLoop:
         # self.model_params = list(self.model.parameters())
         self.model_params = [*text_params, *xattn_params, gain_params, other_params]
 
-        print([len(g) for g in self.model_params])
-        for name_group, mps in zip(self.param_name_groups, self.model_params):
-            print(name_group)
-            print(len(mps))
-            print()
-
         self.master_params = self.model_params
         self.lg_loss_scale = lg_loss_scale
         self.sync_cuda = th.cuda.is_available()
