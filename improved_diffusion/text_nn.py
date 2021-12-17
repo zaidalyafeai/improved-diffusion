@@ -267,10 +267,11 @@ class CrossAttention(nn.Module):
         rezero_keeps_prenorm=False,
         use_layerscale=False,
         layerscale_init=1e-5,
+        qkv_dim=None,
     ):
         super().__init__()
         print(
-            f"xattn: emb_res {emb_res} | dim {dim} | heads {heads} | avoid_groupnorm {avoid_groupnorm} | q_t_emb {q_t_emb} | use_rezero {use_rezero}"
+            f"xattn: emb_res {emb_res} | dim {dim} | qkv_dim {qkv_dim} | heads {heads} | avoid_groupnorm {avoid_groupnorm} | q_t_emb {q_t_emb} | use_rezero {use_rezero}"
         )
         self.dim = dim
         self.heads = heads
@@ -278,7 +279,7 @@ class CrossAttention(nn.Module):
 
         # self.q = torch.nn.Linear(self.dim, self.dim, bias=False)
         # self.kv = torch.nn.Linear(self.text_dim, 2*self.dim, bias=False)
-        self.attn = BetterMultiheadAttention(self.text_dim, self.dim, self.heads, batch_first=True)
+        self.attn = BetterMultiheadAttention(self.text_dim, self.dim, self.heads, qkv_dim=qkv_dim, batch_first=True)
 
         self.avoid_groupnorm = avoid_groupnorm
         self.q_t_emb = q_t_emb
@@ -442,17 +443,20 @@ class ImageToTextCrossAttention(nn.Module):
         use_ff=True,
         ff_rezero=True,
         ff_force_prenorm=False,
+        qkv_dim=None,
     ):
         super().__init__()
+        if qkv_dim is None:
+            qkv_dim = image_dim
         print(
-            f"itot:  emb_res {emb_res} | image_dim {image_dim} | text_dim {text_dim} | heads {heads} | image dim_head {image_dim // heads}"
+            f"itot:  emb_res {emb_res} | image_dim {image_dim} | text_dim {text_dim} | qkv_dim {qkv_dim} | heads {heads} | dim_head {qkv_dim // heads}"
         )
 
         self.image_dim = image_dim
         self.heads = heads
         self.text_dim = text_dim
 
-        self.attn = BetterMultiheadAttention(self.image_dim, self.text_dim, self.heads, batch_first=True)
+        self.attn = BetterMultiheadAttention(self.image_dim, self.text_dim, self.heads, qkv_dim=qkv_dim, batch_first=True)
 
         self.use_rezero = use_rezero
         self.use_layerscale = use_layerscale
@@ -567,6 +571,7 @@ class WeaveAttention(nn.Module):
         use_ff=True,
         ff_rezero=True,
         ff_force_prenorm=False,
+        qkv_dim_always_text=False,
         **text_to_image_kwargs,
     ):
         super().__init__()
@@ -587,6 +592,7 @@ class WeaveAttention(nn.Module):
                 dim=image_dim,
                 q_t_emb=q_t_emb,
                 rezero_keeps_prenorm=rezero_keeps_prenorm,
+                qkv_dim=text_dim if qkv_dim_always_text else None,
                 **shared_args
             )
         )
@@ -596,6 +602,7 @@ class WeaveAttention(nn.Module):
             use_ff=use_ff,
             ff_rezero=ff_rezero,
             ff_force_prenorm=ff_force_prenorm,
+            qkv_dim=text_dim if qkv_dim_always_text else None,
             **shared_args
         )
 

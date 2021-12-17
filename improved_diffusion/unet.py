@@ -472,6 +472,7 @@ class UNetModel(nn.Module):
         weave_use_ff=True,
         weave_ff_rezero=True,
         weave_force_prenorm=False,
+        weave_qkv_dim_always_text=False,
     ):
         super().__init__()
 
@@ -617,6 +618,7 @@ class UNetModel(nn.Module):
                             use_ff=weave_use_ff,
                             ff_rezero=weave_ff_rezero,
                             ff_force_prenorm=weave_force_prenorm,
+                            qkv_dim_always_text=weave_qkv_dim_always_text,
                         ))
                         caa = WeaveAttentionAdapter(**caa_args)
                     else:
@@ -739,6 +741,7 @@ class UNetModel(nn.Module):
                             use_ff=weave_use_ff,
                             ff_rezero=weave_ff_rezero,
                             ff_force_prenorm=weave_force_prenorm,
+                            qkv_dim_always_text=weave_qkv_dim_always_text,
                         ))
                         caa = WeaveAttentionAdapter(**caa_args)
                     else:

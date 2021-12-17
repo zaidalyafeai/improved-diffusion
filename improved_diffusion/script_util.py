@@ -71,6 +71,7 @@ def model_and_diffusion_defaults():
         weave_use_ff=True,
         weave_ff_rezero=True,
         weave_force_prenorm=False,
+        weave_qkv_dim_always_text=False,
     )
 
 
@@ -130,6 +131,7 @@ def create_model_and_diffusion(
     weave_use_ff=True,
     weave_ff_rezero=True,
     weave_force_prenorm=False,
+    weave_qkv_dim_always_text=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     model = create_model(
@@ -179,6 +181,7 @@ def create_model_and_diffusion(
         weave_use_ff=weave_use_ff,
         weave_ff_rezero=weave_ff_rezero,
         weave_force_prenorm=weave_force_prenorm,
+        weave_qkv_dim_always_text=weave_qkv_dim_always_text,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -248,6 +251,7 @@ def create_model(
     weave_use_ff=True,
     weave_ff_rezero=True,
     weave_force_prenorm=False,
+    weave_qkv_dim_always_text=False,
 ):
     text_lr_mult = 1.
     print(
@@ -335,6 +339,7 @@ def create_model(
         weave_use_ff=weave_use_ff,
         weave_ff_rezero=weave_ff_rezero,
         weave_force_prenorm=weave_force_prenorm,
+        weave_qkv_dim_always_text=weave_qkv_dim_always_text,
     )
 
 
@@ -407,6 +412,7 @@ def sr_create_model_and_diffusion(
     weave_use_ff=True,
     weave_ff_rezero=True,
     weave_force_prenorm=False,
+    weave_qkv_dim_always_text=False,
 ):
     model = sr_create_model(
         large_size,
@@ -454,6 +460,7 @@ def sr_create_model_and_diffusion(
         weave_use_ff=weave_use_ff,
         weave_ff_rezero=weave_ff_rezero,
         weave_force_prenorm=weave_force_prenorm,
+        weave_qkv_dim_always_text=weave_qkv_dim_always_text,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
