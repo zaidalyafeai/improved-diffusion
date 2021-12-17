@@ -442,7 +442,7 @@ class ImageToTextCrossAttention(nn.Module):
     ):
         super().__init__()
         print(
-            f"itot: emb_res {emb_res} | image_dim {image_dim} | text_dim {text_dim} | heads {heads} | image dim_head {image_dim // heads}"
+            f"itot:  emb_res {emb_res} | image_dim {image_dim} | text_dim {text_dim} | heads {heads} | image dim_head {image_dim // heads}"
         )
 
         self.image_dim = image_dim
