@@ -2,7 +2,7 @@
 Train a diffusion model on images.
 """
 
-import argparse
+import argparse, os
 import torch as th
 
 from improved_diffusion import dist_util, logger
