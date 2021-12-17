@@ -573,7 +573,6 @@ class WeaveAttention(nn.Module):
         self.text_to_image_layers = nn.Sequential(
             *[CrossAttention(**text_to_image_kwargs) for _ in range(n_layers)]
         )
-    ]
 
     def forward(self, text, image, attn_mask=None, image_pos_embs=None, timestep_emb=None):
         shared_kwargs = dict(attn_mask=attn_mask, image_pos_embs=image_pos_embs, timestep_emb=timestep_emb)
