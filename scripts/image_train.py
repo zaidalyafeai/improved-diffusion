@@ -3,6 +3,7 @@ Train a diffusion model on images.
 """
 
 import argparse
+import torch as th
 
 from improved_diffusion import dist_util, logger
 from improved_diffusion.image_datasets import load_data, load_tokenizer
@@ -44,6 +45,20 @@ def main():
     )
     model.to(dist_util.dev())
     schedule_sampler = create_named_schedule_sampler(args.schedule_sampler, diffusion)
+
+    if args.text_encoder_warmstart != "" and os.path.exists(args.text_encoder_warmstart):
+        sd = th.load(args.text_encoder_warmstart)
+        sd = {k.partition("text_encoder.")[2]: v for k, v in sd.items() if k.startswith("text_encoder.")}
+        ks = list(sd.keys())
+        exk = ks[0]
+        print(('state_dict', exk, sd[exk]))
+        for n, p in model.text_encoder.named_parameters():
+            if n == exk:
+                print(('model (before)', n, p))
+        model.text_encoder.load_state_dict(sd)
+        for n, p in model.text_encoder.named_parameters():
+            if n == exk:
+                print(('model (after)', n, p))
 
     logger.log("creating data loader...")
     data = load_data(
@@ -110,6 +125,7 @@ def create_argparser():
         beta2=0.999,
         verbose=False,
         char_level=False,
+        text_encoder_warmstart="",
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
