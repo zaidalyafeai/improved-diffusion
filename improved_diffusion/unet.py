@@ -468,7 +468,10 @@ class UNetModel(nn.Module):
         txt_rotary=False,
         colorize=False,
         rgb_adapter=False,
-        weave_attn=False
+        weave_attn=False,
+        weave_use_ff=True,
+        weave_ff_rezero=True,
+        weave_force_prenorm=False,
     ):
         super().__init__()
 
@@ -610,6 +613,11 @@ class UNetModel(nn.Module):
                     )
                     if weave_attn:
                         caa_args['image_dim'] = caa_args.pop('dim')
+                        caa_args.update(dict(
+                            use_ff=weave_use_ff,
+                            ff_rezero=weave_ff_rezero,
+                            ff_force_prenorm=weave_force_prenorm,
+                        ))
                         caa = WeaveAttentionAdapter(**caa_args)
                     else:
                         caa = CrossAttentionAdapter(**caa_args)
@@ -727,6 +735,11 @@ class UNetModel(nn.Module):
                     )
                     if weave_attn:
                         caa_args['image_dim'] = caa_args.pop('dim')
+                        caa_args.update(dict(
+                            use_ff=weave_use_ff,
+                            ff_rezero=weave_ff_rezero,
+                            ff_force_prenorm=weave_force_prenorm,
+                        ))
                         caa = WeaveAttentionAdapter(**caa_args)
                     else:
                         caa = CrossAttentionAdapter(**caa_args)

@@ -67,7 +67,10 @@ def model_and_diffusion_defaults():
         txt_t5=False,
         txt_rotary=False,
         rgb_adapter=False,
-        weave_attn=False
+        weave_attn=False,
+        weave_use_ff=True,
+        weave_ff_rezero=True,
+        weave_force_prenorm=False,
     )
 
 
@@ -123,7 +126,10 @@ def create_model_and_diffusion(
     txt_t5=False,
     txt_rotary=False,
     rgb_adapter=False,
-    weave_attn=False
+    weave_attn=False,
+    weave_use_ff=True,
+    weave_ff_rezero=True,
+    weave_force_prenorm=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     model = create_model(
@@ -170,6 +176,9 @@ def create_model_and_diffusion(
         txt_rotary=txt_rotary,
         rgb_adapter=rgb_adapter,
         weave_attn=weave_attn,
+        weave_use_ff=weave_use_ff,
+        weave_ff_rezero=weave_ff_rezero,
+        weave_force_prenorm=weave_force_prenorm,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -236,6 +245,9 @@ def create_model(
     rgb_adapter=False,
     colorize=False,
     weave_attn=False,
+    weave_use_ff=True,
+    weave_ff_rezero=True,
+    weave_force_prenorm=False,
 ):
     text_lr_mult = 1.
     print(
@@ -320,6 +332,9 @@ def create_model(
         rgb_adapter=rgb_adapter,
         colorize=colorize,
         weave_attn=weave_attn,
+        weave_use_ff=weave_use_ff,
+        weave_ff_rezero=weave_ff_rezero,
+        weave_force_prenorm=weave_force_prenorm,
     )
 
 
@@ -388,7 +403,10 @@ def sr_create_model_and_diffusion(
     txt_rotary=False,
     colorize=False,
     rgb_adapter=False,
-    weave_attn=False
+    weave_attn=False,
+    weave_use_ff=True,
+    weave_ff_rezero=True,
+    weave_force_prenorm=False,
 ):
     model = sr_create_model(
         large_size,
@@ -432,7 +450,10 @@ def sr_create_model_and_diffusion(
         txt_rotary=txt_rotary,
         colorize=colorize,
         rgb_adapter=rgb_adapter,
-        weave_attn=weave_attn
+        weave_attn=weave_attn,
+        weave_use_ff=weave_use_ff,
+        weave_ff_rezero=weave_ff_rezero,
+        weave_force_prenorm=weave_force_prenorm,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,

@@ -439,6 +439,8 @@ class ImageToTextCrossAttention(nn.Module):
         use_layerscale=False,
         layerscale_init=1e-5,
         use_ff=True,
+        ff_rezero=True,
+        ff_force_prenorm=False,
     ):
         super().__init__()
         print(
@@ -477,7 +479,15 @@ class ImageToTextCrossAttention(nn.Module):
         self.use_ff = use_ff
         self.ff = None
         if use_ff:
-            self.ff = Rezero(FeedForward(dim=text_dim))
+            ff = FeedForward(dim=text_dim)
+            if ff_rezero:
+                ff = Rezero(ff)
+            self.ff = ff
+
+            if ff_force_prenorm or (not ff_rezero):
+                self.ff_ln = torch.nn.LayerNorm(self.text_dim)
+            else:
+                self.ff_ln = nn.Identity()
 
         if orth_init:
             torch.nn.init.orthogonal_(self.attn.q.weight)
@@ -533,7 +543,7 @@ class ImageToTextCrossAttention(nn.Module):
         tgt = tgt + attn_output
 
         if self.use_ff:
-            ff_output = self.ff(tgt)
+            ff_output = self.ff(self.ff_ln(tgt))
             tgt = tgt + ff_output
         return tgt
 
@@ -553,6 +563,9 @@ class WeaveAttention(nn.Module):
         rezero_keeps_prenorm=False,
         use_layerscale=False,
         layerscale_init=1e-5,
+        use_ff=True,
+        ff_rezero=True,
+        ff_force_prenorm=False,
         **text_to_image_kwargs,
     ):
         super().__init__()
@@ -579,6 +592,9 @@ class WeaveAttention(nn.Module):
 
         image_to_text_kwargs = dict(
             image_dim=image_dim,
+            use_ff=use_ff,
+            ff_rezero=ff_rezero,
+            ff_force_prenorm=ff_force_prenorm,
             **shared_args
         )
 
