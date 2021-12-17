@@ -189,7 +189,7 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         self.embed_dim = qk_embed_dim
         self.kdim = qk_embed_dim
         self.vdim = qk_embed_dim
-        self._qkv_same_embed_dim = qk_embed_dim == self.tgt_embed_dim
+        self._qkv_same_embed_dim = False #qk_embed_dim == self.tgt_embed_dim
 
         self.num_heads = num_heads
         self.dropout = dropout
