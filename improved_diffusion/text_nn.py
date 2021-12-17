@@ -6,7 +6,7 @@ import torch.nn as nn
 from axial_positional_embedding import AxialPositionalEmbedding
 from einops import rearrange
 from x_transformers import TransformerWrapper, Encoder, XTransformer
-from x_transformers.x_transformers import AbsolutePositionalEmbedding, Attention, FeedForward
+from x_transformers.x_transformers import AbsolutePositionalEmbedding, Attention, FeedForward, Rezero
 
 from .nn import normalization_1group, timestep_embedding, SiLU, AdaGN
 
@@ -438,6 +438,7 @@ class ImageToTextCrossAttention(nn.Module):
         use_rezero=False,
         use_layerscale=False,
         layerscale_init=1e-5,
+        use_ff=True,
     ):
         super().__init__()
         self.image_dim = image_dim
@@ -468,6 +469,11 @@ class ImageToTextCrossAttention(nn.Module):
             self.gain = torch.nn.Parameter(torch.zeros(1))
         else:
             self.gain = torch.nn.Parameter(torch.as_tensor(np.log(init_gain) / gain_scale))
+
+        self.use_ff = use_ff
+        self.ff = None
+        if use_ff:
+            self.ff = FeedForward(dim=text_dim, heads=heads)
 
         if orth_init:
             torch.nn.init.orthogonal_(self.attn.q.weight)
@@ -521,6 +527,10 @@ class ImageToTextCrossAttention(nn.Module):
         attn_output = attn_output * self.effective_gain()
 
         tgt = tgt + attn_output
+
+        if self.use_ff:
+            ff_output = self.ff(tgt)
+            tgt = tgt + ff_output
         return tgt
 
 
