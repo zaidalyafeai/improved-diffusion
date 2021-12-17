@@ -125,7 +125,7 @@ class TrainLoop:
         print([len(g) for g in self.model_params])
         for name_group, mps in zip(self.param_name_groups, self.model_params):
             print(name_group)
-            print(mps)
+            print(len(mps))
             print()
 
         self.master_params = self.model_params
