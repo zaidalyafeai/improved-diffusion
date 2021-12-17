@@ -154,7 +154,7 @@ class TrainLoop:
                 xattn_nparams += nparams
                 prefix += '\t'
             if name in self.itot_mods:
-                itot_params += nparams
+                itot_nparams += nparams
                 prefix += '\t'
             print(f"{prefix}{nparams/1e6:.1f}M {name} params")
         print(f"\t{text_nparams/1e6:.1f}M text params")
