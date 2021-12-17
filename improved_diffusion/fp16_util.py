@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
 
-from .text_nn import TextEncoder, CrossAttention
+from .text_nn import TextEncoder, CrossAttention, ImageToTextCrossAttention
 
 
 def convert_module_to_f16(l, bf16=False):
@@ -24,6 +24,12 @@ def convert_module_to_f16(l, bf16=False):
         for n, p in l.named_parameters():
             if 'tgt_ln' in n and (not l.avoid_groupnorm):
                 if 'normalization' not in n.partition('tgt_ln')[2]:
+                    continue
+            p.data = p.data.to(dtype)
+    if isinstance(l, ImageToTextCrossAttention):
+        for n, p in l.named_parameters():
+            if 'src_ln' in n:
+                if 'normalization' not in n.partition('src_ln')[2]:
                     continue
             p.data = p.data.to(dtype)
 
