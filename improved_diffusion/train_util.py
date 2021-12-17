@@ -86,6 +86,7 @@ class TrainLoop:
         text_params, text_param_names = defaultdict(list), defaultdict(list)
         # xattn_params, self.xattn_param_names = [], []
         xattn_params, xattn_param_names = defaultdict(list), defaultdict(list)
+        itot_params, itot_param_names = defaultdict(list), defaultdict(list)
         gain_params, self.gain_param_names = [], []
         other_params, self.other_param_names = [], []
         for n, p in model.named_parameters():
@@ -108,6 +109,11 @@ class TrainLoop:
                 xattn_params[subname].append(p)
                 # self.xattn_param_names.append(n)
                 # xattn_params.append(p)
+            elif "weave_attn.image_to_text_layers" in n:
+                prefix = 'weave_attn.image_to_text_layers.'
+                subname = 'itot.' + '.'.join(n.partition(prefix)[2].split('.')[:2])
+                itot_params[subname].append(n)
+                itot_params[subname].append(p)
             else:
                 self.other_param_names.append(n)
                 other_params.append(p)
@@ -119,9 +125,13 @@ class TrainLoop:
         xattn_params = [xattn_params[n] for n in self.xattn_mods]
         self.xattn_param_names = [xattn_param_names[n] for n in self.xattn_mods]
 
-        self.param_name_groups = [*self.text_param_names, *self.xattn_param_names, self.gain_param_names, self.other_param_names]
+        self.itot_mods = list(itot_param_names.keys())
+        itot_params = [itot_params[n] for n in self.itot_mods]
+        self.itot_param_names = [itot_param_names[n] for n in self.itot_mods]
+
+        self.param_name_groups = [*self.text_param_names, *self.xattn_param_names, *self.itot_param_names, self.gain_param_names, self.other_param_names]
         # self.model_params = list(self.model.parameters())
-        self.model_params = [*text_params, *xattn_params, gain_params, other_params]
+        self.model_params = [*text_params, *xattn_params, *itot_params, gain_params, other_params]
 
         self.master_params = self.model_params
         self.lg_loss_scale = lg_loss_scale
@@ -133,7 +143,8 @@ class TrainLoop:
 
         text_nparams = 0
         xattn_nparams = 0
-        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, 'xgain', 'other']):
+        itot_nparams = 0
+        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'other']):
             nparams = np.product(p.shape)
             prefix = '\t'
             if name in self.text_mods:
@@ -142,9 +153,13 @@ class TrainLoop:
             if name in self.xattn_mods:
                 xattn_nparams += nparams
                 prefix += '\t'
+            if name in self.itot_mods:
+                itot_params += nparams
+                prefix += '\t'
             print(f"{prefix}{nparams/1e6:.1f}M {name} params")
         print(f"\t{text_nparams/1e6:.1f}M text params")
         print(f"\t{xattn_nparams/1e6:.1f}M xattn params")
+        print(f"\t{itot_nparams/1e6:.1f}M itot params")
 
         self.opt = AdamW(
             [
@@ -153,9 +168,11 @@ class TrainLoop:
                     self.master_params,
                     [*[self.text_lr for _ in self.text_mods],
                      *[self.text_lr for _ in self.xattn_mods],
+                     *[self.text_lr for _ in self.itot_mods],
                       self.lr, self.lr],
                     [*[0. for _ in self.text_mods],
                      *[0. for _ in self.xattn_mods],
+                     *[0. for _ in self.itot_mods],
                       0., self.weight_decay]
                 )
             ],
@@ -362,9 +379,9 @@ class TrainLoop:
             sqsum += (p.grad ** 2).sum().item()
         logger.logkv_mean("grad_norm", np.sqrt(sqsum))
 
-        gn_xattn, gn_text = 0., 0.
+        gn_xattn, gn_text, gn_itot = 0., 0., 0.
 
-        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, 'xgain', 'other']):
+        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'other']):
             if p.grad is None:
                 continue
             gn_sq = (p.grad.float() ** 2).sum().item()
@@ -374,6 +391,8 @@ class TrainLoop:
                 gn_text += gn_sq
             elif name in self.xattn_mods:
                 gn_xattn += gn_sq
+            elif name in self.itot_mods:
+                gn_itot += gn_sq
             logger.logkv_mean(f"grad_norm_{name}", gn)
             # logger.logkv_mean(f"nz_{name}", nz)
 
@@ -383,8 +402,15 @@ class TrainLoop:
         gn_xattn = np.sqrt(gn_xattn)
         logger.logkv_mean(f"grad_norm_xattn", gn_xattn)
 
+        if gn_itot > 0:
+            gn_itot = np.sqrt(gn_itot)
+            logger.logkv_mean(f"grad_norm_itot", gn_itot)
+
         if (gn_text is not None) and (gn_xattn is not None):
             logger.logkv_mean(f"grad_norm_xt_ratio", gn_xattn / max(gn_text, 1e-8))
+
+        if gn_itot > 0:
+            logger.logkv_mean(f"grad_norm_xi_ratio", gn_xattn / max(gn_itot, 1e-8))
 
     def _anneal_lr(self):
         if not self.lr_anneal_steps:
