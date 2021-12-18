@@ -276,7 +276,7 @@ class TrainLoop:
             # yes profiler
             with th.profiler.profile(with_stack=True) as _p:
                 self.run_step(batch, cond, verbose = (self.step % self.log_interval == 0))
-            print(_p.key_averages(group_by_stack_n=10).table(sort_by="self_cuda_time_total", row_limit=50))
+            print(_p.key_averages(group_by_stack_n=15).table(sort_by="self_cuda_time_total", row_limit=50))
             # print(_p.key_averages().table(sort_by="self_cpu_time_total", row_limit=50))
 
             ## no profiler
