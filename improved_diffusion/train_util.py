@@ -272,7 +272,11 @@ class TrainLoop:
             or self.step + self.resume_step < self.lr_anneal_steps
         ):
             batch, cond = next(self.data)
-            self.run_step(batch, cond, verbose = (self.step % self.log_interval == 0))
+
+            with torch.profiler.profile() as _p:
+                self.run_step(batch, cond, verbose = (self.step % self.log_interval == 0))
+            print(_p.key_averages().table(sort_by="self_cuda_time_total", row_limit=-1))
+
             if self.step % self.log_interval == 0:
                 t2 = time.time()
                 print(f"{t2-t1:.2f} sec")
