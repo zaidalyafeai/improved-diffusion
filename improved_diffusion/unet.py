@@ -475,6 +475,7 @@ class UNetModel(nn.Module):
         weave_ff_mult=4,
         weave_ff_glu=False,
         weave_qkv_dim_always_text=False,
+        channels_last_mem=False,
     ):
         super().__init__()
 
@@ -517,6 +518,7 @@ class UNetModel(nn.Module):
         self.monochrome_adapter = monochrome_adapter
         self.rgb_adapter = rgb_adapter
         self.colorize = colorize
+        self.channels_last_mem = channels_last_mem
 
         if self.txt:
             self.text_encoder = TextEncoder(
@@ -792,9 +794,15 @@ class UNetModel(nn.Module):
         """
         Convert the torso of the model to float16.
         """
-        self.input_blocks.apply(convert_module_to_f16)#.to(memory_format=th.channels_last)
-        self.middle_block.apply(convert_module_to_f16)#.to(memory_format=th.channels_last)
-        self.output_blocks.apply(convert_module_to_f16)#.to(memory_format=th.channels_last)
+        self.input_blocks.apply(convert_module_to_f16)
+        self.middle_block.apply(convert_module_to_f16)
+        self.output_blocks.apply(convert_module_to_f16)
+
+        if self.channels_last_mem:
+            self.input_blocks.to(memory_format=th.channels_last)
+            self.middle_block.to(memory_format=th.channels_last)
+            self.output_block.to(memory_format=th.channels_last)
+
         # if hasattr(self, 'text_encoder'):
         #     self.text_encoder.apply(convert_module_to_f16)
 
@@ -844,7 +852,7 @@ class UNetModel(nn.Module):
             txt, attn_mask = self.text_encoder(txt, timesteps=timesteps)
             txt = txt.type(self.inner_dtype)
 
-        h = x#.to(memory_format=th.channels_last)
+        h = x
 
         if self.monochrome_adapter:
             h = self.mono_to_rgb(h)
@@ -852,6 +860,8 @@ class UNetModel(nn.Module):
             h = self.rgb_to_input(h)
 
         h = h.type(self.inner_dtype)
+        if self.channels_last_mem:
+            h = h.to(memory_format=th.channels_last)
         for module in self.input_blocks:
             h = module(h, emb, txt=txt, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
             hs.append(h)
