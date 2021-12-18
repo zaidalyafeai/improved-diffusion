@@ -801,7 +801,7 @@ class UNetModel(nn.Module):
         if self.channels_last_mem:
             self.input_blocks.to(memory_format=th.channels_last)
             self.middle_block.to(memory_format=th.channels_last)
-            self.output_block.to(memory_format=th.channels_last)
+            self.output_blocks.to(memory_format=th.channels_last)
 
         # if hasattr(self, 'text_encoder'):
         #     self.text_encoder.apply(convert_module_to_f16)
