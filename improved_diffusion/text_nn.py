@@ -229,16 +229,21 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
 
         fake_proj_weight = torch.eye(self.qkv_dim, dtype=query.dtype, device=query.device)
 
-        attn_output, attn_output_weights = torch.nn.functional.multi_head_attention_forward(
-            query, key, value, self.qkv_dim, self.num_heads,
-            self.in_proj_weight, self.in_proj_bias,
-            self.bias_k, self.bias_v, self.add_zero_attn,
-            self.dropout, self.out_proj.weight, self.out_proj.bias,
-            training=self.training,
-            key_padding_mask=None, need_weights=need_weights,
-            attn_mask=attn_mask, use_separate_proj_weight=True,
-            q_proj_weight=fake_proj_weight, k_proj_weight=fake_proj_weight,
-            v_proj_weight=fake_proj_weight)
+        in_dtype = query.dtype
+
+        with torch.cuda.amp.autocast():
+            attn_output, attn_output_weights = torch.nn.functional.multi_head_attention_forward(
+                query, key, value, self.qkv_dim, self.num_heads,
+                self.in_proj_weight, self.in_proj_bias,
+                self.bias_k, self.bias_v, self.add_zero_attn,
+                self.dropout, self.out_proj.weight, self.out_proj.bias,
+                training=self.training,
+                key_padding_mask=None, need_weights=need_weights,
+                attn_mask=attn_mask, use_separate_proj_weight=True,
+                q_proj_weight=fake_proj_weight, k_proj_weight=fake_proj_weight,
+                v_proj_weight=fake_proj_weight)
+
+        attn_output = attn_output.to(in_dtype)
         del fake_proj_weight
 
         if self.batch_first:
