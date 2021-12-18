@@ -275,7 +275,8 @@ class TrainLoop:
 
             with th.profiler.profile() as _p:
                 self.run_step(batch, cond, verbose = (self.step % self.log_interval == 0))
-            print(_p.key_averages().table(sort_by="self_cuda_time_total", row_limit=-1))
+            print(_p.key_averages().table(sort_by="self_cuda_time_total", row_limit=50))
+            print(_p.key_averages().table(sort_by="self_cpu_time_total", row_limit=50))
 
             if self.step % self.log_interval == 0:
                 t2 = time.time()
