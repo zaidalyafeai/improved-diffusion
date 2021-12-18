@@ -842,7 +842,7 @@ class UNetModel(nn.Module):
 
         if txt is not None:
             txt, attn_mask = self.text_encoder(txt, timesteps=timesteps)
-            txt = txt.type(self.inner_dtype).to(memory_format=th.channels_last)
+            txt = txt.type(self.inner_dtype)
 
         h = x.to(memory_format=th.channels_last)
 
