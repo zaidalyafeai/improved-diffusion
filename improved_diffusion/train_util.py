@@ -304,7 +304,7 @@ class TrainLoop:
     def forward_backward(self, batch, cond, verbose=False):
         zero_grad(self.model_params)
         for i in range(0, batch.shape[0], self.microbatch):
-            micro = batch[i : i + self.microbatch].to(dist_util.dev())
+            micro = batch[i : i + self.microbatch].pin_memory().to(dist_util.dev())
             micro_cond = {
                 k: v[i : i + self.microbatch].to(dist_util.dev())
                 if k != 'txt'
@@ -312,7 +312,7 @@ class TrainLoop:
                 for k, v in cond.items()
             }
             if 'txt' in micro_cond:
-                micro_cond['txt'] = th.as_tensor(tokenize(self.tokenizer, micro_cond['txt'])).to(dist_util.dev())
+                micro_cond['txt'] = th.as_tensor(tokenize(self.tokenizer, micro_cond['txt']), device=dist_util.dev())
             last_batch = (i + self.microbatch) >= batch.shape[0]
             t, weights = self.schedule_sampler.sample(micro.shape[0], dist_util.dev())
 
