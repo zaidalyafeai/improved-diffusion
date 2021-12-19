@@ -32,8 +32,8 @@ class SamplingModel(nn.Module):
         self.is_super_res = is_super_res
 
     @staticmethod
-    def from_config(checkpoint_path, config_path, respace_timesteps=""):
-        model, diffusion, tokenizer, is_super_res = load_config_to_model(config_path, respace_timesteps=respace_timesteps)
+    def from_config(checkpoint_path, config_path, timestep_respacing=""):
+        model, diffusion, tokenizer, is_super_res = load_config_to_model(config_path, timestep_respacing=timestep_respacing)
         model.load_state_dict(
             dist_util.load_state_dict(checkpoint_path, map_location="cpu")
         )

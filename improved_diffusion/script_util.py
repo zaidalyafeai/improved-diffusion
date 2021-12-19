@@ -635,12 +635,12 @@ def load_config_to_args(config_path, args):
     return args, is_super_res
 
 
-def load_config_to_model(config_path, respace_timesteps=""):
+def load_config_to_model(config_path, timestep_respacing=""):
     with open(config_path, 'r') as f:
         conf = json.load(f)
 
-    if respace_timesteps:
-        conf['respace_timesteps'] = respace_timesteps
+    if timestep_respacing:
+        conf['timestep_respacing'] = timestep_respacing
 
     is_super_res = conf['is_super_res']
 
