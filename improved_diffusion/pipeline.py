@@ -66,12 +66,12 @@ class SamplingModel(nn.Module):
 
         n_batches = n_samples // batch_size
 
-        if args.seed > -1:
-            print(f"setting seed to {args.seed}")
-            th.manual_seed(args.seed)
+        if seed > -1:
+            print(f"setting seed to {seed}")
+            th.manual_seed(seed)
 
         sample_fn = (
-            diffusion.p_sample_loop if not args.use_ddim else diffusion.ddim_sample_loop
+            diffusion.p_sample_loop if not use_ddim else diffusion.ddim_sample_loop
         )
 
         model_kwargs = {}
@@ -89,14 +89,14 @@ class SamplingModel(nn.Module):
                 low_res = low_res / 127.5 - 1.0
                 low_res = low_res.permute(0, 3, 1, 2)
 
-            model_kwargs['low_res'] = th.cat([low_res for _ in range(args.batch_size)])
+            model_kwargs['low_res'] = th.cat([low_res for _ in range(batch_size)])
             print(f"batch_size: {batch_size} vs low_res kwarg shape {model_kwargs['low_res'].shape}")
 
         image_channels = 1 if self.model.monochrome else 3
 
         all_images = []
 
-        while len(all_images) * args.batch_size < args.num_samples:
+        while len(all_images) * batch_size < num_samples:
             if self.is_super_res:
                 pass
             else:
