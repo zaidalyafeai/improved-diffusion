@@ -29,6 +29,7 @@ def main():
 
     logger.log("creating model...")
 
+    config_path = args.config_path
     have_config_path = config_path != ""
     using_config = have_config_path and os.path.exists(config_path)
 

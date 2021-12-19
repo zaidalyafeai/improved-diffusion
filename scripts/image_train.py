@@ -34,6 +34,7 @@ def main():
         args.text_lr_mult = None
     print(f"args.text_lr_mult: {args.text_lr_mult}")
 
+    config_path = args.config_path
     have_config_path = config_path != ""
     using_config = have_config_path and os.path.exists(config_path)
 
