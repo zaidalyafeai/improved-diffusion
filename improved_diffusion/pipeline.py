@@ -123,20 +123,49 @@ class SamplingPipeline(nn.Module):
         self.base_model = base_model
         self.super_res_model = super_res_model
 
-        def sample(self,
-                   text: Union[str, List[str]],
-                   batch_size: int,
-                   n_samples: int,
-                   clip_denoised=True,
-                   use_ddim=False,
-                   low_res=None,
-                   seed=None
-                   ):
-            low_res = self.base_model.sample(text, batch_size, n_samples,
-                                             clip_denoised=clip_denoised, use_ddim=use_dim,
-                                             seed=seed, to_visible=False)
-            high_res = self.super_res_model.sample(text, batch_size, n_samples,
-                                                   low_res=low_res,
-                                                   clip_denoised=clip_denoised, use_ddim=use_dim,
-                                                   seed=seed, from_visible=False)
-            return high_res
+    def sample(self,
+               text: Union[str, List[str]],
+               batch_size: int,
+               n_samples: int,
+               clip_denoised=True,
+               use_ddim=False,
+               low_res=None,
+               seed=None
+               ):
+        low_res = self.base_model.sample(text, batch_size, n_samples,
+                                         clip_denoised=clip_denoised, use_ddim=use_dim,
+                                         seed=seed, to_visible=False)
+        high_res = self.super_res_model.sample(text, batch_size, n_samples,
+                                               low_res=low_res,
+                                               clip_denoised=clip_denoised, use_ddim=use_dim,
+                                               seed=seed, from_visible=False)
+        return high_res
+
+    def sample_with_pruning(
+        self,
+        text: Union[str, List[str]],
+        batch_size: int,
+        n_samples: int,
+        prune_fn,
+        continue_if_all_pruned=True,
+        clip_denoised=True,
+        use_ddim=False,
+        low_res=None,
+        seed=None
+        ):
+        low_res = self.base_model.sample(text, batch_size, n_samples,
+                                         clip_denoised=clip_denoised, use_ddim=use_dim,
+                                         seed=seed, to_visible=True)
+        low_res_pruned, text_pruned = prune_fn(low_res, text)
+        if len(low_res_pruned) == 0:
+            if continue_if_all_pruned:
+                print(f"all {len(low_res)} low res samples would be pruned, skipping prune")
+                low_res_pruned = low_res
+            else:
+                return low_res_pruned
+
+        high_res = self.super_res_model.sample(text_pruned, batch_size, n_samples,
+                                               low_res=low_res_pruned,
+                                               clip_denoised=clip_denoised, use_ddim=use_dim,
+                                               seed=seed, from_visible=True)
+        return high_res
