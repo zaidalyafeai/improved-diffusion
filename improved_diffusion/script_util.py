@@ -635,9 +635,12 @@ def load_config_to_args(config_path, args):
     return args, is_super_res
 
 
-def load_config_to_model(config_path):
+def load_config_to_model(config_path, respace_timesteps=""):
     with open(config_path, 'r') as f:
         conf = json.load(f)
+
+    if respace_timesteps:
+        conf['respace_timesteps'] = respace_timesteps
 
     is_super_res = conf['is_super_res']
 
@@ -658,7 +661,7 @@ def load_config_to_model(config_path):
     creator = sr_create_model_and_diffusion if is_super_res else create_model_and_diffusion
     model, diffusion = creator(**model_diffusion_args)
 
-    return model, diffusion, tokenizer
+    return model, diffusion, tokenizer, is_super_res
 
 
 def save_config(config_path, model_diffusion_args, tokenizer_config, is_super_res):

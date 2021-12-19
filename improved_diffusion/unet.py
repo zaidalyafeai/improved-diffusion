@@ -512,6 +512,7 @@ class UNetModel(nn.Module):
 
         self.txt = txt
         self.txt_resolutions = txt_resolutions
+        self.image_size = image_size
 
         if monochrome_adapter and rgb_adapter:
             print("using both monochrome_adapter and rgb_adapter, make sure this is intentional!")
