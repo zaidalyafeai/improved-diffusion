@@ -8,6 +8,7 @@ import numpy as np
 from . import gaussian_diffusion as gd
 from .respace import SpacedDiffusion, space_timesteps
 from .unet import SuperResModel, UNetModel
+from .image_datasets import load_tokenizer
 
 NUM_CLASSES = 1000
 
@@ -632,6 +633,32 @@ def load_config_to_args(config_path, args):
             setattr(args, k, conf[k])
 
     return args, is_super_res
+
+
+def load_config_to_model(config_path):
+    with open(config_path, 'r') as f:
+        conf = json.load(f)
+
+    is_super_res = conf['is_super_res']
+
+    if is_super_res:
+        defaults = sr_model_and_diffusion_defaults()
+    else:
+        defaults = model_and_diffusion_defaults()
+
+    model_diffusion_args = {k: conf.get(k, defaults[k]) for k in defaults}
+
+    tokenizer = None
+
+    if model_diffusion_args['txt']:
+        tokenizer_config = conf['tokenizer_config']
+        tokenizer = load_tokenizer(**tokenizer_config)
+        model_diffusion_args['tokenizer'] = tokenizer
+
+    creator = sr_create_model_and_diffusion if is_super_res else create_model_and_diffusion
+    model, diffusion = creator(**model_diffusion_args)
+
+    return model, diffusion, tokenizer
 
 
 def save_config(config_path, model_diffusion_args, tokenizer_config, is_super_res):
