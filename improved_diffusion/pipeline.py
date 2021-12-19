@@ -54,6 +54,8 @@ class SamplingModel(nn.Module):
                to_visible=True,
                from_visible=True
                ):
+        dist_util.setup_dist()
+
         if self.is_super_res and low_res is None:
             raise ValueError('must pass low_res for super res')
 
