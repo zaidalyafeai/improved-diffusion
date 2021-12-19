@@ -26,6 +26,7 @@ from improved_diffusion.respace import SpacedDiffusion
 
 class SamplingModel(nn.Module):
     def __init__(self, model: UNetModel, diffusion: SpacedDiffusion, tokenizer, is_super_res=False):
+        super().__init__()
         self.model = model
         self.diffusion = diffusion  # TODO: allow changing spacing w/o reloading model
         self.tokenizer = tokenizer
