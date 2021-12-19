@@ -92,7 +92,7 @@ class SamplingModel(nn.Module):
             model_kwargs['low_res'] = th.cat([low_res for _ in range(batch_size)])
             print(f"batch_size: {batch_size} vs low_res kwarg shape {model_kwargs['low_res'].shape}")
 
-        image_channels = 1 if self.model.monochrome else 3
+        image_channels = self.model.in_channels
 
         all_images = []
 
