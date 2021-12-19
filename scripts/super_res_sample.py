@@ -17,6 +17,7 @@ from improved_diffusion.script_util import (
     sr_create_model_and_diffusion,
     args_to_dict,
     add_dict_to_argparser,
+    load_config_to_args
 )
 from improved_diffusion.image_datasets import load_superres_data, load_tokenizer, tokenize
 
@@ -26,6 +27,12 @@ def main():
 
     dist_util.setup_dist()
     logger.configure()
+
+    have_config_path = config_path != ""
+    using_config = have_config_path and os.path.exists(config_path)
+
+    if using_config:
+        args, _ = load_config_to_args(config_path, args)
 
     using_ground_truth = args.base_data_dir != "" and os.path.exists(args.base_data_dir)
     tokenizer = None
@@ -165,6 +172,7 @@ def create_argparser():
         txt_override="",
         char_level=False,
         colorize=False,
+        config_path="",
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

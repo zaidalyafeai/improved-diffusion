@@ -1,5 +1,6 @@
 import argparse
 import inspect
+import json
 from functools import partial
 
 import numpy as np
@@ -614,3 +615,30 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError("boolean value expected")
+
+
+def load_config_to_args(config_path, args):
+    is_super_res = None
+
+    with open(config_path, 'r') as f:
+        conf = json.load(f)
+    for k in conf:
+        if k == 'is_super_res':
+            is_super_res = conf[k]
+        elif k == 'tokenizer_config':
+            for k2 in conf[k]:
+                setattr(args, k2, conf[k][k2])
+        else:
+            setattr(args, k, conf[k])
+
+    return args, is_super_res
+
+
+def save_config(config_path, model_diffusion_args, tokenizer_config, is_super_res):
+    conf = dict(is_super_res=is_super_res, tokenizer_config=tokenizer_config)
+    for k in model_diffusion_args:
+        if k == "tokenizer":
+            continue
+        conf[k] = model_diffusion_args[k]
+    with open(config_path, 'w') as f:
+        json.dump(conf, f, indent=1)

@@ -15,6 +15,8 @@ from improved_diffusion.script_util import (
     sr_create_model_and_diffusion,
     args_to_dict,
     add_dict_to_argparser,
+    load_config_to_args,
+    save_config
 )
 from improved_diffusion.train_util import TrainLoop
 
@@ -26,15 +28,30 @@ def main():
     logger.configure()
 
     logger.log("creating model...")
+
+    have_config_path = config_path != ""
+    using_config = have_config_path and os.path.exists(config_path)
+
+    if using_config:
+        args, _ = load_config_to_args(config_path, args)
+
     tokenizer = None
+    tokenizer_config = dict(
+        max_seq_len=getattr(args, 'max_seq_len', None),
+        char_level=getattr(args, 'char_level', None),
+    )
     if args.txt:
-        tokenizer = load_tokenizer(max_seq_len=args.max_seq_len, char_level=args.char_level)
+        tokenizer = load_tokenizer(**tokenizer_config)
 
     model_diffusion_args = args_to_dict(args, sr_model_and_diffusion_defaults().keys())
     model_diffusion_args['tokenizer'] = tokenizer
     model, diffusion = sr_create_model_and_diffusion(
         **model_diffusion_args
     )
+
+    if have_config_path and (not using_config):
+        save_config(config_path, model_diffusion_args, tokenizer_config, is_super_res=True)
+
     model.to(dist_util.dev())
     schedule_sampler = create_named_schedule_sampler(args.schedule_sampler, diffusion)
 
@@ -109,6 +126,7 @@ def create_argparser():
         colorize=False,
         text_encoder_warmstart="",
         weave_legacy_param_names=False,
+        config_path="",
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
