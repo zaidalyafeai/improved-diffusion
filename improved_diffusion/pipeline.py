@@ -66,7 +66,7 @@ class SamplingModel(nn.Module):
 
         n_batches = n_samples // batch_size
 
-        if seed > -1:
+        if seed is not None:
             print(f"setting seed to {seed}")
             th.manual_seed(seed)
 
