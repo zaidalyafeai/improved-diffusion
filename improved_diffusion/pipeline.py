@@ -96,7 +96,7 @@ class SamplingModel(nn.Module):
 
         all_images = []
 
-        while len(all_images) * batch_size < num_samples:
+        while len(all_images) * batch_size < n_samples:
             if self.is_super_res:
                 pass
             else:
