@@ -76,7 +76,7 @@ class SamplingModel(nn.Module):
 
         model_kwargs = {}
 
-        txt = tokenize(tokenizer, batch_text)
+        txt = tokenize(self.tokenizer, batch_text)
         txt = th.as_tensor(txt).to(dist_util.dev())
         model_kwargs["txt"] = txt
 
