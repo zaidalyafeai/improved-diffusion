@@ -71,7 +71,7 @@ class SamplingModel(nn.Module):
             th.manual_seed(seed)
 
         sample_fn = (
-            diffusion.p_sample_loop if not use_ddim else diffusion.ddim_sample_loop
+            self.diffusion.p_sample_loop if not use_ddim else self.diffusion.ddim_sample_loop
         )
 
         model_kwargs = {}
