@@ -76,7 +76,9 @@ def model_and_diffusion_defaults():
         weave_ff_mult=4,
         weave_ff_glu=False,
         weave_qkv_dim_always_text=False,
-        channels_last_mem=False
+        channels_last_mem=False,
+        txt_ff_glu=False,
+        txt_ff_mult=4,
     )
 
 
@@ -140,6 +142,8 @@ def create_model_and_diffusion(
     weave_ff_glu=False,
     weave_qkv_dim_always_text=False,
     channels_last_mem=False,
+    txt_ff_glu=False,
+    txt_ff_mult=4,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     model = create_model(
@@ -193,6 +197,8 @@ def create_model_and_diffusion(
         weave_ff_glu=weave_ff_glu,
         weave_qkv_dim_always_text=weave_qkv_dim_always_text,
         channels_last_mem=channels_last_mem,
+        txt_ff_glu=txt_ff_glu,
+        txt_ff_mult=txt_ff_mult,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -266,6 +272,8 @@ def create_model(
     weave_ff_glu=False,
     weave_qkv_dim_always_text=False,
     channels_last_mem=False,
+    txt_ff_glu=False,
+    txt_ff_mult=4,
 ):
     text_lr_mult = 1.
     print(
@@ -357,6 +365,8 @@ def create_model(
         weave_ff_glu=weave_ff_glu,
         weave_qkv_dim_always_text=weave_qkv_dim_always_text,
         channels_last_mem=channels_last_mem,
+        txt_ff_glu=txt_ff_glu,
+        txt_ff_mult=txt_ff_mult,
     )
 
 
@@ -433,6 +443,8 @@ def sr_create_model_and_diffusion(
     weave_ff_glu=False,
     weave_qkv_dim_always_text=False,
     channels_last_mem=False,
+    txt_ff_glu=False,
+    txt_ff_mult=4,
 ):
     model = sr_create_model(
         large_size,
@@ -484,6 +496,8 @@ def sr_create_model_and_diffusion(
         weave_ff_glu=weave_ff_glu,
         weave_qkv_dim_always_text=weave_qkv_dim_always_text,
         channels_last_mem=channels_last_mem,
+        txt_ff_glu=txt_ff_glu,
+        txt_ff_mult=txt_ff_mult,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,

@@ -55,6 +55,7 @@ class TextEncoder(nn.Module):
         max_seq_len = 64,
         rotary_pos_emb = False,
         ff_glu = False,
+        ff_mult = 4,
         use_scalenorm = True,
         use_rezero = False,
         use_encoder_decoder = False,
@@ -83,32 +84,7 @@ class TextEncoder(nn.Module):
         print(f"TextEncoder: using num_tokens={num_tokens}, rotary_pos_emb={rotary_pos_emb}, rel_pos_bias={rel_pos_bias}")
 
         if self.use_encoder_decoder:
-            enc_kwargs = dict(
-                depth = depth,
-                heads = self.n_heads,
-                rotary_pos_emb = rotary_pos_emb,
-                ff_glu = ff_glu,
-                use_scalenorm = use_scalenorm,
-                use_rezero = use_rezero,
-            )
-            enc_kwargs = {k: encoder_kwargs.get(k, v) for k, v in enc_kwargs.items()}
-            enc_kwargs = {'enc_' + k: v for k, v in enc_kwargs.items()}
-
-            self.decoder_sqrt_ntok = decoder_sqrt_ntok
-            self.dec_max_seq_len = decoder_sqrt_ntok ** 2
-
-            self.model = XTransformer(
-                enc_num_tokens = num_tokens,
-                dec_num_tokens = 1,
-                enc_max_seq_len = max_seq_len,
-                dec_max_seq_len = self.dec_max_seq_len,
-                dim = inner_dim,
-                dec_depth = depth,
-                dec_heads = self.n_heads,
-                dec_rotary_pos_emb = rotary_pos_emb,
-                dec_ff_glu = ff_glu,
-                **enc_kwargs
-            )
+            raise ValueError('no longer supported')
         else:
             self.token_emb = nn.Embedding(num_tokens, inner_dim)
             self.pos_emb = AbsolutePositionalEmbedding(inner_dim, max_seq_len)
@@ -120,6 +96,7 @@ class TextEncoder(nn.Module):
                 heads = self.n_heads,
                 rotary_pos_emb = rotary_pos_emb,
                 ff_glu = ff_glu,
+                ff_mult = ff_mult,
                 use_scalenorm = use_scalenorm,
                 use_rezero = use_rezero,
                 rel_pos_bias = rel_pos_bias
@@ -130,24 +107,15 @@ class TextEncoder(nn.Module):
         if hasattr(self.model, "to_logits"):
             del self.model.to_logits
 
-        # self.time_embed = nn.Linear(inner_dim, inner_dim)
         self.time_embed_scale = inner_dim ** -0.5
         self.time_embed = nn.Sequential(
             SiLU(),
             nn.Linear(inner_dim, inner_dim),
         )
 
-        # if lr_mult is not None:
-        #     multiply_lr_via_hooks(self, lr_mult)
-
     def forward(self, tokens, timesteps=None):
         if self.use_encoder_decoder:
-            tgt = torch.zeros((tokens.shape[0], self.dec_max_seq_len), device=tokens.device, dtype=torch.int)
-            enc = self.model.encoder(tokens, return_embeddings = True)
-            out = self.model.decoder.net(tgt, context=enc, return_embeddings=True)
-            out = rearrange(out, 'b (h w) c -> b h w c', h=self.decoder_sqrt_ntok)
-            # out = self.proj(out)
-            return out
+            raise ValueError('no longer supported')
         else:
             x = tokens
             x = self.token_emb(x)

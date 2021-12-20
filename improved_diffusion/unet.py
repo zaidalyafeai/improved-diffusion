@@ -459,6 +459,8 @@ class UNetModel(nn.Module):
         cross_attn_orth_init=False,
         cross_attn_q_t_emb=False,
         txt_rezero=False,
+        txt_ff_glu=False,
+        txt_ff_mult=4,
         cross_attn_rezero=False,
         cross_attn_rezero_keeps_prenorm=False,
         cross_attn_use_layerscale=False,
@@ -532,6 +534,8 @@ class UNetModel(nn.Module):
                 tokenizer=tokenizer,
                 rel_pos_bias=txt_t5,
                 rotary_pos_emb=txt_rotary,
+                ff_glu=txt_ff_glu,
+                ff_mult=txt_ff_mult,
             )
 
         self.tgt_pos_embs = nn.ModuleDict({})
