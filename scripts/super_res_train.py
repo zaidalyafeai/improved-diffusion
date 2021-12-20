@@ -80,6 +80,7 @@ def main():
         txt=args.txt,
         monochrome=args.monochrome,
         colorize=args.colorize,
+        blur_prob=args.blur_prob,
     )
 
     logger.log("training...")
@@ -128,6 +129,7 @@ def create_argparser():
         text_encoder_warmstart="",
         weave_legacy_param_names=False,
         config_path="",
+        blur_prob=0.,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
