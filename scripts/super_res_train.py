@@ -130,6 +130,7 @@ def create_argparser():
         weave_legacy_param_names=False,
         config_path="",
         blur_prob=0.,
+        verbose=False,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
