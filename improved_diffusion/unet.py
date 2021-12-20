@@ -652,7 +652,7 @@ class UNetModel(nn.Module):
                             dropout,
                             out_channels=ch,
                             dims=dims,
-                            use_checkpoint=use_checkpoint,
+                            use_checkpoint=use_checkpoint or use_checkpoint_down,
                             use_scale_shift_norm=use_scale_shift_norm,
                             down=True,
                         )
@@ -772,7 +772,7 @@ class UNetModel(nn.Module):
                             dropout,
                             out_channels=ch,
                             dims=dims,
-                            use_checkpoint=use_checkpoint,
+                            use_checkpoint=use_checkpoint or use_checkpoint_up,
                             use_scale_shift_norm=use_scale_shift_norm,
                             up=True,
                         )
