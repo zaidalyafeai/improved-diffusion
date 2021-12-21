@@ -120,6 +120,9 @@ def normalization(channels):
     :param channels: number of input channels.
     :return: an nn.Module for normalization.
     """
+    if channels % 72 == 0:
+        # hack
+        return GroupNorm32(24, channels)
     return GroupNorm32(32, channels)
 
 
