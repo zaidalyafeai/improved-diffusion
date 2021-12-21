@@ -83,7 +83,6 @@ def main():
         blur_prob=args.blur_prob,
         blur_sigma_min=args.blur_sigma_min,
         blur_sigma_max=args.blur_sigma_max,
-        up_interp_mode=args.up_interp_mode,
     )
 
     logger.log("training...")
