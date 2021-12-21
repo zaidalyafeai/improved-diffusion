@@ -83,6 +83,7 @@ def main():
         blur_prob=args.blur_prob,
         blur_sigma_min=args.blur_sigma_min,
         blur_sigma_max=args.blur_sigma_max,
+        up_interp_mode=args.up_interp_mode,
     )
 
     logger.log("training...")
@@ -134,6 +135,7 @@ def create_argparser():
         blur_prob=0.,
         blur_sigma_min=0.4,
         blur_sigma_max=0.6,
+        up_interp_mode='bilinear',
         verbose=False,
     )
     defaults.update(sr_model_and_diffusion_defaults())

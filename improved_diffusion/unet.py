@@ -478,6 +478,7 @@ class UNetModel(nn.Module):
         weave_ff_glu=False,
         weave_qkv_dim_always_text=False,
         channels_last_mem=False,
+        up_interp_mode="bilinear",
     ):
         super().__init__()
 
@@ -522,6 +523,7 @@ class UNetModel(nn.Module):
         self.rgb_adapter = rgb_adapter
         self.colorize = colorize
         self.channels_last_mem = channels_last_mem
+        self.up_interp_mode = up_interp_mode
 
         if self.txt:
             self.text_encoder = TextEncoder(
@@ -929,12 +931,12 @@ class SuperResModel(UNetModel):
 
     def forward(self, x, timesteps, low_res=None, **kwargs):
         _, _, new_height, new_width = x.shape
-        upsampled = F.interpolate(low_res, (new_height, new_width), mode="bilinear")
+        upsampled = F.interpolate(low_res, (new_height, new_width), mode=self.up_interp_mode)
         x = th.cat([x, upsampled], dim=1)
         return super().forward(x, timesteps, **kwargs)
 
     def get_feature_vectors(self, x, timesteps, low_res=None, **kwargs):
         _, new_height, new_width, _ = x.shape
-        upsampled = F.interpolate(low_res, (new_height, new_width), mode="bilinear")
+        upsampled = F.interpolate(low_res, (new_height, new_width), mode=self.up_interp_mode)
         x = th.cat([x, upsampled], dim=1)
         return super().get_feature_vectors(x, timesteps, **kwargs)
