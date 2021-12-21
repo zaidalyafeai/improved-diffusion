@@ -90,7 +90,8 @@ def load_data(
 
 
 def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=False, txt=False, monochrome=False,
-                       deterministic=False, offset=0, colorize=False, blur_prob=0.):
+                       deterministic=False, offset=0, colorize=False,
+                       blur_prob=0., blur_sigma_min=0.4, blur_sigma_max=0.6):
     data = load_data(
         data_dir=data_dir,
         batch_size=batch_size,
@@ -102,7 +103,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         offset=offset
     )
     for large_batch, model_kwargs in data:
-        blurrer = T.RandomApply(transforms=[T.GaussianBlur(5, sigma=(0.4, 0.6))], p=blur_prob)
+        blurrer = T.RandomApply(transforms=[T.GaussianBlur(5, sigma=(blur_sigma_min, blur_sigma_max))], p=blur_prob)
 
         model_kwargs["low_res"] = F.interpolate(large_batch, small_size, mode="area")
         if colorize:

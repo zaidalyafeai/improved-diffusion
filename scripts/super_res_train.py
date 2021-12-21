@@ -81,6 +81,8 @@ def main():
         monochrome=args.monochrome,
         colorize=args.colorize,
         blur_prob=args.blur_prob,
+        blur_sigma_min=args.blur_sigma_min,
+        blur_sigma_max=args.blur_sigma_max,
     )
 
     logger.log("training...")
@@ -130,6 +132,8 @@ def create_argparser():
         weave_legacy_param_names=False,
         config_path="",
         blur_prob=0.,
+        blur_sigma_min=0.4,
+        blur_sigma_max=0.6,
         verbose=False,
     )
     defaults.update(sr_model_and_diffusion_defaults())
