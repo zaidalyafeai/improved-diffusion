@@ -482,7 +482,7 @@ class UNetModel(nn.Module):
     ):
         super().__init__()
 
-        print(f"unet: got txt={txt}, text_lr_mult={text_lr_mult}, txt_output_layers_only={txt_output_layers_only}, colorize={colorize} | weave_attn {weave_attn}")
+        print(f"unet: got txt={txt}, text_lr_mult={text_lr_mult}, txt_output_layers_only={txt_output_layers_only}, colorize={colorize} | weave_attn {weave_attn} | up_interp_mode={up_interp_mode}")
 
         if text_lr_mult < 0:
             text_lr_mult = None
