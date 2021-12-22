@@ -231,20 +231,23 @@ class TrainLoop:
                 )
                 if self.state_dict_sandwich > 0:
                     ks = list(sd.keys())
+                    newsd = {}
                     for k in ks:
                         if k.startswith("input_blocks."):
                             segs = k.split('.')
                             num = int(segs[1])
                             if num == 0:
-                                continue
-                            v = sd.pop(k)
+                                newsd[k] = sd[k]
+                            v = sd[k]
                             segs[1] = str(num + self.state_dict_sandwich)
                             newk = '.'.join(segs)
                             print(f'{v.shape} {k} -> {newk}')
-                            sd[newk] = v
+                            newsd[newk] = v
+                        else:
+                            newsd[k] = sd[k]
 
                 incompatible_keys = self.model.load_state_dict(
-                    sd,
+                    newsd,
                     strict = (not self.model.txt)
                 )
                 print(incompatible_keys)
