@@ -54,7 +54,8 @@ class TrainLoop:
         lg_loss_scale = INITIAL_LOG_LOSS_SCALE,
         beta1=0.9,
         beta2=0.999,
-        weave_legacy_param_names=False
+        weave_legacy_param_names=False,
+        state_dict_sandwich=0
     ):
         self.model = model
         self.diffusion = diffusion
@@ -78,6 +79,7 @@ class TrainLoop:
         self.weight_decay = weight_decay
         self.lr_anneal_steps = lr_anneal_steps
         self.tokenizer = tokenizer
+        self.state_dict_sandwich = state_dict_sandwich
 
         self.step = 0
         self.resume_step = 0
@@ -224,6 +226,20 @@ class TrainLoop:
             self.resume_step = parse_resume_step_from_filename(resume_checkpoint)
             if dist.get_rank() == 0:
                 logger.log(f"loading model from checkpoint: {resume_checkpoint}...")
+                sd = dist_util.load_state_dict(
+                    resume_checkpoint, map_location=dist_util.dev()
+                )
+                if self.state_dict_sandwich > 0:
+                    ks = list(sd.keys())
+                    for k in ks:
+                        if k.startswith("input_blocks."):
+                            v = sd.pop(k)
+                            segs = k.split('.')
+                            segs[1] = str(int(segs[1]) + 1)
+                            newk = '.'.join(segs)
+                            print(f'{k} -> {newk}')
+                            sd[newk] = v
+
                 incompatible_keys = self.model.load_state_dict(
                     dist_util.load_state_dict(
                         resume_checkpoint, map_location=dist_util.dev()
