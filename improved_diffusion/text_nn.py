@@ -319,7 +319,7 @@ class CrossAttention(nn.Module):
         return g
 
     def forward(self, src, tgt, attn_mask=None, tgt_pos_embs=None, timestep_emb=None):
-        print(f"emb_res={self.emb_res}")
+        print(f"ttoi emb_res={self.emb_res}")
         print(src[0, :3, :3])
         def _to_b_hw_c(x, retdims=True):
             b, c, *spatial = x.shape
@@ -484,6 +484,9 @@ class ImageToTextCrossAttention(nn.Module):
         return g
 
     def forward(self, src, tgt, attn_mask=None, image_pos_embs=None, timestep_emb=None):
+        print(f"itot emb_res={self.emb_res}")
+        print(src[0, :3, :3])
+
         def _to_b_hw_c(x, retdims=True):
             b, c, *spatial = x.shape
             xt = x.reshape(b, c, -1).transpose(1, 2)
