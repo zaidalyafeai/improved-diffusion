@@ -233,11 +233,11 @@ class TrainLoop:
                     ks = list(sd.keys())
                     for k in ks:
                         if k.startswith("input_blocks."):
-                            v = sd.pop(k)
                             segs = k.split('.')
                             num = int(segs[1])
                             if num == 0:
                                 continue
+                            v = sd.pop(k)
                             segs[1] = str(num + self.state_dict_sandwich)
                             newk = '.'.join(segs)
                             print(f'{v.shape} {k} -> {newk}')
