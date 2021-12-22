@@ -453,7 +453,8 @@ def sr_create_model_and_diffusion(
     channels_last_mem=False,
     txt_ff_glu=False,
     txt_ff_mult=4,
-    up_interp_mode='bilinear'
+    up_interp_mode='bilinear',
+    weave_v2=False
 ):
     model = sr_create_model(
         large_size,
@@ -507,7 +508,8 @@ def sr_create_model_and_diffusion(
         channels_last_mem=channels_last_mem,
         txt_ff_glu=txt_ff_glu,
         txt_ff_mult=txt_ff_mult,
-        up_interp_mode=up_interp_mode
+        up_interp_mode=up_interp_mode,
+        weave_v2=weave_v2,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
