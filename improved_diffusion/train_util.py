@@ -241,9 +241,7 @@ class TrainLoop:
                             sd[newk] = v
 
                 incompatible_keys = self.model.load_state_dict(
-                    dist_util.load_state_dict(
-                        resume_checkpoint, map_location=dist_util.dev()
-                    ),
+                    sd,
                     strict = (not self.model.txt)
                 )
                 print(incompatible_keys)
