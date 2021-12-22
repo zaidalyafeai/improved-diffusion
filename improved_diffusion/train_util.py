@@ -235,7 +235,7 @@ class TrainLoop:
                         if k.startswith("input_blocks."):
                             v = sd.pop(k)
                             segs = k.split('.')
-                            segs[1] = str(int(segs[1]) + 1)
+                            segs[1] = str(int(segs[1]) + self.state_dict_sandwich)
                             newk = '.'.join(segs)
                             print(f'{k} -> {newk}')
                             sd[newk] = v
