@@ -393,9 +393,9 @@ class CrossAttention(nn.Module):
 
         if self.resid:
             tgt = tgt + attn_output
-            return tgt
+            return tgt, src
 
-        return attn_output
+        return attn_output, src
 
 
 class ImageToTextCrossAttention(nn.Module):
@@ -525,7 +525,7 @@ class ImageToTextCrossAttention(nn.Module):
         if self.use_ff:
             ff_output = self.ff(self.ff_ln(tgt))
             tgt = tgt + ff_output
-        return tgt
+        return tgt, src
 
 
 class WeaveAttention(nn.Module):
@@ -597,7 +597,7 @@ class WeaveAttention(nn.Module):
         shared_kwargs = dict(attn_mask=attn_mask, timestep_emb=timestep_emb)
 
         for i_to_t, t_to_i in zip(self.image_to_text_layers, self.text_to_image_layers):
-            text = i_to_t(src=image, tgt=text, image_pos_embs=tgt_pos_embs, **shared_kwargs)
-            image = t_to_i(src=text, tgt=image, tgt_pos_embs=tgt_pos_embs, **shared_kwargs)
+            text, image = i_to_t(src=image, tgt=text, image_pos_embs=tgt_pos_embs, **shared_kwargs)
+            image, text = t_to_i(src=text, tgt=image, tgt_pos_embs=tgt_pos_embs, **shared_kwargs)
 
-        return image
+        return image, text

@@ -69,15 +69,16 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
     support it as an extra input.
     """
 
-    def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
+    def forward(self, inps, emb, attn_mask=None, tgt_pos_embs=None, timesteps=None):
+        x, txt = inps
         for layer in self:
             if isinstance(layer, TimestepBlock):
                 x = layer(x, emb)
             elif isinstance(layer, TextTimestepBlock):
-                x = layer(x, emb, txt, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs)
+                x, txt = layer(x, emb, txt, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs)
             else:
                 x = layer(x)
-        return x
+        return x, txt
 
 
 class Upsample(nn.Module):
@@ -870,12 +871,12 @@ class UNetModel(nn.Module):
         if self.channels_last_mem:
             h = h.to(memory_format=th.channels_last)
         for module in self.input_blocks:
-            h = module(h, emb, txt=txt, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
+            h, txt = module((h, txt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
             hs.append(h)
-        h = self.middle_block(h, emb, txt=txt, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
+        h, txt = self.middle_block((h, txt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
         for module in self.output_blocks:
             cat_in = th.cat([h, hs.pop()], dim=1)
-            h = module(cat_in, emb, txt=txt, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
+            h, txt = module((cat_in, txt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
         h = h.type(x.dtype)
         h = self.out(h)
 
