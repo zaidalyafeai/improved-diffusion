@@ -246,6 +246,8 @@ class TrainLoop:
                             newsd[newk] = v
                         else:
                             newsd[k] = sd[k]
+                else:
+                    newsd = sd
 
                 incompatible_keys = self.model.load_state_dict(
                     newsd,
