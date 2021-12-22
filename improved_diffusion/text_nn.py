@@ -549,9 +549,12 @@ class WeaveAttention(nn.Module):
         ff_mult=4,
         ff_glu=False,
         qkv_dim_always_text=False,
+        weave_v2=False,
         **text_to_image_kwargs,
     ):
         super().__init__()
+
+        self.weave_v2 = weave_v2
 
         shared_args = dict(
             heads=heads,
@@ -596,8 +599,12 @@ class WeaveAttention(nn.Module):
     def forward(self, text, image, attn_mask=None, tgt_pos_embs=None, timestep_emb=None):
         shared_kwargs = dict(attn_mask=attn_mask, timestep_emb=timestep_emb)
 
+        orig_text = text
+
         for i_to_t, t_to_i in zip(self.image_to_text_layers, self.text_to_image_layers):
             text, image = i_to_t(src=image, tgt=text, image_pos_embs=tgt_pos_embs, **shared_kwargs)
             image, text = t_to_i(src=text, tgt=image, tgt_pos_embs=tgt_pos_embs, **shared_kwargs)
 
-        return image, text
+        if self.weave_v2:
+            return image, text
+        return image, orig_text

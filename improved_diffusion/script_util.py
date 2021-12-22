@@ -79,6 +79,7 @@ def model_and_diffusion_defaults():
         channels_last_mem=False,
         txt_ff_glu=False,
         txt_ff_mult=4,
+        weave_v2=False,
     )
 
 
@@ -144,6 +145,7 @@ def create_model_and_diffusion(
     channels_last_mem=False,
     txt_ff_glu=False,
     txt_ff_mult=4,
+    weave_v2=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     model = create_model(
@@ -199,6 +201,7 @@ def create_model_and_diffusion(
         channels_last_mem=channels_last_mem,
         txt_ff_glu=txt_ff_glu,
         txt_ff_mult=txt_ff_mult,
+        weave_v2=weave_v2,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -275,6 +278,7 @@ def create_model(
     txt_ff_glu=False,
     txt_ff_mult=4,
     up_interp_mode="bilinear",
+    weave_v2=False,
 ):
     text_lr_mult = 1.
     print(
@@ -369,6 +373,7 @@ def create_model(
         txt_ff_glu=txt_ff_glu,
         txt_ff_mult=txt_ff_mult,
         up_interp_mode=up_interp_mode,
+        weave_v2=weave_v2,
     )
 
 

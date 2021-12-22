@@ -480,10 +480,11 @@ class UNetModel(nn.Module):
         weave_qkv_dim_always_text=False,
         channels_last_mem=False,
         up_interp_mode="bilinear",
+        weave_v2=False,
     ):
         super().__init__()
 
-        print(f"unet: got txt={txt}, text_lr_mult={text_lr_mult}, txt_output_layers_only={txt_output_layers_only}, colorize={colorize} | weave_attn {weave_attn} | up_interp_mode={up_interp_mode}")
+        print(f"unet: got txt={txt}, text_lr_mult={text_lr_mult}, txt_output_layers_only={txt_output_layers_only}, colorize={colorize} | weave_attn {weave_attn} | up_interp_mode={up_interp_mode} | weave_v2={weave_v2}")
 
         if text_lr_mult < 0:
             text_lr_mult = None
@@ -633,6 +634,7 @@ class UNetModel(nn.Module):
                             ff_mult=weave_ff_mult,
                             ff_glu=weave_ff_glu,
                             qkv_dim_always_text=weave_qkv_dim_always_text,
+                            weave_v2=weave_v2,
                         ))
                         caa = WeaveAttentionAdapter(**caa_args)
                     else:
@@ -758,6 +760,7 @@ class UNetModel(nn.Module):
                             ff_mult=weave_ff_mult,
                             ff_glu=weave_ff_glu,
                             qkv_dim_always_text=weave_qkv_dim_always_text,
+                            weave_v2=weave_v2,
                         ))
                         caa = WeaveAttentionAdapter(**caa_args)
                     else:
