@@ -240,7 +240,7 @@ class TrainLoop:
                                 continue
                             segs[1] = str(num + self.state_dict_sandwich)
                             newk = '.'.join(segs)
-                            print(f'{k} -> {newk}')
+                            print(f'{v.shape} {k} -> {newk}')
                             sd[newk] = v
 
                 incompatible_keys = self.model.load_state_dict(
