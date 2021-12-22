@@ -238,6 +238,7 @@ class TrainLoop:
                             num = int(segs[1])
                             if num == 0:
                                 newsd[k] = sd[k]
+                                continue
                             v = sd[k]
                             segs[1] = str(num + self.state_dict_sandwich)
                             newk = '.'.join(segs)
