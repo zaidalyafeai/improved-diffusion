@@ -224,12 +224,13 @@ class TrainLoop:
             self.resume_step = parse_resume_step_from_filename(resume_checkpoint)
             if dist.get_rank() == 0:
                 logger.log(f"loading model from checkpoint: {resume_checkpoint}...")
-                self.model.load_state_dict(
+                incompatible_keys = self.model.load_state_dict(
                     dist_util.load_state_dict(
                         resume_checkpoint, map_location=dist_util.dev()
                     ),
                     strict = (not self.model.txt)
                 )
+                print(incompatible_keys)
 
         dist_util.sync_params(self.model.parameters())
 
