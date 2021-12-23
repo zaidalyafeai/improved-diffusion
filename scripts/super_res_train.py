@@ -107,6 +107,7 @@ def main():
         beta2=args.beta2,
         weave_legacy_param_names=args.weave_legacy_param_names,
         state_dict_sandwich=args.state_dict_sandwich,
+        state_dict_sandwich_skipnames=args.state_dict_sandwich_skipnames,
     ).run_loop()
 
 
@@ -138,6 +139,7 @@ def create_argparser():
         up_interp_mode='bilinear',
         verbose=False,
         state_dict_sandwich=0,
+        state_dict_sandwich_skipnames=""
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

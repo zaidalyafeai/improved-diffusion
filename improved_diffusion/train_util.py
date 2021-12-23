@@ -55,7 +55,8 @@ class TrainLoop:
         beta1=0.9,
         beta2=0.999,
         weave_legacy_param_names=False,
-        state_dict_sandwich=0
+        state_dict_sandwich=0,
+        state_dict_sandwich_skipnames=""
     ):
         self.model = model
         self.diffusion = diffusion
@@ -80,6 +81,7 @@ class TrainLoop:
         self.lr_anneal_steps = lr_anneal_steps
         self.tokenizer = tokenizer
         self.state_dict_sandwich = state_dict_sandwich
+        self.state_dict_sandwich_skipnames = state_dict_sandwich_skipnames.split(",")
 
         self.step = 0
         self.resume_step = 0
@@ -233,22 +235,36 @@ class TrainLoop:
                     resume_checkpoint, map_location=dist_util.dev()
                 )
                 if self.state_dict_sandwich > 0:
-                    ks = list(sd.keys())
+                    ks = list(sd.keys())  # TODO: verify this remembers order
                     newsd = {}
+                    output_blocks_do_skip = False
                     for k in ks:
                         if k.startswith("input_blocks."):
                             segs = k.split('.')
                             num = int(segs[1])
                             if num == 0:
-                                # # input transducer might be badly scaled?
-                                # newsd[k] = sd[k]
+                                # skip input transducer
                                 continue
                             v = sd[k]
                             segs[1] = str(num + self.state_dict_sandwich)
                             newk = '.'.join(segs)
                             print(f'{v.shape} {k} -> {newk}')
                             newsd[newk] = v
+                        elif k.startswith('output_blocks.'):
+                            if any(k.startswith(skipname) for skipname in self.state_dict_sandwich_skipnames):
+                                output_blocks_do_skip = True
+                            if output_blocks_do_skip:
+                                segs = k.split('.')
+                                num = int(segs[1])
+                                v = sd[k]
+                                segs[1] = str(num + len(self.state_dict_sandwich_skipnames))
+                                newk = '.'.join(segs)
+                                print(f'{v.shape} {k} -> {newk}')
+                                newsd[newk] = v
+                            else:
+                                newsd[k] = sd[k]
                         elif k.startswith("out."):
+                            # skip output transducer
                             print(f"skipping {k}")
                         else:
                             newsd[k] = sd[k]
