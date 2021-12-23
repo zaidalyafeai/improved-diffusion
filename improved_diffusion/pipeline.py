@@ -76,7 +76,7 @@ class SamplingModel(nn.Module):
             batch_text = batch_size * [text]
         else:
             if len(text) != batch_size:
-                raise ValueError(f"got len({text}) texts for bs {batch_size}")
+                raise ValueError(f"got {len(text)} texts for bs {batch_size}")
             batch_text = text
 
         n_batches = n_samples // batch_size
@@ -236,7 +236,8 @@ class SamplingPipeline(nn.Module):
         tile_shape[0] = n_samples // len(low_res_pruned) + 1
         low_res_pruned = np.tile(low_res_pruned, tile_shape)[:n_samples_sres]
 
-        text_pruned = (text_pruned * tile_shape[0])[:n_samples_sres]
+        # text_pruned = (text_pruned * tile_shape[0])[:n_samples_sres]
+        text_pruned = text  # TODO: remove 'text_pruned' concept
 
         high_res = self.super_res_model.sample(
             text_pruned,
