@@ -94,7 +94,7 @@ class SamplingModel(nn.Module):
 
             # model_kwargs['low_res'] = th.cat([low_res for _ in range(batch_size)])
             # model_kwargs['low_res'] = th.stack([low_res for _ in range(batch_size)])
-            model_kwargs['low_res'] = low_res
+            model_kwargs['low_res'] = low_res.to(dist_util.dev())
             print(f"batch_size: {batch_size} vs low_res kwarg shape {model_kwargs['low_res'].shape}")
 
         image_channels = self.model.in_channels
@@ -102,7 +102,7 @@ class SamplingModel(nn.Module):
         all_images = []
 
         while len(all_images) * batch_size < n_samples:
-            if self.is_super_res:
+            if False: # self.is_super_res:
                 pass
             else:
                 sample = sample_fn(
