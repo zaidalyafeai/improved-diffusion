@@ -136,11 +136,11 @@ class SamplingPipeline(nn.Module):
                seed=None
                ):
         low_res = self.base_model.sample(text, batch_size, n_samples,
-                                         clip_denoised=clip_denoised, use_ddim=use_dim,
+                                         clip_denoised=clip_denoised, use_ddim=use_ddim,
                                          seed=seed, to_visible=False)
         high_res = self.super_res_model.sample(text, batch_size, n_samples,
                                                low_res=low_res,
-                                               clip_denoised=clip_denoised, use_ddim=use_dim,
+                                               clip_denoised=clip_denoised, use_ddim=use_ddim,
                                                seed=seed, from_visible=False)
         return high_res
 
