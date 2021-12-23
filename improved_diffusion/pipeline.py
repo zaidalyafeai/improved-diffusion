@@ -231,9 +231,12 @@ class SamplingPipeline(nn.Module):
             else:
                 return low_res_pruned
 
+        # n_samples_sres = minimum we're OK sampling
+        n_samples_sres = max(n_samples_sres, len(low_res_pruned))
+
         # TODO: n_samples > batch_size case
         tile_shape = [1] * low_res_pruned.ndim
-        tile_shape[0] = n_samples // len(low_res_pruned) + 1
+        tile_shape[0] = n_samples_sres // len(low_res_pruned) + 1
         low_res_pruned = np.tile(low_res_pruned, tile_shape)[:n_samples_sres]
 
         # text_pruned = (text_pruned * tile_shape[0])[:n_samples_sres]
