@@ -19,7 +19,7 @@ from .fp16_util import (
     unflatten_master_params,
     zero_grad,
 )
-from .nn import update_ema
+from .nn import update_ema, scale_module
 from .resample import LossAwareSampler, UniformSampler
 
 from .image_datasets import tokenize
@@ -255,6 +255,10 @@ class TrainLoop:
                     strict = (not self.model.txt)
                 )
                 print(incompatible_keys)
+
+                if self.state_dict_sandwich > 0:
+                    for n, p in self.model.named_parameters():
+                        print(f"{n} | {th.linalg.norm(p).item()}")
 
         dist_util.sync_params(self.model.parameters())
 
