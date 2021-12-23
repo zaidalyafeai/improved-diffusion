@@ -237,7 +237,8 @@ class TrainLoop:
                             segs = k.split('.')
                             num = int(segs[1])
                             if num == 0:
-                                newsd[k] = sd[k]
+                                # # input transducer might be badly scaled?
+                                # newsd[k] = sd[k]
                                 continue
                             v = sd[k]
                             segs[1] = str(num + self.state_dict_sandwich)
