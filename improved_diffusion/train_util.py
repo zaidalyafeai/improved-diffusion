@@ -244,7 +244,7 @@ class TrainLoop:
                             segs[1] = str(num + self.state_dict_sandwich)
                             newk = '.'.join(segs)
                             print(f'{v.shape} {k} -> {newk}')
-                            newsd[newk] = v / np.sqrt(2)
+                            newsd[newk] = v
                         else:
                             newsd[k] = sd[k]
                 else:
@@ -256,9 +256,9 @@ class TrainLoop:
                 )
                 print(incompatible_keys)
 
-                if self.state_dict_sandwich > 0:
-                    for n, p in self.model.named_parameters():
-                        print(f"{th.linalg.norm(p).item():.3f} | {n in newsd} | {n}")
+                # if self.state_dict_sandwich > 0:
+                #     for n, p in self.model.named_parameters():
+                #         print(f"{th.linalg.norm(p).item():.3f} | {n in newsd} | {n}")
 
         dist_util.sync_params(self.model.parameters())
 
