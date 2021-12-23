@@ -169,6 +169,7 @@ class SamplingPipeline(nn.Module):
             if continue_if_all_pruned:
                 print(f"all {len(low_res)} low res samples would be pruned, skipping prune")
                 low_res_pruned = low_res
+                text_pruned = text
             else:
                 return low_res_pruned
 
