@@ -92,8 +92,6 @@ class SamplingModel(nn.Module):
                 low_res = low_res / 127.5 - 1.0
                 low_res = low_res.permute(0, 3, 1, 2)
 
-            # model_kwargs['low_res'] = th.cat([low_res for _ in range(batch_size)])
-            # model_kwargs['low_res'] = th.stack([low_res for _ in range(batch_size)])
             model_kwargs['low_res'] = low_res.to(dist_util.dev())
             print(f"batch_size: {batch_size} vs low_res kwarg shape {model_kwargs['low_res'].shape}")
 
@@ -164,7 +162,7 @@ class SamplingPipeline(nn.Module):
         seed=None
         ):
         low_res = self.base_model.sample(text, batch_size, n_samples,
-                                         clip_denoised=clip_denoised, use_ddim=use_dim,
+                                         clip_denoised=clip_denoised, use_ddim=use_ddim,
                                          seed=seed, to_visible=True)
         low_res_pruned, text_pruned = prune_fn(low_res, text)
         if len(low_res_pruned) == 0:
@@ -174,8 +172,13 @@ class SamplingPipeline(nn.Module):
             else:
                 return low_res_pruned
 
+        # TODO: n_samples > batch_size case
+        tile_shape = [1] * low_res_pruned.ndim
+        tile_shape[0] = n_samples // len(low_res_pruned) + 1
+        low_res_pruned = np.tile(low_res_pruned, tile_shape)[:n_samples]
+
         high_res = self.super_res_model.sample(text_pruned, batch_size, n_samples,
                                                low_res=low_res_pruned,
-                                               clip_denoised=clip_denoised, use_ddim=use_dim,
+                                               clip_denoised=clip_denoised, use_ddim=use_ddim,
                                                seed=seed, from_visible=True)
         return high_res
