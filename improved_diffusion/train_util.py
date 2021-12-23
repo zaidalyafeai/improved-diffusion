@@ -83,6 +83,7 @@ class TrainLoop:
         self.state_dict_sandwich = state_dict_sandwich
         self.state_dict_sandwich_manual_remaps = {kv.split(":")[0]: kv.split(":")[1]
                                                   for kv in state_dict_sandwich_manual_remaps.split(",")
+                                                  if len(kv) > 0
                                                   }
 
         self.step = 0
