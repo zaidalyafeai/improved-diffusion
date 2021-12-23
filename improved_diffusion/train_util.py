@@ -81,9 +81,9 @@ class TrainLoop:
         self.lr_anneal_steps = lr_anneal_steps
         self.tokenizer = tokenizer
         self.state_dict_sandwich = state_dict_sandwich
-        self.state_dict_sandwich_manual_remaps = {k: v
+        self.state_dict_sandwich_manual_remaps = {kv.split(":")[0]: kv.split(":")[1]
                                                   for kv in state_dict_sandwich_manual_remaps.split(",")
-                                                  for k, v in kv.split(":")}
+                                                  }
 
         self.step = 0
         self.resume_step = 0
