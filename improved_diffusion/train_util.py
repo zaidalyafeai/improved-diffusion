@@ -83,7 +83,7 @@ class TrainLoop:
         self.state_dict_sandwich = state_dict_sandwich
         self.state_dict_sandwich_manual_remaps = {k: v
                                                   for kv in state_dict_sandwich_skipnames.split(",")
-                                                  for k, v in kv]
+                                                  for k, v in kv}
 
         self.step = 0
         self.resume_step = 0
