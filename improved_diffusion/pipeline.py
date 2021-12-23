@@ -177,6 +177,8 @@ class SamplingPipeline(nn.Module):
         tile_shape[0] = n_samples // len(low_res_pruned) + 1
         low_res_pruned = np.tile(low_res_pruned, tile_shape)[:n_samples]
 
+        text_pruned = (text_pruned * tile_shape[0])[:n_samples]
+
         high_res = self.super_res_model.sample(text_pruned, batch_size, n_samples,
                                                low_res=low_res_pruned,
                                                clip_denoised=clip_denoised, use_ddim=use_ddim,
