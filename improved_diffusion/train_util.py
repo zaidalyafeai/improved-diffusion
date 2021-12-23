@@ -258,7 +258,7 @@ class TrainLoop:
 
                 if self.state_dict_sandwich > 0:
                     for n, p in self.model.named_parameters():
-                        print(f"{n} | {th.linalg.norm(p).item()}")
+                        print(f"{th.linalg.norm(p).item():.3f} | {n in newsd} | {n}")
 
         dist_util.sync_params(self.model.parameters())
 
