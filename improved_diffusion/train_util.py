@@ -245,6 +245,8 @@ class TrainLoop:
                             newk = '.'.join(segs)
                             print(f'{v.shape} {k} -> {newk}')
                             newsd[newk] = v
+                        elif k.startswith("out."):
+                            print(f"skipping {k}")
                         else:
                             newsd[k] = sd[k]
                 else:
