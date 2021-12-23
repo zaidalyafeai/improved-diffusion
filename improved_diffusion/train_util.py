@@ -81,7 +81,9 @@ class TrainLoop:
         self.lr_anneal_steps = lr_anneal_steps
         self.tokenizer = tokenizer
         self.state_dict_sandwich = state_dict_sandwich
-        self.state_dict_sandwich_skipnames = state_dict_sandwich_skipnames.split(",")
+        self.state_dict_sandwich_skipnames = [n
+                                              for n in state_dict_sandwich_skipnames.split(",")
+                                              if len(n) > 0]
 
         self.step = 0
         self.resume_step = 0
