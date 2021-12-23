@@ -244,7 +244,7 @@ class TrainLoop:
                             segs[1] = str(num + self.state_dict_sandwich)
                             newk = '.'.join(segs)
                             print(f'{v.shape} {k} -> {newk}')
-                            newsd[newk] = v
+                            newsd[newk] = v / np.sqrt(2)
                         else:
                             newsd[k] = sd[k]
                 else:
