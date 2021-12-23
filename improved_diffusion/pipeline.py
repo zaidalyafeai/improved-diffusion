@@ -23,6 +23,10 @@ from improved_diffusion.unet import UNetModel
 from improved_diffusion.respace import SpacedDiffusion
 
 
+def _strip_space(s):
+    return "\n".join([part.strip(" ") for part in s.split("\n")])
+
+
 class SamplingModel(nn.Module):
     def __init__(
         self,
@@ -169,7 +173,13 @@ class SamplingPipeline(nn.Module):
         seed=None,
         batch_size_sres=None,
         n_samples_sres=None,
+        strip_space=True,
     ):
+        if isinstance(text, list):
+            text = [_strip_space(s) for s in text]
+        else:
+            text = _strip_space(text)
+        
         batch_size_sres = batch_size_sres or batch_size
         n_samples_sres = n_samples_sres or n_samples
 
@@ -207,7 +217,14 @@ class SamplingPipeline(nn.Module):
         seed=None,
         batch_size_sres=None,
         n_samples_sres=None,
+        strip_space=True,
     ):
+        if strip_space:
+            if isinstance(text, list):
+                text = [_strip_space(s) for s in text]
+            else:
+                text = _strip_space(text)
+
         batch_size_sres = batch_size_sres or batch_size
         n_samples_sres = n_samples_sres or n_samples
 
