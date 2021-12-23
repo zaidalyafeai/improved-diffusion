@@ -137,6 +137,8 @@ class TrainLoop:
         self.param_name_groups = [*self.text_param_names, *self.xattn_param_names, *self.itot_param_names, self.gain_param_names, self.other_param_names]
         # self.model_params = list(self.model.parameters())
         self.model_params = [*text_params, *xattn_params, *itot_params, gain_params, other_params]
+        if len(gain_params) == 0:
+            self.model_params = [other_params]
 
         self.master_params = self.model_params
         self.lg_loss_scale = lg_loss_scale
