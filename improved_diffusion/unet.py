@@ -859,6 +859,7 @@ class UNetModel(nn.Module):
             assert y.shape == (x.shape[0],)
             emb = emb + self.label_emb(y)
 
+        attn_mask = None
         if txt is not None:
             txt, attn_mask = self.text_encoder(txt, timesteps=timesteps)
             txt = txt.type(self.inner_dtype)
