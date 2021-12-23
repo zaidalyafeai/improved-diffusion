@@ -86,12 +86,15 @@ class SamplingModel(nn.Module):
             # TODO: shape vs. text shape
             print(f"batch_size: {batch_size} vs low_res shape {low_res.shape}")
 
+            low_res = th.from_numpy(low_res).float()
+
             if from_visible:
-                low_res = th.from_numpy(low_res).float()
                 low_res = low_res / 127.5 - 1.0
                 low_res = low_res.permute(0, 3, 1, 2)
 
-            model_kwargs['low_res'] = th.cat([low_res for _ in range(batch_size)])
+            # model_kwargs['low_res'] = th.cat([low_res for _ in range(batch_size)])
+            # model_kwargs['low_res'] = th.stack([low_res for _ in range(batch_size)])
+            model_kwargs['low_res'] = low_res
             print(f"batch_size: {batch_size} vs low_res kwarg shape {model_kwargs['low_res'].shape}")
 
         image_channels = self.model.in_channels
@@ -116,6 +119,8 @@ class SamplingModel(nn.Module):
                 gathered_samples = [th.zeros_like(sample) for _ in range(dist.get_world_size())]
                 dist.all_gather(gathered_samples, sample)  # gather not supported with NCCL
                 all_images.extend([sample.cpu().numpy() for sample in gathered_samples])
+
+        all_images = np.concatenate(all_images, axis=0)
 
         return all_images
 
