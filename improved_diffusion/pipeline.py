@@ -116,7 +116,7 @@ class SamplingModel(nn.Module):
 
         image_channels = self.model.in_channels
         if self.is_super_res:
-            image_channels -= model_kwargs["low_res"].shape[1]
+            image_channels -= all_low_res.shape[1]
 
         all_images = []
 
