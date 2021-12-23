@@ -82,6 +82,8 @@ class SamplingModel(nn.Module):
         txt = th.as_tensor(txt).to(dist_util.dev())
         model_kwargs["txt"] = txt
 
+        all_low_res = []
+
         if self.is_super_res:
             # TODO: shape vs. text shape
             print(f"batch_size: {batch_size} vs low_res shape {low_res.shape}")
@@ -92,7 +94,7 @@ class SamplingModel(nn.Module):
                 low_res = low_res / 127.5 - 1.0
                 low_res = low_res.permute(0, 3, 1, 2)
 
-            model_kwargs['low_res'] = low_res.to(dist_util.dev())
+            all_low_res = low_res.to(dist_util.dev())
             print(f"batch_size: {batch_size} vs low_res kwarg shape {model_kwargs['low_res'].shape}")
 
         image_channels = self.model.in_channels
@@ -102,23 +104,24 @@ class SamplingModel(nn.Module):
         all_images = []
 
         while len(all_images) * batch_size < n_samples:
-            if False: # self.is_super_res:
-                pass
-            else:
-                sample = sample_fn(
-                    self.model,
-                    (batch_size, image_channels, self.model.image_size, self.model.image_size),
-                    clip_denoised=clip_denoised,
-                    model_kwargs=model_kwargs,
-                )
-                if to_visible:
-                    sample = ((sample + 1) * 127.5).clamp(0, 255).to(th.uint8)
-                    sample = sample.permute(0, 2, 3, 1)
-                    sample = sample.contiguous()
+            offset = len(all_images)
+            if self.is_super_res:
+                model_kwargs['low_res'] = all_low_res[offset:offset+batch_size]
 
-                gathered_samples = [th.zeros_like(sample) for _ in range(dist.get_world_size())]
-                dist.all_gather(gathered_samples, sample)  # gather not supported with NCCL
-                all_images.extend([sample.cpu().numpy() for sample in gathered_samples])
+            sample = sample_fn(
+                self.model,
+                (batch_size, image_channels, self.model.image_size, self.model.image_size),
+                clip_denoised=clip_denoised,
+                model_kwargs=model_kwargs,
+            )
+            if to_visible:
+                sample = ((sample + 1) * 127.5).clamp(0, 255).to(th.uint8)
+                sample = sample.permute(0, 2, 3, 1)
+                sample = sample.contiguous()
+
+            gathered_samples = [th.zeros_like(sample) for _ in range(dist.get_world_size())]
+            dist.all_gather(gathered_samples, sample)  # gather not supported with NCCL
+            all_images.extend([sample.cpu().numpy() for sample in gathered_samples])
 
         all_images = np.concatenate(all_images, axis=0)
 
@@ -138,12 +141,17 @@ class SamplingPipeline(nn.Module):
                clip_denoised=True,
                use_ddim=False,
                low_res=None,
-               seed=None
+               seed=None,
+               batch_size_sres=None,
+               n_samples_sres=None,
                ):
+        batch_size_sres = batch_size_sres or batch_size
+        n_samples_sres = n_samples_sres or n_samples
+
         low_res = self.base_model.sample(text, batch_size, n_samples,
                                          clip_denoised=clip_denoised, use_ddim=use_ddim,
                                          seed=seed, to_visible=False)
-        high_res = self.super_res_model.sample(text, batch_size, n_samples,
+        high_res = self.super_res_model.sample(text, batch_size_sres, n_samples_sres,
                                                low_res=low_res,
                                                clip_denoised=clip_denoised, use_ddim=use_ddim,
                                                seed=seed, from_visible=False)
@@ -159,8 +167,13 @@ class SamplingPipeline(nn.Module):
         clip_denoised=True,
         use_ddim=False,
         low_res=None,
-        seed=None
+        seed=None,
+        batch_size_sres=None,
+        n_samples_sres=None,
         ):
+        batch_size_sres = batch_size_sres or batch_size
+        n_samples_sres = n_samples_sres or n_samples
+
         low_res = self.base_model.sample(text, batch_size, n_samples,
                                          clip_denoised=clip_denoised, use_ddim=use_ddim,
                                          seed=seed, to_visible=True)
@@ -176,11 +189,11 @@ class SamplingPipeline(nn.Module):
         # TODO: n_samples > batch_size case
         tile_shape = [1] * low_res_pruned.ndim
         tile_shape[0] = n_samples // len(low_res_pruned) + 1
-        low_res_pruned = np.tile(low_res_pruned, tile_shape)[:n_samples]
+        low_res_pruned = np.tile(low_res_pruned, tile_shape)[:n_samples_sres]
 
-        text_pruned = (text_pruned * tile_shape[0])[:n_samples]
+        text_pruned = (text_pruned * tile_shape[0])[:n_samples_sres]
 
-        high_res = self.super_res_model.sample(text_pruned, batch_size, n_samples,
+        high_res = self.super_res_model.sample(text_pruned, batch_size_sres, n_samples_sres,
                                                low_res=low_res_pruned,
                                                clip_denoised=clip_denoised, use_ddim=use_ddim,
                                                seed=seed, from_visible=True)
