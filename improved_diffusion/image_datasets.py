@@ -56,7 +56,7 @@ def load_data(
     """
     if not data_dir:
         raise ValueError("unspecified data directory")
-    all_files, image_file_to_text_file = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize)
+    all_files, image_file_to_text_file, file_sizes = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize)
     print(f"found {len(all_files)} images, {len(image_file_to_text_file)} texts")
     all_files = all_files[offset:]
 
@@ -74,6 +74,7 @@ def load_data(
         image_file_to_text_file=image_file_to_text_file,
         txt=txt,
         monochrome=monochrome,
+        file_sizes=file_sizes,
         shard=MPI.COMM_WORLD.Get_rank(),
         num_shards=MPI.COMM_WORLD.Get_size(),
     )
@@ -119,13 +120,16 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
 def _list_image_files_recursively(data_dir, txt=False, min_filesize=0):
     results = []
     image_file_to_text_file = {}
+    file_sizes = {}
     for entry in sorted(bf.listdir(data_dir)):
         full_path = bf.join(data_dir, entry)
         ext = entry.split(".")[-1]
         if "." in entry and ext.lower() in ["jpg", "jpeg", "png", "gif"]:
-            if min_filesize > 0 and os.path.getsize(full_path) < min_filesize:
+            filesize = os.path.getsize(full_path)
+            if min_filesize > 0 and filesize < min_filesize:
                 continue
             results.append(full_path)
+            file_sizes[full_path] = filesize
             if txt:
                 prefix, _, ext = full_path.rpartition(".")
                 path_txt = prefix + ".txt"
@@ -139,7 +143,7 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0):
             next_results, next_map = _list_image_files_recursively(full_path, txt=txt)
             results.extend(next_results)
             image_file_to_text_file.update(next_map)
-    return results, image_file_to_text_file
+    return results, image_file_to_text_file, file_sizes
 
 
 class ImageDataset(Dataset):
@@ -148,6 +152,7 @@ class ImageDataset(Dataset):
                  image_file_to_text_file=None,
                  txt=False,
                  monochrome=False,
+                 file_sizes=None,
                  shard=0, num_shards=1):
         super().__init__()
         self.resolution = resolution
@@ -155,6 +160,7 @@ class ImageDataset(Dataset):
         self.local_classes = None if classes is None else classes[shard:][::num_shards]
         self.txt = txt
         self.monochrome = monochrome
+        self.file_sizes = file_sizes
 
         if self.txt:
             self.local_images = [p for p in self.local_images if p in image_file_to_text_file]
