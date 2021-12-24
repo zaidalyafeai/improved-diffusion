@@ -1,4 +1,4 @@
-import string
+import string, os
 from PIL import Image
 import blobfile as bf
 from mpi4py import MPI
@@ -36,7 +36,7 @@ def tokenize(tokenizer, txt):
 
 def load_data(
     *, data_dir, batch_size, image_size, class_cond=False, deterministic=False,
-    txt=False, monochrome=False, offset=0
+    txt=False, monochrome=False, offset=0, min_filesize=0
 ):
     """
     For a dataset, create a generator over (images, kwargs) pairs.
@@ -56,7 +56,7 @@ def load_data(
     """
     if not data_dir:
         raise ValueError("unspecified data directory")
-    all_files, image_file_to_text_file = _list_image_files_recursively(data_dir, txt=txt)
+    all_files, image_file_to_text_file = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize)
     print(f"found {len(all_files)} images, {len(image_file_to_text_file)} texts")
     all_files = all_files[offset:]
 
@@ -91,7 +91,8 @@ def load_data(
 
 def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=False, txt=False, monochrome=False,
                        deterministic=False, offset=0, colorize=False,
-                       blur_prob=0., blur_sigma_min=0.4, blur_sigma_max=0.6):
+                       blur_prob=0., blur_sigma_min=0.4, blur_sigma_max=0.6,
+                       min_filesize=0):
     data = load_data(
         data_dir=data_dir,
         batch_size=batch_size,
@@ -100,7 +101,8 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         txt=txt,
         monochrome=monochrome,
         deterministic=deterministic,
-        offset=offset
+        offset=offset,
+        min_filesize=min_filesize
     )
     for large_batch, model_kwargs in data:
         blurrer = T.RandomApply(transforms=[T.GaussianBlur(5, sigma=(blur_sigma_min, blur_sigma_max))], p=blur_prob)
@@ -114,13 +116,15 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         yield large_batch, model_kwargs
 
 
-def _list_image_files_recursively(data_dir, txt=False):
+def _list_image_files_recursively(data_dir, txt=False, min_filesize=0):
     results = []
     image_file_to_text_file = {}
     for entry in sorted(bf.listdir(data_dir)):
         full_path = bf.join(data_dir, entry)
         ext = entry.split(".")[-1]
         if "." in entry and ext.lower() in ["jpg", "jpeg", "png", "gif"]:
+            if min_filesize > 0 and os.path.getsize(full_path) < min_filesize:
+                continue
             results.append(full_path)
             if txt:
                 prefix, _, ext = full_path.rpartition(".")
