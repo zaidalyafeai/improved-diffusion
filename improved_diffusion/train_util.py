@@ -395,11 +395,12 @@ class TrainLoop:
             log_loss_dict(
                 self.diffusion, t, {k: v * weights for k, v in losses.items()}
             )
+            grad_acc_scale = 1. / (self.batch_size // self.microbatch + ((self.batch_size % self.microbatch) != 0))
             if self.use_fp16:
                 loss_scale = 2 ** self.lg_loss_scale
-                (loss * loss_scale).backward()
+                (loss * loss_scale * grad_acc_scale).backward()
             else:
-                loss.backward()
+                (loss * grad_acc_scale).backward()
 
     def optimize_fp16(self):
         if any(not th.isfinite(p.grad).all() for ps in self.model_params for p in ps if p.grad is not None):
