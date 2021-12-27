@@ -395,7 +395,7 @@ class TrainLoop:
             log_loss_dict(
                 self.diffusion, t, {k: v * weights for k, v in losses.items()}
             )
-            grad_acc_scale = 1. / (self.batch_size // self.microbatch + ((self.batch_size % self.microbatch) != 0))
+            grad_acc_scale = micro.shape[0] / self.batch_size
             if self.use_fp16:
                 loss_scale = 2 ** self.lg_loss_scale
                 (loss * loss_scale * grad_acc_scale).backward()
