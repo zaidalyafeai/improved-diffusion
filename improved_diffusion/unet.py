@@ -51,8 +51,8 @@ class CrossAttentionAdapter(TextTimestepBlock):
         self.use_checkpoint = use_checkpoint
         self.cross_attn = CrossAttention(*args, **kwargs)
 
-    def forward(self, x):
-        return checkpoint(self._forward, (x,), self.parameters(), self.use_checkpoint)
+    def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
+        return checkpoint(self._forward, (x, emb, txt, attn_mask, tgt_pos_embs, timesteps), self.parameters(), self.use_checkpoint)
 
     def _forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
         return self.cross_attn.forward(src=txt, tgt=x, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
@@ -64,8 +64,8 @@ class WeaveAttentionAdapter(TextTimestepBlock):
         self.use_checkpoint = use_checkpoint
         self.weave_attn = WeaveAttention(*args, **kwargs)
 
-    def forward(self, x):
-        return checkpoint(self._forward, (x,), self.parameters(), self.use_checkpoint)
+    def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
+        return checkpoint(self._forward, (x, emb, txt, attn_mask, tgt_pos_embs, timesteps), self.parameters(), self.use_checkpoint)
 
     def _forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
         return self.weave_attn.forward(text=txt, image=x, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
