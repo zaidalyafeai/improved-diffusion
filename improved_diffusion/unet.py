@@ -69,8 +69,6 @@ class WeaveAttentionAdapter(TextTimestepBlock):
         self.weave_attn = WeaveAttention(*args, **kwargs)
 
     def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
-        for arg in (x, emb, txt, attn_mask, tgt_pos_embs, timesteps):
-            print(type(arg))
         return checkpoint(self._forward, (x, emb, txt, attn_mask, tgt_pos_embs, timesteps), self.parameters(), self.use_checkpoint)
 
     def _forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
