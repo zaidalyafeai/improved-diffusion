@@ -103,6 +103,14 @@ def main():
             all_txts.extend(txt)
             txt = th.as_tensor(txt).to(dist_util.dev())
             model_kwargs["txt"] = txt
+        if args.clf_free_guidance:
+            txt_uncon = batch_size * tokenize(tokenizer, [args.txt_drop_string])
+            txt_uncon = th.as_tensor(txt_uncon).to(dist_util.dev())
+
+            model_kwargs["guidance_scale"] = args.guidance_scale
+            model_kwargs["unconditional_model_kwargs"] = {
+                "txt": txt_uncon
+            }
         sample_fn = (
             diffusion.p_sample_loop if not args.use_ddim else diffusion.ddim_sample_loop
         )
@@ -169,7 +177,10 @@ def create_argparser():
         seed=-1,
         char_level=False,
         max_seq_len=64,
-        config_path=""
+        config_path="",
+        clf_free_guidance=False,
+        guidance_scale=0.,
+        txt_drop_string='<mask><mask><mask><mask>',  # TODO: model attr
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
