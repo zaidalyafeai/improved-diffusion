@@ -141,6 +141,9 @@ class SamplingModel(nn.Module):
             if self.is_super_res:
                 model_kwargs["low_res"] = all_low_res[offset : offset + batch_size]
 
+                if "unconditional_model_kwargs" in model_kwargs:
+                    model_kwargs["unconditional_model_kwargs"]["low_res"] = model_kwargs["low_res"]
+
             sample = sample_fn(
                 self.model,
                 (
