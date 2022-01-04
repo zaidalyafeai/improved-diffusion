@@ -85,7 +85,8 @@ def main():
         class_cond=args.class_cond,
         txt=args.txt,
         monochrome=args.monochrome,
-        min_filesize=args.min_filesize
+        min_filesize=args.min_filesize,
+        txt_pdrop=args.txt_pdrop,
     )
 
     logger.log("training...")
@@ -152,6 +153,7 @@ def create_argparser():
         state_dict_sandwich=0,
         state_dict_sandwich_manual_remaps="",
         min_filesize=0,
+        txt_pdrop=0.
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

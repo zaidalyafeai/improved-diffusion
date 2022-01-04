@@ -84,6 +84,7 @@ def main():
         blur_sigma_min=args.blur_sigma_min,
         blur_sigma_max=args.blur_sigma_max,
         min_filesize=args.min_filesize,
+        txt_pdrop=args.txt_pdrop,
     )
 
     logger.log("training...")
@@ -141,7 +142,8 @@ def create_argparser():
         verbose=False,
         state_dict_sandwich=0,
         state_dict_sandwich_manual_remaps="",
-        min_filesize=0
+        min_filesize=0,
+        txt_pdrop=0.
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

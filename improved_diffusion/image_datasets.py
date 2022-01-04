@@ -1,4 +1,4 @@
-import string, os
+import string, os, random
 from PIL import Image
 import blobfile as bf
 from mpi4py import MPI
@@ -36,7 +36,8 @@ def tokenize(tokenizer, txt):
 
 def load_data(
     *, data_dir, batch_size, image_size, class_cond=False, deterministic=False,
-    txt=False, monochrome=False, offset=0, min_filesize=0
+    txt=False, monochrome=False, offset=0, min_filesize=0,
+    txt_pdrop=0., txt_drop_string='<mask><mask><mask><mask>'
 ):
     """
     For a dataset, create a generator over (images, kwargs) pairs.
@@ -77,6 +78,8 @@ def load_data(
         file_sizes=file_sizes,
         shard=MPI.COMM_WORLD.Get_rank(),
         num_shards=MPI.COMM_WORLD.Get_size(),
+        txt_pdrop=txt_pdrop,
+        txt_drop_string=txt_drop_string,
     )
     if deterministic:
         loader = DataLoader(
@@ -93,7 +96,9 @@ def load_data(
 def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=False, txt=False, monochrome=False,
                        deterministic=False, offset=0, colorize=False,
                        blur_prob=0., blur_sigma_min=0.4, blur_sigma_max=0.6,
-                       min_filesize=0):
+                       min_filesize=0,
+                       txt_pdrop=0., txt_drop_string='<mask><mask><mask><mask>'
+                       ):
     data = load_data(
         data_dir=data_dir,
         batch_size=batch_size,
@@ -103,7 +108,9 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         monochrome=monochrome,
         deterministic=deterministic,
         offset=offset,
-        min_filesize=min_filesize
+        min_filesize=min_filesize,
+        txt_pdrop=txt_pdrop,
+        txt_drop_string=txt_drop_string,
     )
     for large_batch, model_kwargs in data:
         blurrer = T.RandomApply(transforms=[T.GaussianBlur(5, sigma=(blur_sigma_min, blur_sigma_max))], p=blur_prob)
@@ -154,7 +161,8 @@ class ImageDataset(Dataset):
                  txt=False,
                  monochrome=False,
                  file_sizes=None,
-                 shard=0, num_shards=1):
+                 shard=0, num_shards=1,
+                 txt_pdrop=0., txt_drop_string='<mask>'):
         super().__init__()
         self.resolution = resolution
         self.local_images = image_paths[shard:][::num_shards]
@@ -162,6 +170,8 @@ class ImageDataset(Dataset):
         self.txt = txt
         self.monochrome = monochrome
         self.file_sizes = file_sizes
+        self.txt_pdrop = txt_pdrop
+        self.txt_drop_string = txt_drop_string
 
         if self.txt:
             self.local_images = [p for p in self.local_images if p in image_file_to_text_file]
@@ -203,7 +213,10 @@ class ImageDataset(Dataset):
             out_dict["y"] = np.array(self.local_classes[idx], dtype=np.int64)
         if self.txt:
             path_txt = self.local_texts[idx]
-            with bf.BlobFile(path_txt, "r") as f:
-                text = f.read()
+            if (self.txt_pdrop > 0) and (random.random() < self.txt_pdrop):
+                text = self.txt_drop_string
+            else:
+                with bf.BlobFile(path_txt, "r") as f:
+                    text = f.read()
             out_dict['txt'] = text
         return np.transpose(arr, [2, 0, 1]), out_dict
