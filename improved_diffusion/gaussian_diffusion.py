@@ -263,7 +263,7 @@ class GaussianDiffusion:
         unconditional_model_kwargs = model_kwargs.get("unconditional_model_kwargs")
         is_eps = self.model_var_type == ModelMeanType.EPSILON
         is_guided = (guidance_scale is not None) and (unconditional_model_kwargs is not None) and is_eps
-        # print(f"is_guided {is_guided} | guidance_scale {guidance_scale} | is_eps {is_eps}")
+        print(f"is_guided {is_guided} | guidance_scale {guidance_scale} | is_eps {is_eps}")
 
         drop_args = {"guidance_scale", "unconditional_model_kwargs"}
         model_kwargs_cond = {k: v for k, v in model_kwargs.items() if k not in drop_args}
