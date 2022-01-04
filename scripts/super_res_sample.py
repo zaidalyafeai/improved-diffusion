@@ -174,6 +174,9 @@ def create_argparser():
         char_level=False,
         colorize=False,
         config_path="",
+        clf_free_guidance=False,
+        guidance_scale=0.,
+        txt_drop_string='<mask><mask><mask><mask>',  # TODO: model attr
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
