@@ -101,6 +101,14 @@ def main():
             for k, v in model_kwargs.items():
                 print((k, v.shape))
         model_kwargs = {k: v.to(dist_util.dev()) for k, v in model_kwargs.items()}
+        if args.clf_free_guidance:
+            txt_uncon = args.batch_size * tokenize(tokenizer, [args.txt_drop_string])
+            txt_uncon = th.as_tensor(txt_uncon).to(dist_util.dev())
+
+            model_kwargs["guidance_scale"] = args.guidance_scale
+            model_kwargs["unconditional_model_kwargs"] = {
+                "txt": txt_uncon
+            }
         sample = diffusion.p_sample_loop(
             model,
             (args.batch_size, image_channels, args.large_size, args.large_size),
