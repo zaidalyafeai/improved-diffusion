@@ -74,7 +74,6 @@ def main():
         data = (model_kwargs for _, model_kwargs in data)
     else:
         data = load_data_for_worker(args.base_samples, args.batch_size, args.class_cond, args.txt, colorize=args.colorize)
-        tokenizer = None
 
     logger.log("creating samples...")
     if args.seed > -1:
