@@ -70,6 +70,9 @@ class SamplingModel(nn.Module):
         seed=None,
         to_visible=True,
         from_visible=True,
+        clf_free_guidance=False,
+        guidance_scale=0.,
+        txt_drop_string='<mask><mask><mask><mask>'
     ):
         dist_util.setup_dist()
 
@@ -100,6 +103,15 @@ class SamplingModel(nn.Module):
         txt = tokenize(self.tokenizer, batch_text)
         txt = th.as_tensor(txt).to(dist_util.dev())
         model_kwargs["txt"] = txt
+
+        if clf_free_guidance:
+            txt_uncon = batch_size * tokenize(tokenizer, [txt_drop_string])
+            txt_uncon = th.as_tensor(txt_uncon).to(dist_util.dev())
+
+            model_kwargs["guidance_scale"] = guidance_scale
+            model_kwargs["unconditional_model_kwargs"] = {
+                "txt": txt_uncon
+            }
 
         all_low_res = []
 
@@ -169,17 +181,22 @@ class SamplingPipeline(nn.Module):
         n_samples: int,
         clip_denoised=True,
         use_ddim=False,
+        clf_free_guidance=False,
+        guidance_scale=0.,
+        txt_drop_string='<mask><mask><mask><mask>',
         low_res=None,
         seed=None,
         batch_size_sres=None,
         n_samples_sres=None,
+        clf_free_guidance_sres=False,
+        guidance_scale_sres=0.,
         strip_space=True,
     ):
         if isinstance(text, list):
             text = [_strip_space(s) for s in text]
         else:
             text = _strip_space(text)
-        
+
         batch_size_sres = batch_size_sres or batch_size
         n_samples_sres = n_samples_sres or n_samples
 
@@ -189,6 +206,9 @@ class SamplingPipeline(nn.Module):
             n_samples,
             clip_denoised=clip_denoised,
             use_ddim=use_ddim,
+            clf_free_guidance=clf_free_guidance,
+            guidance_scale=guidance_scale,
+            txt_drop_string=txt_drop_string,
             seed=seed,
             to_visible=False,
         )
@@ -199,6 +219,9 @@ class SamplingPipeline(nn.Module):
             low_res=low_res,
             clip_denoised=clip_denoised,
             use_ddim=use_ddim,
+            clf_free_guidance=clf_free_guidance_sres,
+            guidance_scale=guidance_scale_sres,
+            txt_drop_string=txt_drop_string,
             seed=seed,
             from_visible=False,
         )
@@ -213,10 +236,15 @@ class SamplingPipeline(nn.Module):
         continue_if_all_pruned=True,
         clip_denoised=True,
         use_ddim=False,
+        clf_free_guidance=False,
+        guidance_scale=0.,
+        txt_drop_string='<mask><mask><mask><mask>',
         low_res=None,
         seed=None,
         batch_size_sres=None,
         n_samples_sres=None,
+        clf_free_guidance_sres=False,
+        guidance_scale_sres=0.,
         strip_space=True,
     ):
         if strip_space:
@@ -234,6 +262,9 @@ class SamplingPipeline(nn.Module):
             n_samples,
             clip_denoised=clip_denoised,
             use_ddim=use_ddim,
+            clf_free_guidance=clf_free_guidance,
+            guidance_scale=guidance_scale,
+            txt_drop_string=txt_drop_string,
             seed=seed,
             to_visible=True,
         )
@@ -266,6 +297,9 @@ class SamplingPipeline(nn.Module):
             low_res=low_res_pruned,
             clip_denoised=clip_denoised,
             use_ddim=use_ddim,
+            clf_free_guidance=clf_free_guidance_sres,
+            guidance_scale=guidance_scale_sres,
+            txt_drop_string=txt_drop_string,
             seed=seed,
             from_visible=True,
         )
