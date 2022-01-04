@@ -333,6 +333,7 @@ class GaussianDiffusion:
                 x_start=pred_xstart, x_t=x, t=t
             )
             if is_guided:
+                print(f'using guidance scale {guidance_scale}')
                 unconditional_model_mean, _, _ = self.q_posterior_mean_variance(
                     x_start=unconditional_pred_xstart, x_t=x, t=t
                 )
