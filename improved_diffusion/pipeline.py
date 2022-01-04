@@ -105,7 +105,7 @@ class SamplingModel(nn.Module):
         model_kwargs["txt"] = txt
 
         if clf_free_guidance and (guidance_scale > 0):
-            txt_uncon = batch_size * tokenize(tokenizer, [txt_drop_string])
+            txt_uncon = batch_size * tokenize(self.tokenizer, [txt_drop_string])
             txt_uncon = th.as_tensor(txt_uncon).to(dist_util.dev())
 
             model_kwargs["guidance_scale"] = guidance_scale
