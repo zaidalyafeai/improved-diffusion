@@ -106,7 +106,8 @@ def main():
 
             model_kwargs["guidance_scale"] = args.guidance_scale
             model_kwargs["unconditional_model_kwargs"] = {
-                "txt": txt_uncon
+                "txt": txt_uncon,
+                "low_res": model_kwargs["low_res"]
             }
         sample = diffusion.p_sample_loop(
             model,
