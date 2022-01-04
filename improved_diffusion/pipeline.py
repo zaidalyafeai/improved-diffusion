@@ -104,7 +104,7 @@ class SamplingModel(nn.Module):
         txt = th.as_tensor(txt).to(dist_util.dev())
         model_kwargs["txt"] = txt
 
-        if clf_free_guidance:
+        if clf_free_guidance and (guidance_scale > 0):
             txt_uncon = batch_size * tokenize(tokenizer, [txt_drop_string])
             txt_uncon = th.as_tensor(txt_uncon).to(dist_util.dev())
 
