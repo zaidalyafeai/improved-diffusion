@@ -259,9 +259,22 @@ class GaussianDiffusion:
         assert t.shape == (B,)
         model_output = model(x, self._scale_timesteps(t), **model_kwargs)
 
+        # are we doing clf free guide?
+        guidance_scale = model_kwargs.get("guidance_scale")
+        unconditional_model_kwargs = model_kwargs.get("unconditional_model_kwargs")
+        is_eps = self.model_var_type == ModelMeanType.EPSILON
+        is_guided = (guidance_scale is not None) and (unconditional_model_kwargs is not None) and is_eps
+        print(f"is_guided {is_guided} | guidance_scale {guidance_scale} | is_eps {is_eps}")
+
+        unconditional_model_output = None
+        if is_guided:
+            unconditional_model_output = model(x, self._scale_timesteps(t), **unconditional_model_kwargs)
+
         if self.model_var_type in [ModelVarType.LEARNED, ModelVarType.LEARNED_RANGE]:
             assert model_output.shape == (B, C * 2, *x.shape[2:])
             model_output, model_var_values = th.split(model_output, C, dim=1)
+            if is_guided:
+                unconditional_model_output, _ = th.split(unconditional_model_output, C, dim=1)
             if self.model_var_type == ModelVarType.LEARNED:
                 model_log_variance = model_var_values
                 model_variance = th.exp(model_log_variance)
@@ -309,9 +322,18 @@ class GaussianDiffusion:
                 pred_xstart = process_xstart(
                     self._predict_xstart_from_eps(x_t=x, t=t, eps=model_output)
                 )
+                if guided:
+                    unconditional_pred_xstart = process_xstart(
+                        self._predict_xstart_from_eps(x_t=x, t=t, eps=unconditional_model_output)
+                    )
             model_mean, _, _ = self.q_posterior_mean_variance(
                 x_start=pred_xstart, x_t=x, t=t
             )
+            if guided:
+                unconditional_model_mean, _, _ = self.q_posterior_mean_variance(
+                    x_start=unconditional_pred_xstart, x_t=x, t=t
+                )
+                model_mean = (1 + guidance_scale) * model_mean - guidance_scale * unconditional_model_mean
         else:
             raise NotImplementedError(self.model_mean_type)
 
