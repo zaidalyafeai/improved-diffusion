@@ -257,7 +257,6 @@ class GaussianDiffusion:
 
         B, C = x.shape[:2]
         assert t.shape == (B,)
-        model_output = model(x, self._scale_timesteps(t), **model_kwargs)
 
         # are we doing clf free guide?
         guidance_scale = model_kwargs.get("guidance_scale")
@@ -265,6 +264,10 @@ class GaussianDiffusion:
         is_eps = self.model_var_type == ModelMeanType.EPSILON
         is_guided = (guidance_scale is not None) and (unconditional_model_kwargs is not None) and is_eps
         # print(f"is_guided {is_guided} | guidance_scale {guidance_scale} | is_eps {is_eps}")
+
+        drop_args = {"guidance_scale", "unconditional_model_kwargs"}
+        model_kwargs_cond = {k: v for k, v in model_kwargs if k not in drop_args}
+        model_output = model(x, self._scale_timesteps(t), **model_kwargs_cond)
 
         unconditional_model_output = None
         if is_guided:
