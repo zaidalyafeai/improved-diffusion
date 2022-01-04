@@ -104,7 +104,7 @@ def main():
             txt = th.as_tensor(txt).to(dist_util.dev())
             model_kwargs["txt"] = txt
         if args.clf_free_guidance:
-            txt_uncon = batch_size * tokenize(tokenizer, [args.txt_drop_string])
+            txt_uncon = args.batch_size * tokenize(tokenizer, [args.txt_drop_string])
             txt_uncon = th.as_tensor(txt_uncon).to(dist_util.dev())
 
             model_kwargs["guidance_scale"] = args.guidance_scale
