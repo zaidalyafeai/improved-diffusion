@@ -148,7 +148,7 @@ def create_model_and_diffusion(
     weave_v2=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
-    print(f"create_model_and_diffusion: use_checkpoint={args.use_checkpoint}")
+    print(f"create_model_and_diffusion: use_checkpoint={use_checkpoint}")
     model = create_model(
         image_size,
         num_channels,
@@ -285,7 +285,7 @@ def create_model(
     print(
         f"create_model: got txt={txt}, num_heads={num_heads}, channels_per_head={channels_per_head}, cross_attn_channels_per_head={cross_attn_channels_per_head}, text_lr_mult={text_lr_mult}"
     )
-    print(f"create_model: use_checkpoint={args.use_checkpoint}")
+    print(f"create_model: use_checkpoint={use_checkpoint}")
     if channel_mult != "":
         print(f"got channel_mult: {channel_mult}")
         try:
