@@ -503,6 +503,7 @@ class UNetModel(nn.Module):
 
         print(f"unet: have text_lr_mult={text_lr_mult}")
         print(f"unet: got use_scale_shift_norm={use_scale_shift_norm}, resblock_updown={resblock_updown}")
+        print(f"unet: got use_checkpoint={use_checkpoint}, use_checkpoint_up={use_checkpoint_up}, use_checkpoint_middle={use_checkpoint_middle}, use_checkpoint_down={use_checkpoint_down}")
 
         def vprint(*args):
             if verbose:
