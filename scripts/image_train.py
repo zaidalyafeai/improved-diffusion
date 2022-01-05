@@ -135,6 +135,7 @@ def create_argparser():
         lg_loss_scale=20,
         fp16_scale_growth=1e-3,
         channel_mult="",
+        use_checkpoint=False,
         use_checkpoint_down=False,
         use_checkpoint_middle=False,
         use_checkpoint_up=False,
