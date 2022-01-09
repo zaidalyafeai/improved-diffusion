@@ -162,7 +162,8 @@ class ImageDataset(Dataset):
                  monochrome=False,
                  file_sizes=None,
                  shard=0, num_shards=1,
-                 txt_pdrop=0., txt_drop_string='<mask>'):
+                 txt_pdrop=0.,
+                 txt_drop_string='<mask><mask><mask><mask>'):
         super().__init__()
         self.resolution = resolution
         self.local_images = image_paths[shard:][::num_shards]
