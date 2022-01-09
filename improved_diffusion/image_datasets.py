@@ -163,7 +163,8 @@ class ImageDataset(Dataset):
                  file_sizes=None,
                  shard=0, num_shards=1,
                  txt_pdrop=0.,
-                 txt_drop_string='<mask><mask><mask><mask>'):
+                 txt_drop_string='<mask><mask><mask><mask>',
+                 empty_string_to_drop_string=True):
         super().__init__()
         self.resolution = resolution
         self.local_images = image_paths[shard:][::num_shards]
@@ -219,5 +220,7 @@ class ImageDataset(Dataset):
             else:
                 with bf.BlobFile(path_txt, "r") as f:
                     text = f.read()
+            if (len(text) == 0) and self.empty_string_to_drop_string:
+                text = self.txt_drop_string
             out_dict['txt'] = text
         return np.transpose(arr, [2, 0, 1]), out_dict
