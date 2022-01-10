@@ -175,6 +175,7 @@ class ImageDataset(Dataset):
         self.file_sizes = file_sizes
         self.txt_pdrop = txt_pdrop
         self.txt_drop_string = txt_drop_string
+        self.empty_string_to_drop_string = empty_string_to_drop_string
 
         if self.txt:
             self.local_images = [p for p in self.local_images if p in image_file_to_text_file]
