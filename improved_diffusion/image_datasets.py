@@ -164,7 +164,8 @@ class ImageDataset(Dataset):
                  shard=0, num_shards=1,
                  txt_pdrop=0.,
                  txt_drop_string='<mask><mask><mask><mask>',
-                 empty_string_to_drop_string=True):
+                 empty_string_to_drop_string=False,  # unconditional != no text
+                 ):
         super().__init__()
         self.resolution = resolution
         self.local_images = image_paths[shard:][::num_shards]
