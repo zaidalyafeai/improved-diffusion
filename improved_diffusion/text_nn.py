@@ -125,17 +125,15 @@ class TextEncoder(nn.Module):
             x = x + pe
             if self.use_line_emb:
                 le = self.line_emb(tokens)
-                # le_norm = (le ** 2).sum().sqrt().item()
                 x = x + le
 
             if timesteps is not None:
                 emb = self.time_embed_scale * self.time_embed(timestep_embedding(timesteps, self.dim))
                 emb = emb.unsqueeze(1).tile((1, x.shape[1], 1))
-                # te_norm = (emb ** 2).sum().sqrt().item()
                 x = x + emb
 
-            # print((te_norm, tok_norm, pe_norm, le_norm))
-
+            # TODO: workaround for HF tokenizers setting PAD and CLS to id 0
+            # cf. pad_id arg of enable_padding()
             attn_mask = tokens != 0
             my_attn_mask = torch.tile(attn_mask.unsqueeze(1).unsqueeze(1), (self.n_heads, tokens.shape[1], 1))
 
