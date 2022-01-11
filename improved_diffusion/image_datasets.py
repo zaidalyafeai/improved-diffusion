@@ -37,7 +37,7 @@ def tokenize(tokenizer, txt):
 def load_data(
     *, data_dir, batch_size, image_size, class_cond=False, deterministic=False,
     txt=False, monochrome=False, offset=0, min_filesize=0,
-    txt_pdrop=0., txt_drop_string='<mask><mask><mask><mask>'
+    txt_pdrop=0., txt_drop_string='<mask><mask><mask><mask>',
 ):
     """
     For a dataset, create a generator over (images, kwargs) pairs.
@@ -60,6 +60,12 @@ def load_data(
     all_files, image_file_to_text_file, file_sizes = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize)
     print(f"found {len(all_files)} images, {len(image_file_to_text_file)} texts")
     all_files = all_files[offset:]
+
+    n_texts = sum(1 for k in file_sizes.keys() if k.endswith('.txt'))  # sanity check
+    n_nonempty_texts = sum(file_sizes[k] > 0 for k in file_sizes.keys() if k.endswith('.txt'))
+    n_empty_texts = n_texts - n_nonempty_texts
+
+    print(f"of {n_texts} texts, {n_empty_texts} are empty, {n_nonempty_texts} are nonempty")
 
     classes = None
     if class_cond:
