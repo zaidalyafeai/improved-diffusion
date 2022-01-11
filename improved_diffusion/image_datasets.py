@@ -151,7 +151,7 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0):
                 if bf.exists(path_txt):
                     image_file_to_text_file[full_path] = path_txt
                     filesize = os.path.getsize(path_txt)
-                    file_sizes[full_path] = filesize
+                    file_sizes[path_txt] = filesize
                 else:
                     pass
                     # raise ValueError(path_txt)
