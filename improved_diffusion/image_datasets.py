@@ -138,17 +138,20 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0):
         full_path = bf.join(data_dir, entry)
         ext = entry.split(".")[-1]
         if "." in entry and ext.lower() in ["jpg", "jpeg", "png", "gif"]:
-            filesize = os.path.getsize(full_path)
-            if min_filesize > 0 and filesize < min_filesize:
-                continue
+            if min_filesize > 0:
+                filesize = os.path.getsize(full_path)
+                if filesize < min_filesize:
+                    continue
+                file_sizes[full_path] = filesize
             results.append(full_path)
-            file_sizes[full_path] = filesize
             if txt:
                 prefix, _, ext = full_path.rpartition(".")
                 path_txt = prefix + ".txt"
                 # print(f'made path_txt={repr(path_txt)} from {repr(entry)}')
                 if bf.exists(path_txt):
                     image_file_to_text_file[full_path] = path_txt
+                    filesize = os.path.getsize(path_txt)
+                    file_sizes[full_path] = filesize
                 else:
                     pass
                     # raise ValueError(path_txt)
