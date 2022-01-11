@@ -65,7 +65,10 @@ def load_data(
     n_nonempty_texts = sum(file_sizes[k] > 0 for k in file_sizes.keys() if k.endswith('.txt'))
     n_empty_texts = n_texts - n_nonempty_texts
 
-    print(f"of {n_texts} texts, {n_empty_texts} are empty, {n_nonempty_texts} are nonempty")
+    frac_empty = n_empty_texts/n_texts
+    frac_nonempty = n_nonempty_texts/n_texts
+
+    print(f"of {n_texts} texts, {n_empty_texts} ({frac_empty:.1%}) are empty, {n_nonempty_texts} ({frac_nonempty:.1%}) are nonempty")
 
     classes = None
     if class_cond:
