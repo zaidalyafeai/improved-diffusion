@@ -59,7 +59,10 @@ def load_state_dict(path, **kwargs):
             data = f.read()
     else:
         data = None
-    data = MPI.COMM_WORLD.bcast(data)
+    # next line is commented out bc i only use 1 gpu and it made me hit the 2gb mpi limit with large models
+    # would need to fix this for real if doing distributed training - nost
+    
+    # data = MPI.COMM_WORLD.bcast(data)
     return th.load(io.BytesIO(data), **kwargs)
 
 
