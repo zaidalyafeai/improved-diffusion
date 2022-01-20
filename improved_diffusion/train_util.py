@@ -56,7 +56,8 @@ class TrainLoop:
         beta2=0.999,
         weave_legacy_param_names=False,
         state_dict_sandwich=0,
-        state_dict_sandwich_manual_remaps=""
+        state_dict_sandwich_manual_remaps="",
+        master_on_cpu=False
     ):
         self.model = model
         self.diffusion = diffusion
@@ -85,6 +86,8 @@ class TrainLoop:
                                                   for kv in state_dict_sandwich_manual_remaps.split(",")
                                                   if len(kv) > 0
                                                   }
+        self.master_device = 'cpu' if master_on_cpu else None
+        print(f"TrainLoop self.master_device: {self.master_device}")
 
         self.step = 0
         self.resume_step = 0
@@ -308,7 +311,7 @@ class TrainLoop:
             self.opt.load_state_dict(state_dict)
 
     def _setup_fp16(self):
-        self.master_params = make_master_params(self.model_params)
+        self.master_params = make_master_params(self.model_params, master_device=self.master_device)
         self.model.convert_to_fp16()
 
     def run_loop(self):
@@ -408,7 +411,7 @@ class TrainLoop:
             logger.log(f"Found NaN, decreased lg_loss_scale to {self.lg_loss_scale}")
             return
 
-        model_grads_to_master_grads(self.model_params, self.master_params)
+        model_grads_to_master_grads(self.model_params, self.master_params, master_device=self.master_device)
         for mp in self.master_params:
             mp.grad.mul_(1.0 / (2 ** self.lg_loss_scale))
         self._log_grad_norm()

@@ -47,17 +47,22 @@ def convert_module_to_f32(l):
             p.data = p.data.float()
 
 
-def make_master_params(model_param_groups):
+def make_master_params(model_param_groups, master_device=None):
     """
     Copy model parameters into a (differently-shaped) list of full-precision
     parameters.
     """
+    def _to_master_device(t):
+        if master_device is not None:
+            return t.to(master_device)
+        return t
+
     if isinstance(model_param_groups[0], nn.Parameter):
         model_param_groups = [model_param_groups]
 
     master_params = [
         _flatten_dense_tensors(
-            [param.detach().float() for param in model_params]
+            [_to_master_device(param.detach()).float() for param in model_params]
         )
         for model_params in model_param_groups
     ]
@@ -67,17 +72,22 @@ def make_master_params(model_param_groups):
     return master_params
 
 
-def model_grads_to_master_grads(model_param_groups, master_params):
+def model_grads_to_master_grads(model_param_groups, master_params, master_device=None):
     """
     Copy the gradients from the model parameters into the master parameters
     from make_master_params().
     """
+    def _to_master_device(t):
+        if master_device is not None:
+            return t.to(master_device)
+        return t
+
     if isinstance(model_param_groups[0], nn.Parameter):
         model_param_groups = [model_param_groups]
 
     for model_group, master_param in zip(model_param_groups, master_params):
         master_param.grad = _flatten_dense_tensors(
-            [param.grad.data.detach().float()
+            [_to_master_device(param.grad.data.detach()).float()
              if param.grad is not None else None
              for param in model_group]
         )
