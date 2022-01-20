@@ -461,26 +461,39 @@ class TrainLoop:
         sqsum_text_encoder = 0.0
         has_text_encoder = False
 
-        for p in self.master_params:
-            if p.grad is None:
-                continue
-            sqsum += (p.grad ** 2).sum().item()
+        for p_ in self.master_params:
+            if isinstance(p_, list):
+                pp = p_
+            else:
+                pp = [p_]
+
+            for p in pp:
+                if p.grad is None:
+                    continue
+                sqsum += (p.grad ** 2).sum().item()
         logger.logkv_mean("grad_norm", np.sqrt(sqsum))
 
         gn_xattn, gn_text, gn_itot = 0., 0., 0.
 
-        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'other']):
-            if p.grad is None:
-                continue
-            gn_sq = (p.grad.float() ** 2).sum().item()
-            gn = np.sqrt(gn_sq)
-            # nz = (p.grad == 0.).sum().item()
-            if name in self.text_mods:
-                gn_text += gn_sq
-            elif name in self.xattn_mods:
-                gn_xattn += gn_sq
-            elif name in self.itot_mods:
-                gn_itot += gn_sq
+        for p_, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'other']):
+            if isinstance(p_, list):
+                pp = p_
+            else:
+                pp = [p_]
+
+            gn = 0.
+            for p in pp:
+                if p.grad is None:
+                    continue
+                gn_sq = (p.grad.float() ** 2).sum().item()
+                gn += np.sqrt(gn_sq)
+                # nz = (p.grad == 0.).sum().item()
+                if name in self.text_mods:
+                    gn_text += gn_sq
+                elif name in self.xattn_mods:
+                    gn_xattn += gn_sq
+                elif name in self.itot_mods:
+                    gn_itot += gn_sq
             logger.logkv_mean(f"grad_norm_{name}", gn)
             # logger.logkv_mean(f"nz_{name}", nz)
 
