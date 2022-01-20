@@ -84,8 +84,11 @@ def update_ema(target_params, source_params, rate=0.99):
     :param source_params: the source parameter sequence.
     :param rate: the EMA rate (closer to 1 means slower).
     """
-    for targ, src in zip(target_params, source_params):
-        targ.detach().mul_(rate).add_(src, alpha=1 - rate)
+    for targ_, src_ in zip(target_params, source_params):
+        inner_targ  = targ_ if isinstance(targ_, list) else [targ_]
+        inner_src  = src_ if isinstance(src_, list) else [src_]
+        for targ, src in zip(inner_targ, inner_src):
+            targ.detach().mul_(rate).add_(src, alpha=1 - rate)
 
 
 def zero_module(module):
