@@ -57,7 +57,8 @@ class TrainLoop:
         weave_legacy_param_names=False,
         state_dict_sandwich=0,
         state_dict_sandwich_manual_remaps="",
-        master_on_cpu=False
+        master_on_cpu=False,
+        use_amp=False,
     ):
         self.model = model
         self.diffusion = diffusion
@@ -87,7 +88,8 @@ class TrainLoop:
                                                   if len(kv) > 0
                                                   }
         self.master_device = 'cpu' if master_on_cpu else None
-        print(f"TrainLoop self.master_device: {self.master_device}")
+        self.use_amp = use_amp
+        print(f"TrainLoop self.master_device: {self.master_device}, use_amp={use_amp}")
 
         self.step = 0
         self.resume_step = 0
@@ -154,6 +156,12 @@ class TrainLoop:
         self.sync_cuda = th.cuda.is_available()
 
         self._load_and_sync_parameters()
+
+        self.grad_scaler = None
+        if self.use_amp:
+            self.use_fp16 = False  # avoid all the manual fp16 steps
+            self._setup_amp()
+
         if self.use_fp16:
             self._setup_fp16()
 
@@ -314,6 +322,9 @@ class TrainLoop:
         self.master_params = make_master_params(self.model_params, master_device=self.master_device)
         self.model.convert_to_fp16()
 
+    def _setup_amp(self):
+        self.grad_scaler = th.cuda.amp.GradScaler()
+
     def run_loop(self):
         t1 = time.time()
         while (
@@ -347,7 +358,9 @@ class TrainLoop:
 
     def run_step(self, batch, cond, verbose=False):
         self.forward_backward(batch, cond, verbose=verbose)
-        if self.use_fp16:
+        if self.use_amp:
+            self.optimize_amp()
+        elif self.use_fp16:
             self.optimize_fp16()
         else:
             self.optimize_normal()
@@ -368,19 +381,20 @@ class TrainLoop:
             last_batch = (i + self.microbatch) >= batch.shape[0]
             t, weights = self.schedule_sampler.sample(micro.shape[0], dist_util.dev())
 
-            compute_losses = functools.partial(
-                self.diffusion.training_losses,
-                self.ddp_model,
-                micro,
-                t,
-                model_kwargs=micro_cond,
-            )
+            with torch.cuda.amp.autocast(enabled=self.use_amp):
+                compute_losses = functools.partial(
+                    self.diffusion.training_losses,
+                    self.ddp_model,
+                    micro,
+                    t,
+                    model_kwargs=micro_cond,
+                )
 
-            if last_batch or not self.use_ddp:
-                losses = compute_losses()
-            else:
-                with self.ddp_model.no_sync():
+                if last_batch or not self.use_ddp:
                     losses = compute_losses()
+                else:
+                    with self.ddp_model.no_sync():
+                        losses = compute_losses()
 
             if isinstance(self.schedule_sampler, LossAwareSampler):
                 self.schedule_sampler.update_with_local_losses(
@@ -402,6 +416,8 @@ class TrainLoop:
             if self.use_fp16:
                 loss_scale = 2 ** self.lg_loss_scale
                 (loss * loss_scale * grad_acc_scale).backward()
+            elif self.use_amp:
+                self.grad_scaler.scale(loss * grad_acc_scale).backward()
             else:
                 (loss * grad_acc_scale).backward()
 
@@ -426,6 +442,14 @@ class TrainLoop:
         self._log_grad_norm()
         self._anneal_lr()
         self.opt.step()
+        for rate, params in zip(self.ema_rate, self.ema_params):
+            update_ema(params, self.master_params, rate=rate)
+
+    def optimize_amp(self):
+        self._log_grad_norm()
+        self._anneal_lr()
+        self.grad_scaler.step(self.opt)
+        self.grad_scaler.update()
         for rate, params in zip(self.ema_rate, self.ema_params):
             update_ema(params, self.master_params, rate=rate)
 
