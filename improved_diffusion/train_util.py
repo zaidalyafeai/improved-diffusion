@@ -384,7 +384,7 @@ class TrainLoop:
             last_batch = (i + self.microbatch) >= batch.shape[0]
             t, weights = self.schedule_sampler.sample(micro.shape[0], dist_util.dev())
 
-            with torch.cuda.amp.autocast(enabled=self.use_amp):
+            with th.cuda.amp.autocast(enabled=self.use_amp):
                 compute_losses = functools.partial(
                     self.diffusion.training_losses,
                     self.ddp_model,
