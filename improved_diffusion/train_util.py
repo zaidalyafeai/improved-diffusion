@@ -449,6 +449,7 @@ class TrainLoop:
             update_ema(params, self.master_params, rate=rate)
 
     def optimize_amp(self):
+        self.grad_scaler.unscale_(self.opt)
         self._log_grad_norm()
         self._anneal_lr()
         self.grad_scaler.step(self.opt)
