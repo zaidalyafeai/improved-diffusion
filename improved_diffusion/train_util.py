@@ -169,7 +169,10 @@ class TrainLoop:
         xattn_nparams = 0
         itot_nparams = 0
         for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'other']):
-            nparams = np.product(p.shape)
+            if isinstance(p, list):
+                nparams = sum(np.product(pp.shape) for pp in p)
+            else:
+                nparams = np.product(p.shape)
             prefix = '\t'
             if name in self.text_mods:
                 text_nparams += nparams
