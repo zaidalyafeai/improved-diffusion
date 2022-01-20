@@ -137,7 +137,8 @@ class TextEncoder(nn.Module):
             attn_mask = tokens != 0
             my_attn_mask = torch.tile(attn_mask.unsqueeze(1).unsqueeze(1), (self.n_heads, tokens.shape[1], 1))
 
-            out = self.model(x, attn_mask=my_attn_mask)
+            with torch.cuda.amp.autocast():
+                out = self.model(x, attn_mask=my_attn_mask)
             if not self.return_sequences:
                 out = out[:, 0, :], attn_mask
             return out, attn_mask
