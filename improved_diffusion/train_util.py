@@ -331,20 +331,15 @@ class TrainLoop:
             theirs = [v['params'] for v in state_dict['param_groups']]
             if not all(len(o) == len(t) for o, t in zip(ours, theirs)):
                 # loading manual mp opt in amp
-                our_exp_avg = [v['exp_avg'] for v in self.opt.state_dict()['state']]
-                our_exp_avg_sq = [v['exp_avg_sq'] for v in self.opt.state_dict()['state']]
                 their_exp_avg = [state_dict['state'][pg[0]]['exp_avg'] for pg in theirs]
                 their_exp_avg_sq = [state_dict['state'][pg[0]]['exp_avg_sq'] for pg in theirs]
 
-                print(len(our_exp_avg))
-                print(len(their_exp_avg))
-
                 their_exp_avg = unflatten_master_params(
-                    our_exp_avg,
+                    self.model_params,
                     their_exp_avg
                 )
                 their_exp_avg_sq = unflatten_master_params(
-                    our_exp_avg_sq,
+                    self.model_params,
                     their_exp_avg_sq
                 )
 
