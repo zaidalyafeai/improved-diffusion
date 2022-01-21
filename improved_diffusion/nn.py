@@ -87,7 +87,9 @@ def update_ema(target_params, source_params, rate=0.99):
     for targ_, src_ in zip(target_params, source_params):
         inner_targ  = targ_ if isinstance(targ_, list) else [targ_]
         inner_src  = src_ if isinstance(src_, list) else [src_]
+        print((len(inner_targ), len(inner_src)))
         for targ, src in zip(inner_targ, inner_src):
+            print((targ.shape, src.shape))
             targ.detach().mul_(rate).add_(src, alpha=1 - rate)
 
 
