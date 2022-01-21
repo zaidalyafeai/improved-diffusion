@@ -333,8 +333,8 @@ class TrainLoop:
                 # loading manual mp opt in amp
                 our_exp_avg = [v['exp_avg'] for v in self.opt.state_dict()['state']]
                 our_exp_avg_sq = [v['exp_avg_sq'] for v in self.opt.state_dict()['state']]
-                their_exp_avg = [v['exp_avg'] for v in state_dict['state']]
-                their_exp_avg_sq = [v['exp_avg_sq'] for v in state_dict['state']]
+                their_exp_avg = [state_dict['state'][pg][0]['exp_avg'] for pg in theirs]
+                their_exp_avg_sq = [state_dict['state'][pg][0]['exp_avg_sq'] for pg in theirs]
 
                 their_exp_avg = unflatten_master_params(
                     our_exp_avg,
@@ -345,10 +345,11 @@ class TrainLoop:
                     their_exp_avg_sq
                 )
 
-                for i in range(len(theirs)):
-                    state_dict['state'][i]['exp_avg'] = their_exp_avg[i]
-                    state_dict['state'][i]['exp_avg_sq'] = their_exp_avg_sq[i]
-                    state_dict['param_groups'][i]['params'] = ours[i]  # set param group to our enumeration
+                for pg in theirs:
+                    param_ix = pg[0]
+                    state_dict['state'][param_ix]['exp_avg'] = their_exp_avg[param_ix]
+                    state_dict['state'][param_ix]['exp_avg_sq'] = their_exp_avg_sq[param_ix]
+                    state_dict['param_groups'][param_ix]['params'] = ours[param_ix]  # set param group to our enumeration
             try:
                 self.opt.load_state_dict(state_dict)
             except ValueError as e:
