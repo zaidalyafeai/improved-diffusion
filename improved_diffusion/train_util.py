@@ -327,11 +327,19 @@ class TrainLoop:
             state_dict = dist_util.load_state_dict(
                 opt_checkpoint, map_location=dist_util.dev()
             )
+            ours = [v['params'] for v in self.opt.state_dict()['param_groups']]
+            theirs = [v['params'] for v in state_dict['param_groups']]
+            if not all(len(o) == len(t) for o, t in zip(ours, theirs)):
+                # loading manual mp opt in amp
+                theirs = unflatten_master_params(
+                    ours,
+                    theirs
+                )
+                for i in range(len(theirs)):
+                    state_dict['param_groups'][i]['params'] = theirs[i]
             try:
                 self.opt.load_state_dict(state_dict)
             except ValueError as e:
-                ours = [len(v['params']) for v in self.opt.state_dict()['param_groups']]
-                theirs = [len(v['params']) for v in state_dict['param_groups']]
                 print(f"self.opt:\n{repr(ours)}\nloaded:\n{repr(theirs)}\n")
                 raise e
 
