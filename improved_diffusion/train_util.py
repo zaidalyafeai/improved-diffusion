@@ -313,7 +313,7 @@ class TrainLoop:
                 )
                 ema_params = self._state_dict_to_master_params(state_dict)
 
-        dist_util.sync_params(ema_params)
+        # dist_util.sync_params(ema_params)
         return ema_params
 
     def _load_optimizer_state(self):
@@ -637,7 +637,7 @@ class TrainLoop:
         else:
             # names_flat = [name for names in self.param_name_groups for name in names]
             # params = [state_dict[name] for name in names_flat]
-            return [p.detach() for p in params]
+            return params
 
 
 def parse_resume_step_from_filename(filename):
