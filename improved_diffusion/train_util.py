@@ -331,12 +331,24 @@ class TrainLoop:
             theirs = [v['params'] for v in state_dict['param_groups']]
             if not all(len(o) == len(t) for o, t in zip(ours, theirs)):
                 # loading manual mp opt in amp
-                theirs = unflatten_master_params(
-                    ours,
-                    [v[0] for v in theirs]
+                our_exp_avg = [v['exp_avg'] for v in self.opt.state_dict()['state']]
+                our_exp_avg_sq = [v['exp_avg_sq'] for v in self.opt.state_dict()['state']]
+                their_exp_avg = [v['exp_avg'] for v in state_dict['state']]
+                their_exp_avg_sq = [v['exp_avg_sq'] for v in state_dict['state']]
+
+                their_exp_avg = unflatten_master_params(
+                    our_exp_avg,
+                    their_exp_avg
                 )
+                their_exp_avg_sq = unflatten_master_params(
+                    our_exp_avg_sq,
+                    their_exp_avg_sq
+                )
+
                 for i in range(len(theirs)):
-                    state_dict['param_groups'][i]['params'] = theirs[i]
+                    state_dict['state'][i]['exp_avg'] = their_exp_avg[i]
+                    state_dict['state'][i]['exp_avg_sq'] = their_exp_avg_sq[i]
+                    state_dict['param_groups'][i]['params'] = ours[i]  # set param group to our enumeration
             try:
                 self.opt.load_state_dict(state_dict)
             except ValueError as e:
