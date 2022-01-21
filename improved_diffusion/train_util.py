@@ -210,7 +210,8 @@ class TrainLoop:
         if self.resume_step:
             try:
                 self._load_optimizer_state()
-            except ValueError:
+            except ValueError as e:
+                raise e
                 print("couldn't load opt")
             # Model was resumed, either due to a restart or a checkpoint
             # being specified at the command line.
