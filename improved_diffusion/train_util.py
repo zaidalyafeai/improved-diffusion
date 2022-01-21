@@ -327,7 +327,13 @@ class TrainLoop:
             state_dict = dist_util.load_state_dict(
                 opt_checkpoint, map_location=dist_util.dev()
             )
-            self.opt.load_state_dict(state_dict)
+            try:
+                self.opt.load_state_dict(state_dict)
+            except ValueError as e:
+                ours = {k: len(v) for k, v in self.opt.state_dict()}
+                theirs = {k: len(v) for k, v in state_dict}
+                print(f"self.opt:\n{repr(ours)}\nloaded:\n{repr(theirs)}\n")
+                raise e
 
     def _setup_fp16(self):
         self.master_params = make_master_params(self.model_params, master_device=self.master_device)
