@@ -610,13 +610,14 @@ class TrainLoop:
             )
         state_dict = self.model.state_dict()
         if self.use_amp:
-            for p, name_or_group in zip(master_params, self.param_name_groups):
-                if isinstance(name_or_group, list):
-                    for name, pp in zip(name_or_group, p):
-                        state_dict[name] = pp
-                else:
-                    name = name_or_group
-                    state_dict[name] = p
+            pass
+            # for p, name_or_group in zip(master_params, self.param_name_groups):
+            #     if isinstance(name_or_group, list):
+            #         for name, pp in zip(name_or_group, p):
+            #             state_dict[name] = pp
+            #     else:
+            #         name = name_or_group
+            #         state_dict[name] = p
         else:
             names_flat = [name for names in self.param_name_groups for name in names]
             for i, name in enumerate(names_flat):
@@ -636,7 +637,7 @@ class TrainLoop:
         else:
             # names_flat = [name for names in self.param_name_groups for name in names]
             # params = [state_dict[name] for name in names_flat]
-            return params
+            return [p.detach() for p in params]
 
 
 def parse_resume_step_from_filename(filename):
