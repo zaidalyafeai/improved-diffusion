@@ -333,8 +333,8 @@ class TrainLoop:
                 # loading manual mp opt in amp
                 our_exp_avg = [v['exp_avg'] for v in self.opt.state_dict()['state']]
                 our_exp_avg_sq = [v['exp_avg_sq'] for v in self.opt.state_dict()['state']]
-                their_exp_avg = [state_dict['state'][pg][0]['exp_avg'] for pg in theirs]
-                their_exp_avg_sq = [state_dict['state'][pg][0]['exp_avg_sq'] for pg in theirs]
+                their_exp_avg = [state_dict['state'][pg[0]]['exp_avg'] for pg in theirs]
+                their_exp_avg_sq = [state_dict['state'][pg[0]]['exp_avg_sq'] for pg in theirs]
 
                 their_exp_avg = unflatten_master_params(
                     our_exp_avg,
