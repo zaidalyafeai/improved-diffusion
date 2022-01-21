@@ -336,6 +336,9 @@ class TrainLoop:
                 their_exp_avg = [state_dict['state'][pg[0]]['exp_avg'] for pg in theirs]
                 their_exp_avg_sq = [state_dict['state'][pg[0]]['exp_avg_sq'] for pg in theirs]
 
+                print(len(our_exp_avg))
+                print(len(their_exp_avg))
+
                 their_exp_avg = unflatten_master_params(
                     our_exp_avg,
                     their_exp_avg
