@@ -330,8 +330,8 @@ class TrainLoop:
             try:
                 self.opt.load_state_dict(state_dict)
             except ValueError as e:
-                ours = [len(v) for v in self.opt.state_dict()['param_groups']]
-                theirs = [len(v) for v in state_dict['param_groups']]
+                ours = [len(v['params']) for v in self.opt.state_dict()['param_groups']]
+                theirs = [len(v['params']) for v in state_dict['param_groups']]
                 print(f"self.opt:\n{repr(ours)}\nloaded:\n{repr(theirs)}\n")
                 raise e
 
