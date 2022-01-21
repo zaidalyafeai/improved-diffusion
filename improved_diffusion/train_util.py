@@ -629,12 +629,12 @@ class TrainLoop:
 
     def _state_dict_to_master_params(self, state_dict):
         # params = [state_dict[name] for name, _ in self.model.named_parameters()]
+        params = [[state_dict[name] for name in name_group] for name_group in self.param_name_groups]
         if self.use_fp16:
-            params = [[state_dict[name] for name in name_group] for name_group in self.param_name_groups]
             return make_master_params(params)
         else:
-            names_flat = [name for names in self.param_name_groups for name in names]
-            params = [state_dict[name] for name in names_flat]
+            # names_flat = [name for names in self.param_name_groups for name in names]
+            # params = [state_dict[name] for name in names_flat]
             return params
 
 
