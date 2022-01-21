@@ -218,7 +218,7 @@ class TrainLoop:
                 self.ema_params = [
                     self._load_ema_parameters(rate) for rate in self.ema_rate
                 ]
-            except ValueError:
+            except RuntimeError:
                 print("couldn't load ema")
                 self.ema_params = [
                     copy.deepcopy(self.master_params) for _ in range(len(self.ema_rate))
