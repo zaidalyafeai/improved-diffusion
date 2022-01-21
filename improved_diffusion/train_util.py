@@ -332,7 +332,7 @@ class TrainLoop:
         self.model.convert_to_fp16()
 
     def _setup_amp(self):
-        self.grad_scaler = th.cuda.amp.GradScaler()
+        self.grad_scaler = th.cuda.amp.GradScaler(init_scale=2 ** self.lg_loss_scale, growth_interval=1 / self.fp16_scale_growth)
 
     def run_loop(self):
         t1 = time.time()
@@ -493,7 +493,8 @@ class TrainLoop:
                 if p.grad is None:
                     continue
                 gn_sq = (p.grad.float() ** 2).sum().item()
-                gn += np.sqrt(gn_sq)
+                # gn += np.sqrt(gn_sq)
+                gn += gn_sq
                 # nz = (p.grad == 0.).sum().item()
                 if name in self.text_mods:
                     gn_text += gn_sq
@@ -501,7 +502,7 @@ class TrainLoop:
                     gn_xattn += gn_sq
                 elif name in self.itot_mods:
                     gn_itot += gn_sq
-            logger.logkv_mean(f"grad_norm_{name}", gn)
+            logger.logkv_mean(f"grad_norm_{name}", np.sqrt(gn))
             # logger.logkv_mean(f"nz_{name}", nz)
 
         gn_text = np.sqrt(gn_text)
