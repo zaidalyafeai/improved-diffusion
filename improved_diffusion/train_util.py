@@ -332,7 +332,7 @@ class TrainLoop:
         self.model.convert_to_fp16()
 
     def _setup_amp(self):
-        self.grad_scaler = th.cuda.amp.GradScaler(init_scale=2 ** self.lg_loss_scale, growth_interval=1 / self.fp16_scale_growth)
+        self.grad_scaler = th.cuda.amp.GradScaler(init_scale=2 ** self.lg_loss_scale, growth_interval=int(1 / self.fp16_scale_growth))
 
     def run_loop(self):
         t1 = time.time()
@@ -546,6 +546,8 @@ class TrainLoop:
         logger.logkv("samples", (self.step + self.resume_step + 1) * self.global_batch)
         if self.use_fp16:
             logger.logkv("lg_loss_scale", self.lg_loss_scale)
+        if self.use_amp:
+            logger.logkv("lg_loss_scale", np.log2(self.grad_scaler.get_scale()))
         self.log_gain()
 
     def save(self):
