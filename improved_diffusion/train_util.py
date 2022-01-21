@@ -333,7 +333,7 @@ class TrainLoop:
                 # loading manual mp opt in amp
                 theirs = unflatten_master_params(
                     ours,
-                    theirs
+                    [v[0] for v in theirs]
                 )
                 for i in range(len(theirs)):
                     state_dict['param_groups'][i]['params'] = theirs[i]
