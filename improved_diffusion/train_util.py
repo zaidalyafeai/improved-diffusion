@@ -610,14 +610,13 @@ class TrainLoop:
             )
         state_dict = self.model.state_dict()
         if self.use_amp:
-            pass
-            # for p, name_or_group in zip(master_params, self.param_name_groups):
-            #     if isinstance(name_or_group, list):
-            #         for name, pp in zip(name_or_group, p):
-            #             state_dict[name] = pp
-            #     else:
-            #         name = name_or_group
-            #         state_dict[name] = p
+            for p, name_or_group in zip(master_params, self.param_name_groups):
+                if isinstance(name_or_group, list):
+                    for name, pp in zip(name_or_group, p):
+                        state_dict[name] = pp
+                else:
+                    name = name_or_group
+                    state_dict[name] = p
         else:
             names_flat = [name for names in self.param_name_groups for name in names]
             for i, name in enumerate(names_flat):
