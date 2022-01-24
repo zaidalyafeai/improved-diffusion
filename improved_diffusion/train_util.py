@@ -59,6 +59,7 @@ class TrainLoop:
         state_dict_sandwich_manual_remaps="",
         master_on_cpu=False,
         use_amp=False,
+        use_profiler=False,
     ):
         self.model = model
         self.diffusion = diffusion
@@ -89,6 +90,7 @@ class TrainLoop:
                                                   }
         self.master_device = 'cpu' if master_on_cpu else None
         self.use_amp = use_amp
+        self.use_profiler = use_profiler
         print(f"TrainLoop self.master_device: {self.master_device}, use_amp={use_amp}")
 
         self.step = 0
@@ -368,13 +370,12 @@ class TrainLoop:
         ):
             batch, cond = next(self.data)
 
-            # # yes profiler
-            # with th.profiler.profile(with_stack=True) as _p:
-            #     self.run_step(batch, cond, verbose = (self.step % self.log_interval == 0))
-            # print(_p.key_averages(group_by_stack_n=15).table(sort_by="self_cuda_time_total", row_limit=50))
-
-            # no profiler
-            self.run_step(batch, cond, verbose = (self.step % self.log_interval == 0))
+            if self.use_profiler:
+                with th.profiler.profile(with_stack=True) as _p:
+                    self.run_step(batch, cond, verbose = (self.step % self.log_interval == 0))
+                print(_p.key_averages(group_by_stack_n=15).table(sort_by="self_cuda_time_total", row_limit=50))
+            else:
+                self.run_step(batch, cond, verbose = (self.step % self.log_interval == 0))
 
             if self.step % self.log_interval == 0:
                 t2 = time.time()

@@ -116,7 +116,8 @@ def main():
         state_dict_sandwich=args.state_dict_sandwich,
         state_dict_sandwich_manual_remaps=args.state_dict_sandwich_manual_remaps,
         master_on_cpu=args.master_on_cpu,
-        use_amp=args.use_amp
+        use_amp=args.use_amp,
+        use_profiler=args.use_profiler
     ).run_loop()
 
 
@@ -156,6 +157,7 @@ def create_argparser():
         txt_pdrop=0.,
         master_on_cpu=False,
         use_amp=False,
+        use_profiler=False,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
