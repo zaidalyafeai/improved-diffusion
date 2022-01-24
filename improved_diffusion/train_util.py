@@ -371,9 +371,11 @@ class TrainLoop:
             batch, cond = next(self.data)
 
             if self.use_profiler:
-                with th.profiler.profile(with_stack=True) as _p:
+                with th.profiler.profile(True) as _p:
                     self.run_step(batch, cond, verbose = (self.step % self.log_interval == 0))
-                print(_p.key_averages(group_by_stack_n=15).table(sort_by="self_cuda_time_total", row_limit=50))
+                print(_p.key_averages().table(sort_by="self_cuda_time_total", row_limit=50))
+                _p.export_chrome_trace('chromeprof')
+                print('done saving')
             else:
                 self.run_step(batch, cond, verbose = (self.step % self.log_interval == 0))
 
