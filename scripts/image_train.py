@@ -27,7 +27,7 @@ def main():
     logger.configure()
 
     if args.channels_last_mem:
-        from improved_diffusion.channels_last_checker import *
+        import improved_diffusion.channels_last_checker
 
     print(f"args.text_lr: {type(args.text_lr)}, {args.text_lr}")
 
