@@ -26,8 +26,8 @@ def main():
     dist_util.setup_dist()
     logger.configure()
 
-    if args.channels_last_mem:
-        import improved_diffusion.channels_last_checker
+    # if args.channels_last_mem:
+    #     import improved_diffusion.channels_last_checker
 
     print(f"args.text_lr: {type(args.text_lr)}, {args.text_lr}")
 
