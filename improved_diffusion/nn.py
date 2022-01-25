@@ -14,27 +14,30 @@ import torch.nn as nn
 #         return x * th.sigmoid(x)
 
 
-# from https://github.com/lukemelas/EfficientNet-PyTorch/blob/7e8b0d312162f335785fb5dcfa1df29a75a1783a/efficientnet_pytorch/utils.py
-# A memory-efficient implementation of Swish function
-class SwishImplementation(th.autograd.Function):
-    @staticmethod
-    def forward(ctx, i):
-        result = i * th.sigmoid(i)
-        ctx.save_for_backward(i)
-        return result
+# # from https://github.com/lukemelas/EfficientNet-PyTorch/blob/7e8b0d312162f335785fb5dcfa1df29a75a1783a/efficientnet_pytorch/utils.py
+# # A memory-efficient implementation of Swish function
+# class SwishImplementation(th.autograd.Function):
+#     @staticmethod
+#     def forward(ctx, i):
+#         result = i * th.sigmoid(i)
+#         ctx.save_for_backward(i)
+#         return result
+#
+#     @staticmethod
+#     def backward(ctx, grad_output):
+#         i = ctx.saved_tensors[0]
+#         sigmoid_i = th.sigmoid(i)
+#         return grad_output * (sigmoid_i * (1 + i * (1 - sigmoid_i)))
+#
+#
+# class MemoryEfficientSwish(nn.Module):
+#     def forward(self, x):
+#         return SwishImplementation.apply(x)
+#
+# SiLU = MemoryEfficientSwish
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        i = ctx.saved_tensors[0]
-        sigmoid_i = th.sigmoid(i)
-        return grad_output * (sigmoid_i * (1 + i * (1 - sigmoid_i)))
+SiLU = nn.SiLU
 
-
-class MemoryEfficientSwish(nn.Module):
-    def forward(self, x):
-        return SwishImplementation.apply(x)
-
-SiLU = MemoryEfficientSwish
 
 class GroupNorm32(nn.GroupNorm):
     def forward(self, x):
