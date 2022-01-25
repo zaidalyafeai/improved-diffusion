@@ -50,7 +50,7 @@ def check_wrapper(fn):
             print("`{}` inputs are:".format(name))
             print_inputs(args)
             msg = "Operator `{}` lost channels_last property".format(name)
-            if false:
+            if False:
                 raise Exception(msg)
             print(msg)
         return result
