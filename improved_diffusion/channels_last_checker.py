@@ -22,7 +22,7 @@ def print_inputs(args, indent=""):
             print(indent, t)
 
 
-def check_wrapper(fn, raise=False):
+def check_wrapper(fn):
     name = fn.__name__ if hasattr(fn, '__name__') else 'noname__' + repr(fn)
 
     def check_cl(*args, **kwargs):
@@ -50,7 +50,7 @@ def check_wrapper(fn, raise=False):
             print("`{}` inputs are:".format(name))
             print_inputs(args)
             msg = "Operator `{}` lost channels_last property".format(name)
-            if raise:
+            if false:
                 raise Exception(msg)
             print(msg)
         return result
