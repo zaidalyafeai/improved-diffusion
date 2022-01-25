@@ -19,7 +19,7 @@ import torch.nn as nn
 class SwishImplementation(th.autograd.Function):
     @staticmethod
     def forward(ctx, i):
-        result = i * torch.sigmoid(i)
+        result = i * th.sigmoid(i)
         ctx.save_for_backward(i)
         return result
 
