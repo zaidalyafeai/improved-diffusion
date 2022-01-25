@@ -26,6 +26,9 @@ def main():
     dist_util.setup_dist()
     logger.configure()
 
+    if args.channels_last_mem:
+        from improved_diffusion.channels_last_checker import *
+
     print(f"args.text_lr: {type(args.text_lr)}, {args.text_lr}")
 
     if isinstance(args.text_lr, float) and args.text_lr > 0:
