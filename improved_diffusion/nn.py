@@ -8,20 +8,29 @@ import torch as th
 import torch.nn as nn
 
 
-# PyTorch 1.7 has SiLU, but we support PyTorch 1.5.
-class SiLU(nn.Module):
+# # PyTorch 1.7 has SiLU, but we support PyTorch 1.5.
+# class SiLU(nn.Module):
+#     def __init__(self, use_checkpoint=False):
+#         super().__init__()
+#         self.use_checkpoint = use_checkpoint
+#
+#     def forward(self, x):
+#         return checkpoint(
+#             self._forward, (x,), self.parameters(), self.use_checkpoint
+#         )
+#
+#     def _forward(self, x):
+#         return x * th.sigmoid(x)
+
+class SiLU(nn.SiLU):
     def __init__(self, use_checkpoint=False):
         super().__init__()
         self.use_checkpoint = use_checkpoint
 
     def forward(self, x):
         return checkpoint(
-            self._forward, (x,), self.parameters(), self.use_checkpoint
+            super()._forward, (x,), self.parameters(), self.use_checkpoint
         )
-
-    def _forward(self, x):
-        return x * th.sigmoid(x)
-
 
 # # from https://github.com/lukemelas/EfficientNet-PyTorch/blob/7e8b0d312162f335785fb5dcfa1df29a75a1783a/efficientnet_pytorch/utils.py
 # # A memory-efficient implementation of Swish function
