@@ -552,8 +552,9 @@ class TrainLoop:
 
     def _anneal_lr(self):
         if not self.lr_anneal_steps:
-            return
-        frac_done = (self.step + self.resume_step) / self.lr_anneal_steps
+            frac_done = 0.
+        else:
+            frac_done = (self.step + self.resume_step) / self.lr_anneal_steps
         lr = self.lr * (1 - frac_done)
         for param_group in self.opt.param_groups:
             param_group["lr"] = lr
