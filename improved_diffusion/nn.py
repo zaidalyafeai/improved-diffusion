@@ -29,7 +29,7 @@ class SiLU(nn.SiLU):
 
     def forward(self, x):
         return checkpoint(
-            super()._forward, (x,), self.parameters(), self.use_checkpoint
+            super().forward, (x,), self.parameters(), self.use_checkpoint
         )
 
 # # from https://github.com/lukemelas/EfficientNet-PyTorch/blob/7e8b0d312162f335785fb5dcfa1df29a75a1783a/efficientnet_pytorch/utils.py
