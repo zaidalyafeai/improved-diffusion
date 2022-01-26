@@ -287,13 +287,14 @@ class AttentionBlock(nn.Module):
     https://github.com/hojonathanho/diffusion/blob/1e0dceb3b3495bbe19116a5e1b3596cd0706c543/diffusion_tf/models/unet.py#L66.
     """
 
-    def __init__(self, channels, num_heads=1, use_checkpoint=False):
+    def __init__(self, channels, num_heads=1, use_checkpoint=False, use_checkpoint_lowcost=False):
         super().__init__()
         self.channels = channels
         self.num_heads = num_heads
         self.use_checkpoint = use_checkpoint
+        use_checkpoint_lowcost = use_checkpoint_lowcost and not use_checkpoint
 
-        self.norm = normalization(channels)
+        self.norm = normalization(channels, use_checkpoint=use_checkpoint_lowcost)
         self.qkv = conv_nd(1, channels, channels * 3, 1)
         self.attention = QKVAttention()
         self.proj_out = zero_module(conv_nd(1, channels, channels, 1))
@@ -576,7 +577,7 @@ class UNetModel(nn.Module):
         time_embed_dim = model_channels * 4
         self.time_embed = nn.Sequential(
             linear(model_channels, time_embed_dim),
-            SiLU(),
+            SiLU(use_checkpoint=use_checkpoint_lowcost),
             linear(time_embed_dim, time_embed_dim),
         )
 
@@ -620,7 +621,8 @@ class UNetModel(nn.Module):
                         num_heads_here = ch // channels_per_head
                     layers.append(
                         AttentionBlock(
-                            ch, use_checkpoint=use_checkpoint or use_checkpoint_down, num_heads=num_heads_here
+                            ch, use_checkpoint=use_checkpoint or use_checkpoint_down, num_heads=num_heads_here,
+                            use_checkpoint_lowcost=use_checkpoint_lowcost
                         )
                     )
                 if self.txt and ds in self.txt_resolutions and (not txt_output_layers_only):
@@ -715,7 +717,8 @@ class UNetModel(nn.Module):
                 use_scale_shift_norm=use_scale_shift_norm,
                 use_checkpoint_lowcost=use_checkpoint_lowcost,
             ),
-            AttentionBlock(ch, use_checkpoint=use_checkpoint or use_checkpoint_middle, num_heads=num_heads),
+            AttentionBlock(ch, use_checkpoint=use_checkpoint or use_checkpoint_middle, num_heads=num_heads,
+                           use_checkpoint_lowcost=use_checkpoint_lowcost),
             ResBlock(
                 ch,
                 time_embed_dim,
@@ -752,6 +755,7 @@ class UNetModel(nn.Module):
                             ch,
                             use_checkpoint=use_checkpoint or use_checkpoint_up,
                             num_heads=num_heads_here,
+                            use_checkpoint_lowcost=use_checkpoint_lowcost
                         )
                     )
                 if self.txt and ds in self.txt_resolutions:
@@ -827,8 +831,8 @@ class UNetModel(nn.Module):
                 self.output_blocks.append(TimestepEmbedSequential(*layers))
 
         self.out = nn.Sequential(
-            normalization(ch),
-            SiLU(),
+            normalization(ch, use_checkpoint=use_checkpoint_lowcost),
+            SiLU(use_checkpoint=use_checkpoint_lowcost),
             zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
         )
 
