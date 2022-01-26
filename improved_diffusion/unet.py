@@ -205,7 +205,7 @@ class ResBlock(TimestepBlock):
 
         self.in_layers = nn.Sequential(
             normalization(channels, use_checkpoint=use_checkpoint_lowcost),
-            nn.SiLU(use_checkpoint=use_checkpoint_lowcost),
+            SiLU(use_checkpoint=use_checkpoint_lowcost),
             conv_nd(dims, channels, self.out_channels, 3, padding=1),
         )
 
@@ -221,7 +221,7 @@ class ResBlock(TimestepBlock):
             self.h_upd = self.x_upd = nn.Identity()
 
         self.emb_layers = nn.Sequential(
-            nn.SiLU(use_checkpoint=use_checkpoint_lowcost),
+            SiLU(use_checkpoint=use_checkpoint_lowcost),
             linear(
                 emb_channels,
                 2 * self.out_channels if use_scale_shift_norm else self.out_channels,
@@ -229,7 +229,7 @@ class ResBlock(TimestepBlock):
         )
         self.out_layers = nn.Sequential(
             normalization(self.out_channels, use_checkpoint=use_checkpoint_lowcost),
-            nn.SiLU(use_checkpoint=use_checkpoint_lowcost),
+            SiLU(use_checkpoint=use_checkpoint_lowcost),
             nn.Dropout(p=dropout) if dropout > 0 else nn.Identity(),
             zero_module(
                 conv_nd(dims, self.out_channels, self.out_channels, 3, padding=1)
