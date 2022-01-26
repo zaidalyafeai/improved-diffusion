@@ -204,7 +204,7 @@ class ResBlock(TimestepBlock):
             use_checkpoint_lowcost = False
 
         self.in_layers = nn.Sequential(
-            normalization(channels, use_checkpoint=use_checkpoint_lowcost),
+            normalization(channels),
             SiLU(use_checkpoint=use_checkpoint_lowcost),
             conv_nd(dims, channels, self.out_channels, 3, padding=1),
         )
@@ -228,7 +228,7 @@ class ResBlock(TimestepBlock):
             ),
         )
         self.out_layers = nn.Sequential(
-            normalization(self.out_channels, use_checkpoint=use_checkpoint_lowcost),
+            normalization(self.out_channels),
             SiLU(use_checkpoint=use_checkpoint_lowcost),
             nn.Dropout(p=dropout) if dropout > 0 else nn.Identity(),
             zero_module(
@@ -294,7 +294,7 @@ class AttentionBlock(nn.Module):
         self.use_checkpoint = use_checkpoint
         use_checkpoint_lowcost = use_checkpoint_lowcost and not use_checkpoint
 
-        self.norm = normalization(channels, use_checkpoint=use_checkpoint_lowcost)
+        self.norm = normalization(channels)
         self.qkv = conv_nd(1, channels, channels * 3, 1)
         self.attention = QKVAttention()
         self.proj_out = zero_module(conv_nd(1, channels, channels, 1))
@@ -831,7 +831,7 @@ class UNetModel(nn.Module):
                 self.output_blocks.append(TimestepEmbedSequential(*layers))
 
         self.out = nn.Sequential(
-            normalization(ch, use_checkpoint=use_checkpoint_lowcost),
+            normalization(ch),
             SiLU(use_checkpoint=use_checkpoint_lowcost),
             zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
         )
