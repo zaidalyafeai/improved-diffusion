@@ -462,7 +462,7 @@ def sr_create_model_and_diffusion(
     txt_ff_mult=4,
     up_interp_mode='bilinear',
     weave_v2=False,
-    use_checkpoint_lowcost=use_checkpoint_lowcost
+    use_checkpoint_lowcost=False
 ):
     model = sr_create_model(
         large_size,
