@@ -103,15 +103,21 @@ class Upsample(nn.Module):
                  upsampling occurs in the inner-two dimensions.
     """
 
-    def __init__(self, channels, use_conv, dims=2):
+    def __init__(self, channels, use_conv, dims=2, use_checkpoint_lowcost=False):
         super().__init__()
         self.channels = channels
         self.use_conv = use_conv
         self.dims = dims
+        self.use_checkpoint = use_checkpoint_lowcost and not use_conv
         if use_conv:
             self.conv = conv_nd(dims, channels, channels, 3, padding=1)
 
     def forward(self, x):
+        return checkpoint(
+            self._forward, (x,), self.parameters(), self.use_checkpoint
+        )
+
+    def _forward(self, x):
         assert x.shape[1] == self.channels
         if self.dims == 3:
             x = F.interpolate(
@@ -134,11 +140,12 @@ class Downsample(nn.Module):
                  downsampling occurs in the inner-two dimensions.
     """
 
-    def __init__(self, channels, use_conv, dims=2):
+    def __init__(self, channels, use_conv, dims=2, use_checkpoint_lowcost=False):
         super().__init__()
         self.channels = channels
         self.use_conv = use_conv
         self.dims = dims
+        self.use_checkpoint = use_checkpoint_lowcost and not use_conv
         stride = 2 if dims != 3 else (1, 2, 2)
         if use_conv:
             self.op = conv_nd(dims, channels, channels, 3, stride=stride, padding=1)
@@ -146,6 +153,11 @@ class Downsample(nn.Module):
             self.op = avg_pool_nd(dims, kernel_size=stride, stride=stride)
 
     def forward(self, x):
+        return checkpoint(
+            self._forward, (x,), self.parameters(), self.use_checkpoint
+        )
+
+    def _forward(self, x):
         assert x.shape[1] == self.channels
         return self.op(x)
 
@@ -178,6 +190,7 @@ class ResBlock(TimestepBlock):
         use_checkpoint=False,
         up=False,
         down=False,
+        use_checkpoint_lowcost=False,
     ):
         super().__init__()
         self.channels = channels
@@ -187,34 +200,36 @@ class ResBlock(TimestepBlock):
         self.use_conv = use_conv
         self.use_checkpoint = use_checkpoint
         self.use_scale_shift_norm = use_scale_shift_norm
+        if use_checkpoint:
+            use_checkpoint_lowcost = False
 
         self.in_layers = nn.Sequential(
-            normalization(channels),
-            nn.SiLU(),
+            normalization(channels, use_checkpoint=use_checkpoint_lowcost),
+            nn.SiLU(use_checkpoint=use_checkpoint_lowcost),
             conv_nd(dims, channels, self.out_channels, 3, padding=1),
         )
 
         self.updown = up or down
 
         if up:
-            self.h_upd = Upsample(channels, False, dims)
-            self.x_upd = Upsample(channels, False, dims)
+            self.h_upd = Upsample(channels, False, dims, use_checkpoint_lowcost=use_checkpoint_lowcost)
+            self.x_upd = Upsample(channels, False, dims, use_checkpoint_lowcost=use_checkpoint_lowcost)
         elif down:
-            self.h_upd = Downsample(channels, False, dims)
-            self.x_upd = Downsample(channels, False, dims)
+            self.h_upd = Downsample(channels, False, dims, use_checkpoint_lowcost=use_checkpoint_lowcost)
+            self.x_upd = Downsample(channels, False, dims, use_checkpoint_lowcost=use_checkpoint_lowcost)
         else:
             self.h_upd = self.x_upd = nn.Identity()
 
         self.emb_layers = nn.Sequential(
-            nn.SiLU(),
+            nn.SiLU(use_checkpoint=use_checkpoint_lowcost),
             linear(
                 emb_channels,
                 2 * self.out_channels if use_scale_shift_norm else self.out_channels,
             ),
         )
         self.out_layers = nn.Sequential(
-            normalization(self.out_channels),
-            nn.SiLU(),
+            normalization(self.out_channels, use_checkpoint=use_checkpoint_lowcost),
+            nn.SiLU(use_checkpoint=use_checkpoint_lowcost),
             nn.Dropout(p=dropout) if dropout > 0 else nn.Identity(),
             zero_module(
                 conv_nd(dims, self.out_channels, self.out_channels, 3, padding=1)
@@ -493,6 +508,7 @@ class UNetModel(nn.Module):
         channels_last_mem=False,
         up_interp_mode="bilinear",
         weave_v2=False,
+        use_checkpoint_lowcost=False
     ):
         super().__init__()
 
@@ -503,7 +519,7 @@ class UNetModel(nn.Module):
 
         print(f"unet: have text_lr_mult={text_lr_mult}")
         print(f"unet: got use_scale_shift_norm={use_scale_shift_norm}, resblock_updown={resblock_updown}")
-        print(f"unet: got use_checkpoint={use_checkpoint}, use_checkpoint_up={use_checkpoint_up}, use_checkpoint_middle={use_checkpoint_middle}, use_checkpoint_down={use_checkpoint_down}")
+        print(f"unet: got use_checkpoint={use_checkpoint}, use_checkpoint_up={use_checkpoint_up}, use_checkpoint_middle={use_checkpoint_middle}, use_checkpoint_down={use_checkpoint_down}, use_checkpoint_lowcost={use_checkpoint_lowcost}")
 
         def vprint(*args):
             if verbose:
@@ -594,6 +610,7 @@ class UNetModel(nn.Module):
                         dims=dims,
                         use_checkpoint=use_checkpoint or use_checkpoint_down,
                         use_scale_shift_norm=use_scale_shift_norm,
+                        use_checkpoint_lowcost=use_checkpoint_lowcost,
                     )
                 ]
                 ch = mult * model_channels
@@ -674,6 +691,7 @@ class UNetModel(nn.Module):
                             use_checkpoint=use_checkpoint or use_checkpoint_down,
                             use_scale_shift_norm=use_scale_shift_norm,
                             down=True,
+                            use_checkpoint_lowcost=use_checkpoint_lowcost,
                         )
                         if resblock_updown
                         else Downsample(
@@ -695,6 +713,7 @@ class UNetModel(nn.Module):
                 dims=dims,
                 use_checkpoint=use_checkpoint or use_checkpoint_middle,
                 use_scale_shift_norm=use_scale_shift_norm,
+                use_checkpoint_lowcost=use_checkpoint_lowcost,
             ),
             AttentionBlock(ch, use_checkpoint=use_checkpoint or use_checkpoint_middle, num_heads=num_heads),
             ResBlock(
@@ -704,6 +723,7 @@ class UNetModel(nn.Module):
                 dims=dims,
                 use_checkpoint=use_checkpoint or use_checkpoint_middle,
                 use_scale_shift_norm=use_scale_shift_norm,
+                use_checkpoint_lowcost=use_checkpoint_lowcost,
             ),
         )
 
@@ -719,6 +739,7 @@ class UNetModel(nn.Module):
                         dims=dims,
                         use_checkpoint=use_checkpoint or use_checkpoint_up,
                         use_scale_shift_norm=use_scale_shift_norm,
+                        use_checkpoint_lowcost=use_checkpoint_lowcost,
                     )
                 ]
                 ch = model_channels * mult
@@ -796,6 +817,7 @@ class UNetModel(nn.Module):
                             use_checkpoint=use_checkpoint or use_checkpoint_up,
                             use_scale_shift_norm=use_scale_shift_norm,
                             up=True,
+                            use_checkpoint_lowcost=use_checkpoint_lowcost,
                         )
                         if resblock_updown
                         else Upsample(ch, conv_resample, dims=dims)

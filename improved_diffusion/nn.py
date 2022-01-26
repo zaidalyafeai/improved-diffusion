@@ -8,10 +8,19 @@ import torch as th
 import torch.nn as nn
 
 
-# # PyTorch 1.7 has SiLU, but we support PyTorch 1.5.
-# class SiLU(nn.Module):
-#     def forward(self, x):
-#         return x * th.sigmoid(x)
+# PyTorch 1.7 has SiLU, but we support PyTorch 1.5.
+class SiLU(nn.Module):
+    def __init__(self, use_checkpoint=False):
+        super().__init__()
+        self.use_checkpoint = use_checkpoint
+
+    def forward(self, x):
+        return checkpoint(
+            self._forward, (x,), self.parameters(), self.use_checkpoint
+        )
+
+    def _forward(self, x):
+        return x * th.sigmoid(x)
 
 
 # # from https://github.com/lukemelas/EfficientNet-PyTorch/blob/7e8b0d312162f335785fb5dcfa1df29a75a1783a/efficientnet_pytorch/utils.py
@@ -36,11 +45,20 @@ import torch.nn as nn
 #
 # SiLU = MemoryEfficientSwish
 
-SiLU = nn.SiLU
+# SiLU = nn.SiLU
 
 
 class GroupNorm32(nn.GroupNorm):
+    def __init__(self, *args, use_checkpoint=False):
+        super().__init__(*args)
+        self.use_checkpoint = use_checkpoint
+
     def forward(self, x):
+        return checkpoint(
+            self._forward, (x,), self.parameters(), self.use_checkpoint
+        )
+
+    def _forward(self, x):
         return super().forward(x.float()).type(x.dtype)
 
 
@@ -141,7 +159,7 @@ def mean_flat(tensor):
     return tensor.mean(dim=list(range(1, len(tensor.shape))))
 
 
-def normalization(channels):
+def normalization(channels, use_checkpoint=False):
     """
     Make a standard normalization layer.
 
@@ -150,8 +168,8 @@ def normalization(channels):
     """
     if channels % 72 == 0:
         # hack
-        return GroupNorm32(24, channels)
-    return GroupNorm32(32, channels)
+        return GroupNorm32(24, channels, use_checkpoint=use_checkpoint)
+    return GroupNorm32(32, channels, use_checkpoint=use_checkpoint)
 
 
 def normalization_1group(channels):
