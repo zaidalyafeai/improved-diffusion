@@ -500,6 +500,7 @@ class ImageToTextCrossAttention(nn.Module):
         )
 
     def _forward(self, src, tgt, attn_mask, src_pos_emb_val, timestep_emb):
+        print(f"src {src.shape}, src_pos_emb_val {src_pos_emb_val.shape}")
         def _to_b_hw_c(x, retdims=True):
             b, c, *spatial = x.shape
             xt = x.reshape(b, c, -1).transpose(1, 2)
@@ -517,7 +518,7 @@ class ImageToTextCrossAttention(nn.Module):
         pos_emb = src_pos_emb_val
         pos_emb = _to_b_c_h_w(pos_emb, spatial)
 
-        src_in = self.src_ln(h=src_in, emb=timestep_emb, side_emb=_to_b_c_h_w(pos_emb, spatial))
+        src_in = self.src_ln(h=src_in, emb=timestep_emb, side_emb=pos_emb)
 
         src_in, b, c, spatial = _to_b_hw_c(src_in)
 
