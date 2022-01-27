@@ -321,12 +321,9 @@ class CrossAttention(nn.Module):
 
     def forward(self, src, tgt, attn_mask=None, tgt_pos_embs=None, timestep_emb=None):
         tgt_pos_emb = tgt_pos_embs[str(self.emb_res)]
-        if self.q_t_emb:
-            tgt_in_shape = tgt.shape
-        else:
-            b, c, *spatial = tgt.shape
-            tgt_in_shape  = (b, spatial[0]*spatial[1], c)
-            pseudo_tgt_in = torch.zeros(tgt_in_shape, dtype=tgt.dtype, device=tgt.device)
+        b, c, *spatial = tgt.shape
+        tgt_in_shape  = (b, spatial[0]*spatial[1], c)
+        pseudo_tgt_in = torch.zeros(tgt_in_shape, dtype=tgt.dtype, device=tgt.device)
         tgt_pos_emb_val = tgt_pos_emb(pseudo_tgt_in)
 
         return checkpoint(
@@ -334,6 +331,7 @@ class CrossAttention(nn.Module):
         )
 
     def _forward(self, src, tgt, attn_mask, tgt_pos_emb_val, timestep_emb):
+        print(f"tgt {tgt.shape}, tgt_pos_emb_val {tgt_pos_emb_val.shape}")
         def _to_b_hw_c(x, retdims=True):
             b, c, *spatial = x.shape
             xt = x.reshape(b, c, -1).transpose(1, 2)
@@ -353,7 +351,7 @@ class CrossAttention(nn.Module):
 
             b, c, *spatial = tgt_in.shape
 
-            tgt_in = self.tgt_ln(h=tgt_in, emb=timestep_emb, side_emb=tgt_pos_emb_val)
+            tgt_in = self.tgt_ln(h=tgt_in, emb=timestep_emb, side_emb=_to_b_c_h_w(tgt_pos_emb_val))
 
             tgt_in, b, c, spatial = _to_b_hw_c(tgt_in)
         else:
@@ -519,7 +517,7 @@ class ImageToTextCrossAttention(nn.Module):
         pos_emb = src_pos_emb_val
         pos_emb = _to_b_c_h_w(pos_emb, spatial)
 
-        src_in = self.src_ln(h=src_in, emb=timestep_emb, side_emb=pos_emb)
+        src_in = self.src_ln(h=src_in, emb=timestep_emb, side_emb=_to_b_c_h_w(pos_emb))
 
         src_in, b, c, spatial = _to_b_hw_c(src_in)
 
