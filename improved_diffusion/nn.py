@@ -212,7 +212,7 @@ def timestep_embedding(timesteps, dim, max_period=10000):
     return embedding
 
 
-def checkpoint(func, inputs, params, flag, final_nograd=False):
+def checkpoint(func, inputs, params, flag, final_nograd=0):
     """
     Evaluate a function without caching intermediate activations, allowing for
     reduced memory at the expense of extra compute in the backward pass.
@@ -252,8 +252,8 @@ class CheckpointFunction(th.autograd.Function):
     def backward(ctx, *output_grads):
         # print(f"bwd ctx.final_nograd: {ctx.final_nograd}")
         if ctx.final_nograd:
-            ctx.input_tensors = [x.detach().requires_grad_(True) for x in ctx.input_tensors[:-1]] + [ctx.input_tensors[-1]]
-            grad_input_tensors = ctx.input_tensors[:-1]
+            ctx.input_tensors = [x.detach().requires_grad_(True) for x in ctx.input_tensors[:-final_nograd]] + ctx.input_tensors[-final_nograd:]]
+            grad_input_tensors = ctx.input_tensors[:-final_nograd]
         else:
             ctx.input_tensors = [x.detach().requires_grad_(True) for x in ctx.input_tensors]
             grad_input_tensors = ctx.input_tensors
@@ -275,5 +275,5 @@ class CheckpointFunction(th.autograd.Function):
         del ctx.input_params
         del output_tensors
         if ctx.final_nograd:
-            return (None, None, None) + input_grads[:ng] + (None,) + input_grads[ng:]
+            return (None, None, None) + input_grads[:ng] + (ctx.final_nograd * (None,)) + input_grads[ng:]
         return (None, None, None) + input_grads

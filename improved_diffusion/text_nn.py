@@ -66,6 +66,7 @@ class TextEncoder(nn.Module):
         use_line_emb=True,
         tokenizer=None,
         rel_pos_bias=False,
+        use_checkpoint=False,
     ):
         super().__init__()
 
@@ -78,6 +79,7 @@ class TextEncoder(nn.Module):
         self.return_sequences = return_sequences
         self.use_line_emb = use_line_emb
         self.dim = inner_dim
+        self.use_checkpoint = use_checkpoint
 
         if tokenizer is not None:
             num_tokens = tokenizer.get_vocab_size()
@@ -113,6 +115,12 @@ class TextEncoder(nn.Module):
             nn.Linear(inner_dim, inner_dim),
         )
 
+    def model_forward(x, attn_mask):
+        return checkpoint(
+            self.model.forward, (x, attn_mask, ), self.parameters(), self.use_checkpoint,
+            final_nograd=True
+        )
+
     def forward(self, tokens, timesteps=None):
         if self.use_encoder_decoder:
             raise ValueError('no longer supported')
@@ -138,7 +146,7 @@ class TextEncoder(nn.Module):
             my_attn_mask = torch.tile(attn_mask.unsqueeze(1).unsqueeze(1), (self.n_heads, tokens.shape[1], 1))
 
             with torch.cuda.amp.autocast():
-                out = self.model(x, attn_mask=my_attn_mask)
+                out = self.model_forward(x, attn_mask=my_attn_mask)
             if not self.return_sequences:
                 out = out[:, 0, :], attn_mask
             return out, attn_mask
