@@ -321,9 +321,12 @@ class CrossAttention(nn.Module):
 
     def forward(self, src, tgt, attn_mask=None, tgt_pos_embs=None, timestep_emb=None):
         tgt_pos_emb = tgt_pos_embs[str(self.emb_res)]
-        b, c, *spatial = tgt.shape
-        tgt_in_shape  = (b, spatial[0]*spatial[1], c)
-        pseudo_tgt_in = torch.zeros(tgt_in_shape, dtype=tgt.dtype, device=tgt.device)
+        if self.q_t_emb:
+            tgt_in_shape = tgt.shape
+        else:
+            b, c, *spatial = tgt.shape
+            tgt_in_shape  = (b, spatial[0]*spatial[1], c)
+            pseudo_tgt_in = torch.zeros(tgt_in_shape, dtype=tgt.dtype, device=tgt.device)
         tgt_pos_emb_val = tgt_pos_emb(pseudo_tgt_in)
 
         return checkpoint(
