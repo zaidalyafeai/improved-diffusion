@@ -46,33 +46,37 @@ class TextTimestepBlock(nn.Module):
 
 
 class CrossAttentionAdapter(TextTimestepBlock):
-    def __init__(self, use_checkpoint, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__()
-        self.use_checkpoint = use_checkpoint
         # if self.use_checkpoint:
         #     raise ValueError('grad ckpt for xattn not working yet')
         self.cross_attn = CrossAttention(*args, **kwargs)
 
     def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
-        return checkpoint(self._forward, (x, emb, txt, attn_mask, tgt_pos_embs, timesteps), self.parameters(), self.use_checkpoint)
-
-    def _forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
         return self.cross_attn.forward(src=txt, tgt=x, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
+
+    # def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
+    #     return checkpoint(self._forward, (x, emb, txt, attn_mask, tgt_pos_embs, timesteps), self.parameters(), self.use_checkpoint)
+    #
+    # def _forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
+    #     return self.cross_attn.forward(src=txt, tgt=x, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
 
 
 class WeaveAttentionAdapter(TextTimestepBlock):
-    def __init__(self, use_checkpoint, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__()
-        self.use_checkpoint = use_checkpoint
         # if self.use_checkpoint:
         #     raise ValueError('grad ckpt for xattn not working yet')
         self.weave_attn = WeaveAttention(*args, **kwargs)
 
     def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
-        return checkpoint(self._forward, (x, emb, txt, attn_mask, tgt_pos_embs, timesteps), self.parameters(), self.use_checkpoint)
-
-    def _forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
         return self.weave_attn.forward(text=txt, image=x, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
+
+    # def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
+    #     return checkpoint(self._forward, (x, emb, txt, attn_mask, tgt_pos_embs, timesteps), self.parameters(), self.use_checkpoint)
+    #
+    # def _forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
+    #     return self.weave_attn.forward(text=txt, image=x, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
 
 
 class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
