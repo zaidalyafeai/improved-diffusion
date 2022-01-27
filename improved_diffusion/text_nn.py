@@ -118,7 +118,7 @@ class TextEncoder(nn.Module):
     def model_forward(self, x, attn_mask):
         return checkpoint(
             self._model_forward, (x, attn_mask, ), self.parameters(), self.use_checkpoint,
-            final_nograd=2
+            final_nograd=1
         )
 
     def _model_forward(self, x, attn_mask):
