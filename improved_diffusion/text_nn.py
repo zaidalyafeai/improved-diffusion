@@ -240,6 +240,7 @@ class CrossAttention(nn.Module):
         use_layerscale=False,
         layerscale_init=1e-5,
         qkv_dim=None,
+        use_checkpoint=False,
     ):
         super().__init__()
         print(
@@ -258,6 +259,7 @@ class CrossAttention(nn.Module):
         self.use_rezero = use_rezero
         self.use_layerscale = use_layerscale
         self.no_prenorm = use_rezero and not rezero_keeps_prenorm
+        self.use_checkpoint = use_checkpoint
 
         if self.no_prenorm:
             self.src_ln = nn.Identity()
@@ -418,6 +420,7 @@ class ImageToTextCrossAttention(nn.Module):
         ff_mult=4,
         ff_glu=False,
         qkv_dim=None,
+        use_checkpoint=False,
     ):
         super().__init__()
         if qkv_dim is None:
@@ -551,6 +554,7 @@ class WeaveAttention(nn.Module):
         ff_glu=False,
         qkv_dim_always_text=False,
         weave_v2=False,
+        use_checkpoint=False,
         **text_to_image_kwargs,
     ):
         super().__init__()
@@ -568,6 +572,7 @@ class WeaveAttention(nn.Module):
             use_rezero=use_rezero,
             use_layerscale=use_layerscale,
             layerscale_init=layerscale_init,
+            use_checkpoint=use_checkpoint
         )
 
         text_to_image_kwargs.update(
@@ -598,6 +603,7 @@ class WeaveAttention(nn.Module):
         self.text_to_image_layers = nn.Sequential(
             *[CrossAttention(**text_to_image_kwargs) for _ in range(n_layers)]
         )
+
 
     def forward(self, text, image, attn_mask=None, tgt_pos_embs=None, timestep_emb=None):
         shared_kwargs = dict(attn_mask=attn_mask, timestep_emb=timestep_emb)
