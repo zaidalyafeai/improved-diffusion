@@ -587,7 +587,7 @@ class WeaveAttention(nn.Module):
             use_rezero=use_rezero,
             use_layerscale=use_layerscale,
             layerscale_init=layerscale_init,
-            # use_checkpoint=use_checkpoint
+            use_checkpoint=use_checkpoint
         )
 
         text_to_image_kwargs.update(
