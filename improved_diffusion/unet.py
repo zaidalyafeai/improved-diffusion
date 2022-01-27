@@ -49,8 +49,8 @@ class CrossAttentionAdapter(TextTimestepBlock):
     def __init__(self, use_checkpoint, *args, **kwargs):
         super().__init__()
         self.use_checkpoint = use_checkpoint
-        if self.use_checkpoint:
-            raise ValueError('grad ckpt for xattn not working yet')
+        # if self.use_checkpoint:
+        #     raise ValueError('grad ckpt for xattn not working yet')
         self.cross_attn = CrossAttention(*args, **kwargs)
 
     def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
@@ -64,8 +64,8 @@ class WeaveAttentionAdapter(TextTimestepBlock):
     def __init__(self, use_checkpoint, *args, **kwargs):
         super().__init__()
         self.use_checkpoint = use_checkpoint
-        if self.use_checkpoint:
-            raise ValueError('grad ckpt for xattn not working yet')
+        # if self.use_checkpoint:
+        #     raise ValueError('grad ckpt for xattn not working yet')
         self.weave_attn = WeaveAttention(*args, **kwargs)
 
     def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
@@ -641,7 +641,7 @@ class UNetModel(nn.Module):
                             axial_shape=(emb_res, emb_res),
                         )
                     caa_args = dict(
-                        use_checkpoint=False,
+                        use_checkpoint=use_checkpoint or use_checkpoint_down,
                         dim=ch,
                         time_embed_dim=time_embed_dim,
                         heads=num_heads_here,
@@ -774,7 +774,7 @@ class UNetModel(nn.Module):
                             axial_shape=(emb_res, emb_res),
                         )
                     caa_args = dict(
-                        use_checkpoint=False,
+                        use_checkpoint=use_checkpoint or use_checkpoint_up,
                         dim=ch,
                         time_embed_dim=time_embed_dim,
                         heads=num_heads_here,
