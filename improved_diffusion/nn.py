@@ -239,6 +239,8 @@ class CheckpointFunction(th.autograd.Function):
         ctx.input_tensors = list(args[:length])
         ctx.input_params = list(args[length:])
         ctx.final_nograd = final_nograd
+        print(f"fwd length: {length}")
+        print(f"fwd final_nograd: {final_nograd}")
         print(f"fwd ctx.final_nograd: {ctx.final_nograd}")
         with th.no_grad():
             output_tensors = ctx.run_function(*ctx.input_tensors)
