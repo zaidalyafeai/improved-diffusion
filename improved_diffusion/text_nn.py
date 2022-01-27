@@ -118,7 +118,7 @@ class TextEncoder(nn.Module):
     def model_forward(self, x, attn_mask):
         return checkpoint(
             self._model_forward, (x, attn_mask, ), self.parameters(), self.use_checkpoint,
-            final_nograd=True
+            final_nograd=2
         )
 
     def _model_forward(self, x, attn_mask):
@@ -339,7 +339,7 @@ class CrossAttention(nn.Module):
 
         return checkpoint(
             self._forward, (src, tgt, tgt_pos_emb_val, timestep_emb, attn_mask, ), self.parameters(), self.use_checkpoint,
-            final_nograd=True
+            final_nograd=1
         )
 
     def _forward(self, src, tgt, tgt_pos_emb_val, timestep_emb, attn_mask):
@@ -508,7 +508,7 @@ class ImageToTextCrossAttention(nn.Module):
 
         return checkpoint(
             self._forward, (src, tgt, src_pos_emb_val, timestep_emb, attn_mask, ), self.parameters(), self.use_checkpoint,
-            final_nograd=True
+            final_nograd=1
         )
 
     def _forward(self, src, tgt, src_pos_emb_val, timestep_emb, attn_mask, ):
