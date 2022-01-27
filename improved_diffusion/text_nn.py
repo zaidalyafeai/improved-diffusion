@@ -115,7 +115,7 @@ class TextEncoder(nn.Module):
             nn.Linear(inner_dim, inner_dim),
         )
 
-    def model_forward(x, attn_mask):
+    def model_forward(self, x, attn_mask):
         return checkpoint(
             self.model.forward, (x, attn_mask, ), self.parameters(), self.use_checkpoint,
             final_nograd=True
