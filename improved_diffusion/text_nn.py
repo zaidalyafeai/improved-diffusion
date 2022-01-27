@@ -608,7 +608,7 @@ class WeaveAttention(nn.Module):
             ff_mult=ff_mult,
             ff_glu=ff_glu,
             qkv_dim=text_dim if qkv_dim_always_text else None,
-            use_checkpoint=use_checkpoint,
+            # use_checkpoint=use_checkpoint,
             **shared_args
         )
 
