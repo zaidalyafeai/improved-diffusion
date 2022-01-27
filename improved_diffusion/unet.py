@@ -641,7 +641,7 @@ class UNetModel(nn.Module):
                             axial_shape=(emb_res, emb_res),
                         )
                     caa_args = dict(
-                        use_checkpoint=use_checkpoint or use_checkpoint_down,
+                        use_checkpoint=True,
                         dim=ch,
                         time_embed_dim=time_embed_dim,
                         heads=num_heads_here,
@@ -774,7 +774,7 @@ class UNetModel(nn.Module):
                             axial_shape=(emb_res, emb_res),
                         )
                     caa_args = dict(
-                        use_checkpoint=use_checkpoint or use_checkpoint_up,
+                        use_checkpoint=True,
                         dim=ch,
                         time_embed_dim=time_embed_dim,
                         heads=num_heads_here,
