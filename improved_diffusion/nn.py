@@ -238,6 +238,7 @@ class CheckpointFunction(th.autograd.Function):
         ctx.input_tensors = list(args[:length])
         ctx.input_params = list(args[length:])
         ctx.final_nograd = final_nograd
+        print(f"fwd ctx.final_nograd: {ctx.final_nograd}")
         with th.no_grad():
             output_tensors = ctx.run_function(*ctx.input_tensors)
         return output_tensors
@@ -245,6 +246,7 @@ class CheckpointFunction(th.autograd.Function):
     @staticmethod
     @th.cuda.amp.custom_bwd
     def backward(ctx, *output_grads):
+        print(f"bwd ctx.final_nograd: {ctx.final_nograd}")
         if ctx.final_nograd:
             ctx.input_tensors = [x.detach().requires_grad_(True) for x in ctx.input_tensors[:-1]] + [ctx.input_tensors[-1]]
             grad_input_tensors = ctx.input_tensors[:-1]
