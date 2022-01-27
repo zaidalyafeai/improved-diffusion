@@ -212,7 +212,7 @@ def timestep_embedding(timesteps, dim, max_period=10000):
     return embedding
 
 
-def checkpoint(func, inputs, params, flag):
+def checkpoint(func, inputs, params, flag, final_nograd=False):
     """
     Evaluate a function without caching intermediate activations, allowing for
     reduced memory at the expense of extra compute in the backward pass.
@@ -225,7 +225,7 @@ def checkpoint(func, inputs, params, flag):
     """
     if flag:
         args = tuple(inputs) + tuple(params)
-        return CheckpointFunction.apply(func, len(inputs), *args)
+        return CheckpointFunction.apply(func, len(inputs), final_nograd, *args)
     else:
         return func(*inputs)
 
@@ -233,10 +233,11 @@ def checkpoint(func, inputs, params, flag):
 class CheckpointFunction(th.autograd.Function):
     @staticmethod
     @th.cuda.amp.custom_fwd
-    def forward(ctx, run_function, length, *args):
+    def forward(ctx, run_function, length, final_nograd, *args):
         ctx.run_function = run_function
         ctx.input_tensors = list(args[:length])
         ctx.input_params = list(args[length:])
+        ctx.final_nograd = final_nograd
         with th.no_grad():
             output_tensors = ctx.run_function(*ctx.input_tensors)
         return output_tensors
@@ -244,9 +245,12 @@ class CheckpointFunction(th.autograd.Function):
     @staticmethod
     @th.cuda.amp.custom_bwd
     def backward(ctx, *output_grads):
-        print((len(ctx.needs_input_grad), ctx.needs_input_grad))
-        print(len(ctx.input_tensors))
-        ctx.input_tensors = [x.detach().requires_grad_(rg) for x, rg in zip(ctx.input_tensors, ctx.needs_input_grad)]
+        if ctx.final_nograd:
+            ctx.input_tensors = [x.detach().requires_grad_(True) for x in ctx.input_tensors[:-1]] + [ctx.input_tensors[-1]]
+            grad_input_tensors = ctx.input_tensors[:-1]
+        else:
+            ctx.input_tensors = [x.detach().requires_grad_(True) for x in ctx.input_tensors]
+            grad_input_tensors = ctx.input_tensors
         with th.enable_grad():
             # Fixes a bug where the first op in run_function modifies the
             # Tensor storage in place, which is not allowed for detach()'d
@@ -255,11 +259,15 @@ class CheckpointFunction(th.autograd.Function):
             output_tensors = ctx.run_function(*shallow_copies)
         input_grads = th.autograd.grad(
             output_tensors,
-            ctx.input_tensors + ctx.input_params,
+            grad_input_tensors + ctx.input_params,
             output_grads,
             allow_unused=True,
         )
+        ng = len(grad_input_tensors)
         del ctx.input_tensors
+        del grad_input_tensors
         del ctx.input_params
         del output_tensors
-        return (None, None) + input_grads
+        if ctx.final_nograd:
+            return (None, None, None) + input_grads[:ng] + (None,) + input_grads[ng:]
+        return (None, None, None) + input_grads

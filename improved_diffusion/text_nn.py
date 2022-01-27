@@ -327,10 +327,11 @@ class CrossAttention(nn.Module):
         tgt_pos_emb_val = tgt_pos_emb(pseudo_tgt_in)
 
         return checkpoint(
-            self._forward, (src, tgt, attn_mask, tgt_pos_emb_val, timestep_emb), self.parameters(), self.use_checkpoint
+            self._forward, (src, tgt, tgt_pos_emb_val, timestep_emb, attn_mask, ), self.parameters(), self.use_checkpoint,
+            final_nograd=True
         )
 
-    def _forward(self, src, tgt, attn_mask, tgt_pos_emb_val, timestep_emb):
+    def _forward(self, src, tgt, tgt_pos_emb_val, timestep_emb, attn_mask):
         def _to_b_hw_c(x, retdims=True):
             b, c, *spatial = x.shape
             xt = x.reshape(b, c, -1).transpose(1, 2)
@@ -495,10 +496,11 @@ class ImageToTextCrossAttention(nn.Module):
         src_pos_emb_val = src_pos_emb(pseudo_src_in)
 
         return checkpoint(
-            self._forward, (src, tgt, attn_mask, src_pos_emb_val, timestep_emb), self.parameters(), self.use_checkpoint
+            self._forward, (src, tgt, src_pos_emb_val, timestep_emb, attn_mask, ), self.parameters(), self.use_checkpoint,
+            final_nograd=True
         )
 
-    def _forward(self, src, tgt, attn_mask, src_pos_emb_val, timestep_emb):
+    def _forward(self, src, tgt, src_pos_emb_val, timestep_emb, attn_mask, ):
         def _to_b_hw_c(x, retdims=True):
             b, c, *spatial = x.shape
             xt = x.reshape(b, c, -1).transpose(1, 2)
