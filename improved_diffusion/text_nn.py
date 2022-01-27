@@ -121,7 +121,7 @@ class TextEncoder(nn.Module):
             final_nograd=True
         )
 
-    def self._model_forward(self, x, attn_mask):
+    def _model_forward(self, x, attn_mask):
         return self.model.forward(x, attn_mask=attn_mask)
 
     def forward(self, tokens, timesteps=None):
