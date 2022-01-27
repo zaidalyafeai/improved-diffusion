@@ -223,6 +223,7 @@ def checkpoint(func, inputs, params, flag, final_nograd=False):
                    explicitly take as arguments.
     :param flag: if False, disable gradient checkpointing.
     """
+    print(f"ckpt final_nograd: {final_nograd}")
     if flag:
         args = tuple(inputs) + tuple(params)
         return CheckpointFunction.apply(func, len(inputs), final_nograd, *args)
