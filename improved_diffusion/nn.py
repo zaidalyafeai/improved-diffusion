@@ -252,7 +252,7 @@ class CheckpointFunction(th.autograd.Function):
     def backward(ctx, *output_grads):
         # print(f"bwd ctx.final_nograd: {ctx.final_nograd}")
         if ctx.final_nograd:
-            ctx.input_tensors = [x.detach().requires_grad_(True) for x in ctx.input_tensors[:-final_nograd]] + ctx.input_tensors[-final_nograd:]]
+            ctx.input_tensors = [x.detach().requires_grad_(True) for x in ctx.input_tensors[:-final_nograd]] + ctx.input_tensors[-final_nograd:]
             grad_input_tensors = ctx.input_tensors[:-final_nograd]
         else:
             ctx.input_tensors = [x.detach().requires_grad_(True) for x in ctx.input_tensors]
