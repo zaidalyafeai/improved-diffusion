@@ -244,6 +244,8 @@ class CheckpointFunction(th.autograd.Function):
     @staticmethod
     @th.cuda.amp.custom_bwd
     def backward(ctx, *output_grads):
+        print((len(ctx.needs_input_grad), ctx.needs_input_grad))
+        print(len(ctx.input_tensors))
         ctx.input_tensors = [x.detach().requires_grad_(rg) for x, rg in zip(ctx.input_tensors, ctx.needs_input_grad)]
         with th.enable_grad():
             # Fixes a bug where the first op in run_function modifies the
