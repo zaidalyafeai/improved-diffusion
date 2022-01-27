@@ -275,5 +275,6 @@ class CheckpointFunction(th.autograd.Function):
         del ctx.input_params
         del output_tensors
         if ctx.final_nograd:
+            print((ctx.final_nograd, ng, len(input_grads))
             return (None, None, None) + input_grads[:ng] + (ctx.final_nograd * (None,)) + input_grads[ng:]
         return (None, None, None) + input_grads
