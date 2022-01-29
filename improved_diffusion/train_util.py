@@ -674,7 +674,7 @@ def save_progress_to_gcs(step, ema_rates, autosave_dir):
 
     fn_progress_base = os.path.join(logdir, f"progress.csv")
     fn_progress = os.path.join(logdir, f"progress{step}.csv")
-    _run_and_log(f"cp {fn_progress_base} {fn_progress})
+    _run_and_log(f"cp {fn_progress_base} {fn_progress}")
 
     fn_segs = [f'model{prefixd}.pt', f'opt{prefixd}.pt']
     fn_segs += [f'ema_{rate}_{prefixd}.pt' for rate in ema_rates]
