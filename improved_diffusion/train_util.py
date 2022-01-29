@@ -2,6 +2,7 @@ import copy
 import functools
 import os
 import time
+import subprocess
 from collections import defaultdict
 
 import blobfile as bf
@@ -60,6 +61,8 @@ class TrainLoop:
         master_on_cpu=False,
         use_amp=False,
         use_profiler=False,
+        autosave=True,
+        autosave_dir="gs://nost_ar_work/improved_diffusion/"
     ):
         self.model = model
         self.diffusion = diffusion
@@ -91,6 +94,8 @@ class TrainLoop:
         self.master_device = 'cpu' if master_on_cpu else None
         self.use_amp = use_amp
         self.use_profiler = use_profiler
+        self.autosave = autosave
+        self.autosave_dir = autosave_dir
         print(f"TrainLoop self.master_device: {self.master_device}, use_amp={use_amp}")
 
         self.step = 0
@@ -596,12 +601,19 @@ class TrainLoop:
         for rate, params in zip(self.ema_rate, self.ema_params):
             save_checkpoint(rate, params)
 
+        logger.log("saving opt...")
+
         if dist.get_rank() == 0:
             with bf.BlobFile(
                 bf.join(get_blob_logdir(), f"opt{(self.step+self.resume_step):06d}.pt"),
                 "wb",
             ) as f:
                 th.save(self.opt.state_dict(), f)
+
+        logger.log("done saving locally")
+
+        if self.autosave:
+            save_progress_to_gcs(step=self.step+self.resume_step, ema_rates=self.ema_rate, autosave_dir=self.autosave_dir)
 
         dist.barrier()
 
@@ -641,6 +653,37 @@ class TrainLoop:
             # names_flat = [name for names in self.param_name_groups for name in names]
             # params = [state_dict[name] for name in names_flat]
             return params
+
+
+def save_progress_to_gcs(step, ema_rates, autosave_dir):
+    def _run_and_log(command):
+        print(f"running {repr(command)}")
+        return subprocess.check_output(command, shell=True)
+
+    # construct gcs dir
+    logdir = get_blob_logdir()
+    logdir_final = [s for s in logdir.split('/') if len(s) > 0][-1]
+
+    if not autosave_dir.endswith('/'):
+        autosave_dir = autosave_dir + '/'
+
+    experiment_autosave_dir = autosave_dir + logdir_final
+    logger.log(f"copying to {repr(experiment_autosave_dir)}")
+
+    prefixd = f"{step:06d}"
+
+    fn_progress_base = os.path.join(logdir, f"progress.csv")
+    fn_progress = os.path.join(logdir, f"progress{step}.csv")
+    _run_and_log(f"cp {fn_progress_base} {fn_progress})
+
+    fn_segs = [f'model{prefixd}.pt', f'opt{prefixd}.pt']
+    fn_segs += [f'ema_{rate}_{prefixd}.pt' for rate in ema_rates]
+    fn_segs = [os.path.join(logdir, s) for s in fn_segs]
+    fn_segs.append(fn_progress)
+
+    fns_joined = " ".join(fn_segs)
+    gcs_up_command = f"gsutil -m cp {fns_joined} {experiment_autosave_dir}"
+    _run_and_log(gcs_up_command)
 
 
 def parse_resume_step_from_filename(filename):
