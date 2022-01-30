@@ -62,7 +62,7 @@ class TrainLoop:
         use_amp=False,
         use_profiler=False,
         autosave=True,
-        autosave_dir="gs://nost_ar_work/improved_diffusion/"
+        autosave_dir="gs://nost_ar_work/improved-diffusion/"
     ):
         self.model = model
         self.diffusion = diffusion
