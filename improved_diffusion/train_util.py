@@ -98,6 +98,7 @@ class TrainLoop:
         self.use_profiler = use_profiler
         self.autosave = autosave
         self.autosave_dir = autosave_dir
+        self.anneal_log_flag = False
         print(f"TrainLoop self.master_device: {self.master_device}, use_amp={use_amp}")
 
         self.step = 0
@@ -567,7 +568,10 @@ class TrainLoop:
 
         for param_group, lr_variant in zip(self.opt.param_groups, lr_variants):
             this_lr = lr_variant * (1 - frac_done)
-            print(f"setting lr to {this_lr:.4e} for group with {len(param_group['params'])} params")
+            state_lr = param_group["lr"]
+            if not self.anneal_log_flag:
+                print(f"for group with {len(param_group['params'])} params, setting lr to {this_lr:.4e} (was {state_lr:.4e})")
+                self.anneal_log_flag = True
             param_group["lr"] = this_lr
 
     def log_gain(self):
