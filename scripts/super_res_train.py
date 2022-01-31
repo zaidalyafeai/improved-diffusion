@@ -120,6 +120,7 @@ def main():
         use_amp=args.use_amp,
         text_lr=args.text_lr,
         gain_lr=args.gain_lr,
+        autosave=args.autosave
     ).run_loop()
 
 
@@ -158,6 +159,7 @@ def create_argparser():
         min_filesize=0,
         txt_pdrop=0.,
         use_amp=False,
+        autosave=True,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
