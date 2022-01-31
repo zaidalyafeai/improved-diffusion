@@ -24,6 +24,12 @@ from improved_diffusion.train_util import TrainLoop
 def main():
     args = create_argparser().parse_args()
 
+    if args.text_lr < 0:
+        args.text_lr = None
+
+    if args.gain_lr < 0:
+        args.gain_lr = None
+
     dist_util.setup_dist()
     logger.configure()
 
@@ -111,7 +117,9 @@ def main():
         weave_legacy_param_names=args.weave_legacy_param_names,
         state_dict_sandwich=args.state_dict_sandwich,
         state_dict_sandwich_manual_remaps=args.state_dict_sandwich_manual_remaps,
-        use_amp=args.use_amp
+        use_amp=args.use_amp,
+        text_lr=args.text_lr,
+        gain_lr=args.gain_lr,
     ).run_loop()
 
 
@@ -132,6 +140,8 @@ def create_argparser():
         fp16_scale_growth=1e-3,
         lg_loss_scale=20,
         char_level=False,
+        text_lr=-1,
+        gain_lr=-1,
         beta1=0.9,
         beta2=0.999,
         colorize=False,
@@ -157,3 +167,4 @@ def create_argparser():
 
 if __name__ == "__main__":
     main()
+h
