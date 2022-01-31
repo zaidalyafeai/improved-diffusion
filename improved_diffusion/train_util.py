@@ -562,9 +562,11 @@ class TrainLoop:
             frac_done = 0.
         else:
             frac_done = (self.step + self.resume_step) / self.lr_anneal_steps
-        lr = self.lr * (1 - frac_done)
-        for param_group in self.opt.param_groups:
-            param_group["lr"] = lr
+
+        lr_variants = (len(self.opt.param_groups)-2) * [self.text_lr] + [self.gain_lr, self.lr]
+
+        for param_group, lr_variant in zip(self.opt.param_groups, lr_variants):
+            param_group["lr"] = lr_variant * (1 - frac_done)
 
     def log_gain(self):
         for n, m in self.model.named_modules():
