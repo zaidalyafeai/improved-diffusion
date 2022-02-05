@@ -20,7 +20,7 @@ from .fp16_util import (
     unflatten_master_params,
     zero_grad,
 )
-from .nn import update_ema, scale_module
+from .nn import update_ema, update_arithmetic_average, scale_module
 from .resample import LossAwareSampler, UniformSampler
 
 from .image_datasets import tokenize
@@ -63,7 +63,8 @@ class TrainLoop:
         use_amp=False,
         use_profiler=False,
         autosave=True,
-        autosave_dir="gs://nost_ar_work/improved-diffusion/"
+        autosave_dir="gs://nost_ar_work/improved-diffusion/",
+        arithmetic_avg_from_step=-1
     ):
         self.model = model
         self.diffusion = diffusion
@@ -99,6 +100,7 @@ class TrainLoop:
         self.autosave = autosave
         self.autosave_dir = autosave_dir
         self.anneal_log_flag = False
+        self.arithmetic_avg_from_step = arithmetic_avg_from_step
         print(f"TrainLoop self.master_device: {self.master_device}, use_amp={use_amp}")
 
         self.step = 0
@@ -466,6 +468,17 @@ class TrainLoop:
                 self.grad_scaler.scale(loss * grad_acc_scale).backward()
             else:
                 (loss * grad_acc_scale).backward()
+
+    def _update_ema(self, params, rate):
+        if self.arithmetic_avg_from_step > 0:
+            n = self.arithmetic_avg_from_step - (self.step + self.resume_step) + 2  # divisor is 1/2 at first step
+            print(f"using n={n}, vs 1/rate {1/rate:.1fs}")
+            if n >= 1/rate:
+                update_ema(params, self.master_params, rate=rate)
+            else:
+                update_arithmetic_average(params, self.master_params, n=n)
+        else:
+            update_ema(params, self.master_params, rate=rate)
 
     def optimize_fp16(self):
         if any(not th.isfinite(p.grad).all() for ps in self.model_params for p in ps if p.grad is not None):

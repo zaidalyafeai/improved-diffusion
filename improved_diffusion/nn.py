@@ -143,6 +143,13 @@ def update_ema(target_params, source_params, rate=0.99):
             targ.detach().mul_(rate).add_(src, alpha=1 - rate)
 
 
+def update_arithmetic_average(target_params, source_params, n):
+    if n == 0:
+        raise ValueError
+    rate = 1 - (1/n)
+    update_ema(target_params, source_params, rate)
+
+
 def zero_module(module):
     """
     Zero out the parameters of a module and return it.

@@ -128,7 +128,8 @@ def main():
         master_on_cpu=args.master_on_cpu,
         use_amp=args.use_amp,
         use_profiler=args.use_profiler,
-        autosave=args.autosave
+        autosave=args.autosave,
+        arithmetic_avg_from_step=args.arithmetic_avg_from_step
     ).run_loop()
 
 
@@ -171,6 +172,7 @@ def create_argparser():
         use_amp=False,
         use_profiler=False,
         autosave=True,
+        arithmetic_avg_from_step=-1,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
