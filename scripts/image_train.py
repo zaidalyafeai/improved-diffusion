@@ -129,7 +129,8 @@ def main():
         use_amp=args.use_amp,
         use_profiler=args.use_profiler,
         autosave=args.autosave,
-        arithmetic_avg_from_step=args.arithmetic_avg_from_step
+        arithmetic_avg_from_step=args.arithmetic_avg_from_step,
+        arithmetic_avg_extra_shift=args.arithmetic_avg_extra_shift
     ).run_loop()
 
 
@@ -173,6 +174,7 @@ def create_argparser():
         use_profiler=False,
         autosave=True,
         arithmetic_avg_from_step=-1,
+        arithmetic_avg_extra_shift=0,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

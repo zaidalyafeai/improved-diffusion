@@ -121,7 +121,8 @@ def main():
         text_lr=args.text_lr,
         gain_lr=args.gain_lr,
         autosave=args.autosave,
-        arithmetic_avg_from_step=args.arithmetic_avg_from_step
+        arithmetic_avg_from_step=args.arithmetic_avg_from_step,
+        arithmetic_avg_extra_shift=args.arithmetic_avg_extra_shift
     ).run_loop()
 
 
@@ -161,7 +162,8 @@ def create_argparser():
         txt_pdrop=0.,
         use_amp=False,
         autosave=True,
-        arithmetic_avg_from_step=-1
+        arithmetic_avg_from_step=-1,
+        arithmetic_avg_extra_shift=0
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
