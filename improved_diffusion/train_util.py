@@ -472,10 +472,12 @@ class TrainLoop:
     def _update_ema(self, params, rate):
         if self.arithmetic_avg_from_step > 0:
             n = self.arithmetic_avg_from_step - (self.step + self.resume_step) + 2  # divisor is 1/2 at first step
-            print(f"using n={n}, vs 1/rate {1/rate:.1f}")
-            if n >= 1/rate:
+            print(f"using n={n}, vs 1/(1-rate) {1/(1-rate):.1f} | ", end="")
+            if n >= 1/(1-rate):
+                print('update_ema')
                 update_ema(params, self.master_params, rate=rate)
             else:
+                print('update_arithmetic_average')
                 update_arithmetic_average(params, self.master_params, n=n)
         else:
             update_ema(params, self.master_params, rate=rate)
