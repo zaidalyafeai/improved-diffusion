@@ -493,7 +493,7 @@ class TrainLoop:
         self._anneal_lr()
         self.opt.step()
         for rate, params in zip(self.ema_rate, self.ema_params):
-            update_ema(params, self.master_params, rate=rate)
+            self._update_ema(params, rate=rate)
         master_params_to_model_params(self.model_params, self.master_params)
         self.lg_loss_scale += self.fp16_scale_growth
 
@@ -502,7 +502,7 @@ class TrainLoop:
         self._anneal_lr()
         self.opt.step()
         for rate, params in zip(self.ema_rate, self.ema_params):
-            update_ema(params, self.master_params, rate=rate)
+            self._update_ema(params, rate=rate)
 
     def optimize_amp(self):
         self.grad_scaler.unscale_(self.opt)
@@ -511,7 +511,7 @@ class TrainLoop:
         self.grad_scaler.step(self.opt)
         self.grad_scaler.update()
         for rate, params in zip(self.ema_rate, self.ema_params):
-            update_ema(params, self.master_params, rate=rate)
+            self._update_ema(params, rate=rate)
 
     def _log_grad_norm(self):
         sqsum = 0.0
