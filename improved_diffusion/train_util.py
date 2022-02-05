@@ -65,7 +65,7 @@ class TrainLoop:
         autosave=True,
         autosave_dir="gs://nost_ar_work/improved-diffusion/",
         arithmetic_avg_from_step=-1,
-        arithmetic_avg_extra_shift=arithmetic_avg_extra_shift
+        arithmetic_avg_extra_shift=0
     ):
         self.model = model
         self.diffusion = diffusion
