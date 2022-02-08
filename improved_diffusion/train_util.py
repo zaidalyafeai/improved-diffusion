@@ -116,6 +116,7 @@ class TrainLoop:
         itot_params, itot_param_names = defaultdict(list), defaultdict(list)
         gain_params, self.gain_param_names = [], []
         other_params, self.other_param_names = [], []
+        ff_gain_params, self.ff_gain_param_names = [], []
         for n, p in model.named_parameters():
             if 'text_encoder' in n:
                 # subname = 'text'
@@ -126,8 +127,12 @@ class TrainLoop:
                 text_param_names[subname].append(n)
                 text_params[subname].append(p)
             elif ("cross_attn" in n or "weave_attn.text_to_image_layers") and "gain" in n:
-                self.gain_param_names.append(n)
-                gain_params.append(p)
+                if 'gain_ff' in n:
+                    self.ff_gain_param_names.append(n)
+                    ff_gain_params.append(p)
+                else:
+                    self.gain_param_names.append(n)
+                    gain_params.append(p)
             elif "cross_attn" in n or "weave_attn.text_to_image_layers" in n:
                 # subname = 'xattn'
                 prefix = "cross_attn." if "cross_attn." in n else "weave_attn.text_to_image_layers."
@@ -146,6 +151,7 @@ class TrainLoop:
             else:
                 self.other_param_names.append(n)
                 other_params.append(p)
+
         self.text_mods = list(text_param_names.keys())
         text_params = [text_params[n] for n in self.text_mods]
         self.text_param_names = [text_param_names[n] for n in self.text_mods]
@@ -158,9 +164,9 @@ class TrainLoop:
         itot_params = [itot_params[n] for n in self.itot_mods]
         self.itot_param_names = [itot_param_names[n] for n in self.itot_mods]
 
-        self.param_name_groups = [*self.text_param_names, *self.xattn_param_names, *self.itot_param_names, self.gain_param_names, self.other_param_names]
+        self.param_name_groups = [*self.text_param_names, *self.xattn_param_names, *self.itot_param_names, self.gain_param_names, self.ff_gain_param_names, self.other_param_names]
         # self.model_params = list(self.model.parameters())
-        self.model_params = [*text_params, *xattn_params, *itot_params, gain_params, other_params]
+        self.model_params = [*text_params, *xattn_params, *itot_params, gain_params, other_params, ff_gain_params]
         if len(gain_params) == 0:
             self.param_name_groups = [self.other_param_names]
             self.model_params = [other_params]
@@ -182,7 +188,7 @@ class TrainLoop:
         text_nparams = 0
         xattn_nparams = 0
         itot_nparams = 0
-        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'other']):
+        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'other', 'xgainff']):
             if isinstance(p, list):
                 nparams = sum(np.product(pp.shape) for pp in p)
             else:
@@ -242,6 +248,8 @@ class TrainLoop:
             self.ema_params = [
                 copy.deepcopy(self.master_params) for _ in range(len(self.ema_rate))
             ]
+
+        self.opt.add_param_group({"params": ff_gain_params, "lr": self.gain_lr, "weight_decay": 0.})
 
         if th.cuda.is_available():
             self.use_ddp = True
@@ -537,7 +545,7 @@ class TrainLoop:
 
         gn_xattn, gn_text, gn_itot = 0., 0., 0.
 
-        for p_, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'other']):
+        for p_, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'other', 'xgainff']):
             if isinstance(p_, list):
                 pp = p_
             else:
