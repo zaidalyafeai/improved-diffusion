@@ -468,10 +468,16 @@ class ImageToTextCrossAttention(nn.Module):
         self.gain_scale = gain_scale
         if self.use_layerscale:
             self.gain = torch.nn.Parameter(layerscale_init * torch.ones(self.dim))
+            if use_ff:
+                self.gain_ff = torch.nn.Parameter(layerscale_init * torch.ones(self.dim))
         elif self.use_rezero:
             self.gain = torch.nn.Parameter(torch.zeros(1))
+            if use_ff:
+                self.gain_ff = torch.nn.Parameter(layerscale_init * torch.ones(self.dim))
         else:
             self.gain = torch.nn.Parameter(torch.as_tensor(np.log(init_gain) / gain_scale))
+            if use_ff:
+                self.gain_ff = torch.nn.Parameter(layerscale_init * torch.ones(self.dim))
 
         self.use_ff = use_ff
         self.ff = None
@@ -492,8 +498,8 @@ class ImageToTextCrossAttention(nn.Module):
             torch.nn.init.orthogonal_(self.attn.v.weight)
             torch.nn.init.orthogonal_(self.attn.out_proj.weight)
 
-    def effective_gain(self):
-        g = self.gain_scale * self.gain
+    def effective_gain(self, base):
+        g = self.gain_scale * base
         if not (self.use_rezero or self.use_layerscale):
             g = g.exp()
         return g
@@ -546,12 +552,13 @@ class ImageToTextCrossAttention(nn.Module):
             my_attn_mask = (~my_attn_mask).to(q.dtype) * -10000.
 
         attn_output, attn_output_weights = self.attn(q, k, v, attn_mask=my_attn_mask)
-        attn_output = attn_output * self.effective_gain()
+        attn_output = attn_output * self.effective_gain(self.gain)
 
         tgt = tgt + attn_output
 
         if self.use_ff:
             ff_output = self.ff(self.ff_ln(tgt))  # TODO: make a flag that enables gain for the ff part too?
+            attn_output = attn_output * self.effective_gain(self.gain_ff)
             tgt = tgt + ff_output
         return tgt, src
 
