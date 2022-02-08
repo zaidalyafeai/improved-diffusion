@@ -467,17 +467,17 @@ class ImageToTextCrossAttention(nn.Module):
 
         self.gain_scale = gain_scale
         if self.use_layerscale:
-            self.gain = torch.nn.Parameter(layerscale_init * torch.ones(self.dim))
+            self.gain = torch.nn.Parameter(layerscale_init * torch.ones(self.text_dim))
             if use_ff:
-                self.gain_ff = torch.nn.Parameter(layerscale_init * torch.ones(self.dim))
+                self.gain_ff = torch.nn.Parameter(layerscale_init * torch.ones(self.text_dim))
         elif self.use_rezero:
             self.gain = torch.nn.Parameter(torch.zeros(1))
             if use_ff:
-                self.gain_ff = torch.nn.Parameter(layerscale_init * torch.ones(self.dim))
+                self.gain_ff = torch.nn.Parameter(torch.zeros(1))
         else:
             self.gain = torch.nn.Parameter(torch.as_tensor(np.log(init_gain) / gain_scale))
             if use_ff:
-                self.gain_ff = torch.nn.Parameter(layerscale_init * torch.ones(self.dim))
+                self.gain_ff = torch.nn.Parameter(torch.as_tensor(np.log(init_gain) / gain_scale))
 
         self.use_ff = use_ff
         self.ff = None
