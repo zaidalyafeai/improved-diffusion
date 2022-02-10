@@ -596,7 +596,7 @@ class TrainLoop:
         else:
             frac_done = (self.step + self.resume_step) / self.lr_anneal_steps
 
-        lr_variants = (len(self.opt.param_groups)-2) * [self.text_lr] + [self.gain_lr, self.lr]
+        lr_variants = (len(self.opt.param_groups)-3) * [self.text_lr] + [self.gain_lr, self.lr, self.gain_lr]
 
         for param_group, lr_variant in zip(self.opt.param_groups, lr_variants):
             this_lr = lr_variant * (1 - frac_done)
