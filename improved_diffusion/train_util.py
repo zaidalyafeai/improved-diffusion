@@ -683,13 +683,21 @@ class TrainLoop:
         return state_dict
 
     def _state_dict_to_master_params(self, state_dict):
-        # params = [state_dict[name] for name, _ in self.model.named_parameters()]
-        params = [[state_dict[name] for name in name_group] for name_group in self.param_name_groups]
+        # params = [[state_dict[name] for name in name_group] for name_group in self.param_name_groups]
+        def _debug_get(sd, name, fallback):
+            if name in sd:
+                return sd[name]
+            print(f'{repr(name)} not found, falling back to\n\t{repr(fallback)}\n')
+            return deepcopy(fallback)
+
+        params = [
+            [_debug_get(state_dict, name, p) for name, p in zip(name_group, param_group)]
+            for name_group, param_group in zip(self.param_name_groups, self.master_params)
+        ]
+
         if self.use_fp16:
             return make_master_params(params)
         else:
-            # names_flat = [name for names in self.param_name_groups for name in names]
-            # params = [state_dict[name] for name in names_flat]
             return params
 
 
