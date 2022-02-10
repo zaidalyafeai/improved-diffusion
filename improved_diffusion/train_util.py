@@ -604,7 +604,9 @@ class TrainLoop:
 
     def log_gain(self):
         for n, m in self.model.named_modules():
-            for attrname, methodname in [('gain', 'effective_gain'), ('gain_ff', 'effective_gain_ff')]:
+            for attrname, methodname, suffix in [
+                ('gain', 'effective_gain', ''), ('gain_ff', 'effective_gain_ff', '_ff')
+            ]:
                 if hasattr(m, attrname):
                     gain_val = getattr(m, methodname)()
                     if gain_val.ndim < 1 or len(gain_val) == 1:
@@ -612,7 +614,7 @@ class TrainLoop:
                     else:
                         gain_val = gain_val.detach().abs().mean().item()
                     short_name = ".".join(seg[:3] for seg in n.split(".") if seg[:3] != 'cro')
-                    logger.logkv(f"{attrname}_{short_name}", gain_val)
+                    logger.logkv(f"gain_{short_name}{attrname}", gain_val)
 
     def log_step(self):
         logger.logkv("step", self.step + self.resume_step)
