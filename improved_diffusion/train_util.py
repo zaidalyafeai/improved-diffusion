@@ -472,7 +472,7 @@ class TrainLoop:
                 (loss * grad_acc_scale).backward()
 
     def _update_ema(self, params, rate):
-        if self.arithmetic_avg_from_step > 0:
+        if self.arithmetic_avg_from_step >= 0:
             n = (self.step + self.resume_step) - self.arithmetic_avg_from_step + 2  # divisor is 1/2 at first step
             n = n + self.arithmetic_avg_extra_shift  # for after first save/load
             print(f"using n={n}, vs 1/(1-rate) {1/(1-rate):.1f} | ", end="")
