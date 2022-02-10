@@ -65,7 +65,8 @@ class TrainLoop:
         autosave=True,
         autosave_dir="gs://nost_ar_work/improved-diffusion/",
         arithmetic_avg_from_step=-1,
-        arithmetic_avg_extra_shift=0
+        arithmetic_avg_extra_shift=0,
+        gain_ff_setup_step=False
     ):
         self.model = model
         self.diffusion = diffusion
@@ -227,6 +228,10 @@ class TrainLoop:
             weight_decay=self.weight_decay,
             betas=(beta1, beta2)
         )
+
+        if not gain_ff_setup_step:
+            self.opt.add_param_group({"params": ff_gain_params, "lr": self.gain_lr, "weight_decay": 0.})
+
         if self.resume_step:
             try:
                 self._load_optimizer_state()
@@ -249,7 +254,8 @@ class TrainLoop:
                 copy.deepcopy(self.master_params) for _ in range(len(self.ema_rate))
             ]
 
-        self.opt.add_param_group({"params": ff_gain_params, "lr": self.gain_lr, "weight_decay": 0.})
+        if gain_ff_setup_step:
+            self.opt.add_param_group({"params": ff_gain_params, "lr": self.gain_lr, "weight_decay": 0.})
 
         if th.cuda.is_available():
             self.use_ddp = True
