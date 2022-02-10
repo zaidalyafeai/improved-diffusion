@@ -103,7 +103,7 @@ class TrainLoop:
         self.anneal_log_flag = False
         self.arithmetic_avg_from_step = arithmetic_avg_from_step
         self.arithmetic_avg_extra_shift = arithmetic_avg_extra_shift
-        print(f"TrainLoop self.master_device: {self.master_device}, use_amp={use_amp}")
+        print(f"TrainLoop self.master_device: {self.master_device}, use_amp={use_amp}, autosave={self.autosave}")
 
         self.step = 0
         self.resume_step = 0
