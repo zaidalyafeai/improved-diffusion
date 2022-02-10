@@ -498,11 +498,17 @@ class ImageToTextCrossAttention(nn.Module):
             torch.nn.init.orthogonal_(self.attn.v.weight)
             torch.nn.init.orthogonal_(self.attn.out_proj.weight)
 
-    def effective_gain(self, base):
+    def _effective_gain(self, base):
         g = self.gain_scale * base
         if not (self.use_rezero or self.use_layerscale):
             g = g.exp()
         return g
+
+    def effective_gain(self):
+        return self._effective_gain(self.gain)
+
+    def effective_gain_ff(self):
+        return self._effective_gain(self.gain_ff)
 
     def forward(self, src, tgt, attn_mask=None, image_pos_embs=None, timestep_emb=None):
         src_pos_emb = image_pos_embs[str(self.emb_res)]
@@ -552,13 +558,13 @@ class ImageToTextCrossAttention(nn.Module):
             my_attn_mask = (~my_attn_mask).to(q.dtype) * -10000.
 
         attn_output, attn_output_weights = self.attn(q, k, v, attn_mask=my_attn_mask)
-        attn_output = attn_output * self.effective_gain(self.gain)
+        attn_output = attn_output * self.effective_gain()
 
         tgt = tgt + attn_output
 
         if self.use_ff:
             ff_output = self.ff(self.ff_ln(tgt))
-            ff_output = ff_output * self.effective_gain(self.gain_ff)
+            ff_output = ff_output * self.effective_gain_ff()
             tgt = tgt + ff_output
         return tgt, src
 

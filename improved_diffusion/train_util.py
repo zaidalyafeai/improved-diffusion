@@ -604,15 +604,15 @@ class TrainLoop:
 
     def log_gain(self):
         for n, m in self.model.named_modules():
-            if hasattr(m, 'gain'):
-                # gain_val = (getattr(m, 'gain_scale') * getattr(m, 'gain')).exp().item()
-                gain_val = m.effective_gain()
-                if gain_val.ndim < 1 or len(gain_val) == 1:
-                    gain_val = gain_val.item()
-                else:
-                    gain_val = gain_val.detach().abs().mean().item()
-                short_name = ".".join(seg[:3] for seg in n.split(".") if seg[:3] != 'cro')
-                logger.logkv(f"gain_{short_name}", gain_val)
+            for attrname, methodname in [('gain', 'effective_gain'), ('gain_ff', 'effective_gain_ff')]:
+                if hasattr(m, attrname):
+                    gain_val = getattr(m, methodname)()
+                    if gain_val.ndim < 1 or len(gain_val) == 1:
+                        gain_val = gain_val.item()
+                    else:
+                        gain_val = gain_val.detach().abs().mean().item()
+                    short_name = ".".join(seg[:3] for seg in n.split(".") if seg[:3] != 'cro')
+                    logger.logkv(f"{attrname}_{short_name}", gain_val)
 
     def log_step(self):
         logger.logkv("step", self.step + self.resume_step)
