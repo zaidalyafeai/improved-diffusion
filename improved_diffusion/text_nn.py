@@ -557,8 +557,8 @@ class ImageToTextCrossAttention(nn.Module):
         tgt = tgt + attn_output
 
         if self.use_ff:
-            ff_output = self.ff(self.ff_ln(tgt))  # TODO: make a flag that enables gain for the ff part too?
-            attn_output = attn_output * self.effective_gain(self.gain_ff)
+            ff_output = self.ff(self.ff_ln(tgt))
+            ff_output = ff_output * self.effective_gain(self.gain_ff)
             tgt = tgt + ff_output
         return tgt, src
 

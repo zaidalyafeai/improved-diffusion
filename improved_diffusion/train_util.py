@@ -688,7 +688,7 @@ class TrainLoop:
             if name in sd:
                 return sd[name]
             print(f'{repr(name)} not found, falling back to\n\t{repr(fallback)}\n')
-            return deepcopy(fallback)
+            return copy.deepcopy(fallback)
 
         params = [
             [_debug_get(state_dict, name, p) for name, p in zip(name_group, param_group)]
