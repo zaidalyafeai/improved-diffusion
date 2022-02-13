@@ -435,6 +435,7 @@ class ImageToTextCrossAttention(nn.Module):
         ff_glu=False,
         qkv_dim=None,
         use_checkpoint=False,
+        use_ff_gain=False,
     ):
         super().__init__()
         if qkv_dim is None:
@@ -466,18 +467,22 @@ class ImageToTextCrossAttention(nn.Module):
         )
 
         self.gain_scale = gain_scale
+        self.gain_ff = 1
         if self.use_layerscale:
             self.gain = torch.nn.Parameter(layerscale_init * torch.ones(self.text_dim))
-            if use_ff:
+            if use_ff and use_ff_gain:
                 self.gain_ff = torch.nn.Parameter(layerscale_init * torch.ones(self.text_dim))
         elif self.use_rezero:
             self.gain = torch.nn.Parameter(torch.zeros(1))
-            if use_ff:
+            if use_ff and use_ff_gain:
                 self.gain_ff = torch.nn.Parameter(torch.zeros(1))
         else:
             self.gain = torch.nn.Parameter(torch.as_tensor(np.log(init_gain) / gain_scale))
             if use_ff:
-                self.gain_ff = torch.nn.Parameter(torch.as_tensor(np.log(init_gain) / gain_scale))
+                if use_ff_gain:
+                    self.gain_ff = torch.nn.Parameter(torch.as_tensor(np.log(init_gain) / gain_scale))
+                else:
+                    self.gain_ff = np.log(init_gain)
 
         self.use_ff = use_ff
         self.ff = None
@@ -594,6 +599,7 @@ class WeaveAttention(nn.Module):
         qkv_dim_always_text=False,
         weave_v2=False,
         use_checkpoint=False,
+        use_ff_gain=False,
         **text_to_image_kwargs,
     ):
         super().__init__()
@@ -632,6 +638,7 @@ class WeaveAttention(nn.Module):
             ff_mult=ff_mult,
             ff_glu=ff_glu,
             qkv_dim=text_dim if qkv_dim_always_text else None,
+            use_ff_gain=use_ff_gain,
             **shared_args
         )
 
