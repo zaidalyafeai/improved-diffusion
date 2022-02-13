@@ -467,7 +467,6 @@ class ImageToTextCrossAttention(nn.Module):
         )
 
         self.gain_scale = gain_scale
-        self.gain_ff = 1
         if self.use_layerscale:
             self.gain = torch.nn.Parameter(layerscale_init * torch.ones(self.text_dim))
             if use_ff and use_ff_gain:
@@ -485,6 +484,7 @@ class ImageToTextCrossAttention(nn.Module):
                     self.gain_ff = np.log(init_gain)
 
         self.use_ff = use_ff
+        self.use_ff_gain = use_ff_gain
         self.ff = None
         if use_ff:
             ff = FeedForward(dim=text_dim, mult=ff_mult, glu=ff_glu)
@@ -513,6 +513,8 @@ class ImageToTextCrossAttention(nn.Module):
         return self._effective_gain(self.gain)
 
     def effective_gain_ff(self):
+        if not self.use_ff_gain:
+            return 1.
         return self._effective_gain(self.gain_ff)
 
     def forward(self, src, tgt, attn_mask=None, image_pos_embs=None, timestep_emb=None):
