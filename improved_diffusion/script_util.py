@@ -81,6 +81,7 @@ def model_and_diffusion_defaults():
         txt_ff_mult=4,
         weave_v2=False,
         use_checkpoint_lowcost=False,
+        weave_use_ff_gain=False,
     )
 
 
