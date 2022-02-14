@@ -97,6 +97,9 @@ def main():
         monochrome=args.monochrome,
         min_filesize=args.min_filesize,
         txt_pdrop=args.txt_pdrop,
+        crop_prob=args.crop_prob,
+        crop_min_scale=args.crop_min_scale,
+        crop_max_scale=args.crop_max_scale,
     )
 
     logger.log("training...")
@@ -177,6 +180,9 @@ def create_argparser():
         arithmetic_avg_from_step=-1,
         arithmetic_avg_extra_shift=0,
         gain_ff_setup_step=False,
+        crop_prob=0.,
+        crop_min_scale=0.75,
+        crop_max_scale=1.,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

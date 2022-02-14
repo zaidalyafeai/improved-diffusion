@@ -38,6 +38,7 @@ def load_data(
     *, data_dir, batch_size, image_size, class_cond=False, deterministic=False,
     txt=False, monochrome=False, offset=0, min_filesize=0,
     txt_pdrop=0., txt_drop_string='<mask><mask><mask><mask>',
+    crop_prob=0., crop_min_scale=0.75, crop_max_scale=1.,
 ):
     """
     For a dataset, create a generator over (images, kwargs) pairs.
@@ -78,6 +79,19 @@ def load_data(
         class_names = [bf.basename(path).split("_")[0] for vpath in all_files]
         sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
         classes = [sorted_classes[x] for x in class_names]
+
+    pre_resize_transform = None
+
+    if crop_prob > 0:
+        print("using crop")
+        imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
+        pre_resize_transform = T.RandomApply(
+            transforms=[
+                T.RandomResizedCrop(size=tsize, ratio=(1, 1), scale=(crop_min_scale, crop_max_scale), interpolation=imode),
+            ],
+            p=crop_prob
+        )
+
     dataset = ImageDataset(
         image_size,
         all_files,
@@ -90,6 +104,7 @@ def load_data(
         num_shards=MPI.COMM_WORLD.Get_size(),
         txt_pdrop=txt_pdrop,
         txt_drop_string=txt_drop_string,
+        pre_resize_transform=pre_resize_transform,
     )
     if deterministic:
         loader = DataLoader(
