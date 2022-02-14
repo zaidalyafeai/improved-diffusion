@@ -178,6 +178,7 @@ class ImageDataset(Dataset):
                  txt_pdrop=0.,
                  txt_drop_string='<mask><mask><mask><mask>',
                  empty_string_to_drop_string=False,  # unconditional != no text
+                 pre_resize_transform=None
                  ):
         super().__init__()
         self.resolution = resolution
@@ -189,6 +190,7 @@ class ImageDataset(Dataset):
         self.txt_pdrop = txt_pdrop
         self.txt_drop_string = txt_drop_string
         self.empty_string_to_drop_string = empty_string_to_drop_string
+        self.pre_resize_transform = pre_resize_transform
 
         if self.txt:
             self.local_images = [p for p in self.local_images if p in image_file_to_text_file]
@@ -202,6 +204,9 @@ class ImageDataset(Dataset):
         with bf.BlobFile(path, "rb") as f:
             pil_image = Image.open(f)
             pil_image.load()
+
+        if self.pre_resize_transform is not None:
+            pil_image = pre_resize_transform(pil_image)
 
         # We are not on a new enough PIL to support the `reducing_gap`
         # argument, which uses BOX downsampling at powers of two first.
