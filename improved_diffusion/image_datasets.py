@@ -206,7 +206,7 @@ class ImageDataset(Dataset):
             pil_image.load()
 
         if self.pre_resize_transform is not None:
-            pil_image = pre_resize_transform(pil_image)
+            pil_image = self.pre_resize_transform(pil_image)
 
         # We are not on a new enough PIL to support the `reducing_gap`
         # argument, which uses BOX downsampling at powers of two first.
