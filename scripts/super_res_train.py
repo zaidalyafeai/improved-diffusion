@@ -163,8 +163,8 @@ def create_argparser():
         txt_pdrop=0.,
         use_amp=False,
         autosave=True,
-        arithmetic_avg_from_step=-1,
-        arithmetic_avg_extra_shift=0,
+        arithmetic_avg_from_step='-1',
+        arithmetic_avg_extra_shift='0',
         gain_ff_setup_step=False
     )
     defaults.update(sr_model_and_diffusion_defaults())
