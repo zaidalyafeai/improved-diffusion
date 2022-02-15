@@ -102,8 +102,16 @@ class TrainLoop:
         self.autosave = autosave
         self.autosave_dir = autosave_dir
         self.anneal_log_flag = False
-        self.arithmetic_avg_from_step = arithmetic_avg_from_step
-        self.arithmetic_avg_extra_shift = arithmetic_avg_extra_shift
+        self.arithmetic_avg_from_step = (
+            [arithmetic_avg_from_step for _ in self.ema_rate]
+            if isinstance(arithmetic_avg_from_step, float)
+            else [float(x) for x in arithmetic_avg_from_step.split(",") if len(x) > 0]
+        )
+        self.arithmetic_avg_extra_shift = (
+            [arithmetic_avg_extra_shift for _ in self.ema_rate]
+            if isinstance(arithmetic_avg_extra_shift, float)
+            else [float(x) for x in arithmetic_avg_extra_shift.split(",") if len(x) > 0]
+        )
         print(f"TrainLoop self.master_device: {self.master_device}, use_amp={use_amp}, autosave={self.autosave}")
 
         self.step = 0
@@ -485,10 +493,10 @@ class TrainLoop:
             else:
                 (loss * grad_acc_scale).backward()
 
-    def _update_ema(self, params, rate):
-        if self.arithmetic_avg_from_step >= 0:
-            n = (self.step + self.resume_step) - self.arithmetic_avg_from_step + 2  # divisor is 1/2 at first step
-            n = n + self.arithmetic_avg_extra_shift  # for after first save/load
+    def _update_ema(self, params, rate, arith_from_step=0, arith_extra_shift=0):
+        if arith_from_step >= 0:
+            n = (self.step + self.resume_step) - arith_from_step + 2  # divisor is 1/2 at first step
+            n = n + arith_extra_shift  # for after first save/load
             print(f"using n={n}, vs 1/(1-rate) {1/(1-rate):.1f} | ", end="")
             if n >= 1/(1-rate):
                 print('update_ema')
@@ -511,8 +519,13 @@ class TrainLoop:
         self._log_grad_norm()
         self._anneal_lr()
         self.opt.step()
-        for rate, params in zip(self.ema_rate, self.ema_params):
-            self._update_ema(params, rate=rate)
+        for rate, params, arith_from_step, arith_extra_shift in zip(
+            self.ema_rate,
+            self.ema_params,
+            self.arithmetic_avg_from_step,
+            self.arithmetic_avg_extra_shift
+        ):
+            self._update_ema(params, rate=rate, arith_from_step=arith_from_step, arith_extra_shift=arith_extra_shift)
         master_params_to_model_params(self.model_params, self.master_params)
         self.lg_loss_scale += self.fp16_scale_growth
 
