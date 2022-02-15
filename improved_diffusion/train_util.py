@@ -535,8 +535,13 @@ class TrainLoop:
         self._log_grad_norm()
         self._anneal_lr()
         self.opt.step()
-        for rate, params in zip(self.ema_rate, self.ema_params):
-            self._update_ema(params, rate=rate)
+        for rate, params, arith_from_step, arith_extra_shift in zip(
+            self.ema_rate,
+            self.ema_params,
+            self.arithmetic_avg_from_step,
+            self.arithmetic_avg_extra_shift
+        ):
+            self._update_ema(params, rate=rate, arith_from_step=arith_from_step, arith_extra_shift=arith_extra_shift)
 
     def optimize_amp(self):
         self.grad_scaler.unscale_(self.opt)
@@ -544,8 +549,13 @@ class TrainLoop:
         self._anneal_lr()
         self.grad_scaler.step(self.opt)
         self.grad_scaler.update()
-        for rate, params in zip(self.ema_rate, self.ema_params):
-            self._update_ema(params, rate=rate)
+        for rate, params, arith_from_step, arith_extra_shift in zip(
+            self.ema_rate,
+            self.ema_params,
+            self.arithmetic_avg_from_step,
+            self.arithmetic_avg_extra_shift
+        ):
+            self._update_ema(params, rate=rate, arith_from_step=arith_from_step, arith_extra_shift=arith_extra_shift)
 
     def _log_grad_norm(self):
         sqsum = 0.0
