@@ -496,7 +496,6 @@ class TrainLoop:
 
     def _update_ema(self, params, rate, arith_from_step=0, arith_extra_shift=0):
         if arith_from_step >= 0:
-            print(f"got rate={rate}, arith_from_step={arith_from_step}, arith_extra_shift={arith_extra_shift}")
             n = (self.step + self.resume_step) - arith_from_step + 2  # divisor is 1/2 at first step
             n = n + arith_extra_shift  # for after first save/load
             print(f"using n={n}, vs 1/(1-rate) {1/(1-rate):.1f} | ", end="")
