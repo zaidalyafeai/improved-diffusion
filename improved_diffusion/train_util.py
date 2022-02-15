@@ -494,16 +494,19 @@ class TrainLoop:
             else:
                 (loss * grad_acc_scale).backward()
 
-    def _update_ema(self, params, rate, arith_from_step=0, arith_extra_shift=0):
+    def _update_ema(self, params, rate, arith_from_step=0, arith_extra_shift=0, verbose=True):
+        def _vprint(*args, **kwargs):
+            if verbose:
+                print(*args, **kwargs)
         if arith_from_step >= 0:
             n = (self.step + self.resume_step) - arith_from_step + 2  # divisor is 1/2 at first step
             n = n + arith_extra_shift  # for after first save/load
-            print(f"using n={n}, vs 1/(1-rate) {1/(1-rate):.1f} | ", end="")
+            _vprint(f"using n={n}, vs 1/(1-rate) {1/(1-rate):.1f} | ", end="")
             if n >= 1/(1-rate):
-                print('update_ema')
+                _vprint('update_ema')
                 update_ema(params, self.master_params, rate=rate)
             else:
-                print('update_arithmetic_average')
+                _vprint('update_arithmetic_average')
                 update_arithmetic_average(params, self.master_params, n=n)
         else:
             update_ema(params, self.master_params, rate=rate)
@@ -520,13 +523,16 @@ class TrainLoop:
         self._log_grad_norm()
         self._anneal_lr()
         self.opt.step()
-        for rate, params, arith_from_step, arith_extra_shift in zip(
+        verboses = [False] * (len(self.ema_rate) - 1) + [True]
+        for rate, params, arith_from_step, arith_extra_shift, verbose in zip(
             self.ema_rate,
             self.ema_params,
             self.arithmetic_avg_from_step,
-            self.arithmetic_avg_extra_shift
+            self.arithmetic_avg_extra_shift,
+            verboses
         ):
-            self._update_ema(params, rate=rate, arith_from_step=arith_from_step, arith_extra_shift=arith_extra_shift)
+            self._update_ema(params, rate=rate, arith_from_step=arith_from_step, arith_extra_shift=arith_extra_shift,
+                             verbose=verbose)
         master_params_to_model_params(self.model_params, self.master_params)
         self.lg_loss_scale += self.fp16_scale_growth
 
@@ -534,13 +540,16 @@ class TrainLoop:
         self._log_grad_norm()
         self._anneal_lr()
         self.opt.step()
-        for rate, params, arith_from_step, arith_extra_shift in zip(
+        verboses = [False] * (len(self.ema_rate) - 1) + [True]
+        for rate, params, arith_from_step, arith_extra_shift, verbose in zip(
             self.ema_rate,
             self.ema_params,
             self.arithmetic_avg_from_step,
-            self.arithmetic_avg_extra_shift
+            self.arithmetic_avg_extra_shift,
+            verboses
         ):
-            self._update_ema(params, rate=rate, arith_from_step=arith_from_step, arith_extra_shift=arith_extra_shift)
+            self._update_ema(params, rate=rate, arith_from_step=arith_from_step, arith_extra_shift=arith_extra_shift,
+                             verbose=verbose)
 
     def optimize_amp(self):
         self.grad_scaler.unscale_(self.opt)
@@ -548,13 +557,16 @@ class TrainLoop:
         self._anneal_lr()
         self.grad_scaler.step(self.opt)
         self.grad_scaler.update()
-        for rate, params, arith_from_step, arith_extra_shift in zip(
+        verboses = [False] * (len(self.ema_rate) - 1) + [True]
+        for rate, params, arith_from_step, arith_extra_shift, verbose in zip(
             self.ema_rate,
             self.ema_params,
             self.arithmetic_avg_from_step,
-            self.arithmetic_avg_extra_shift
+            self.arithmetic_avg_extra_shift,
+            verboses
         ):
-            self._update_ema(params, rate=rate, arith_from_step=arith_from_step, arith_extra_shift=arith_extra_shift)
+            self._update_ema(params, rate=rate, arith_from_step=arith_from_step, arith_extra_shift=arith_extra_shift,
+                             verbose=verbose)
 
     def _log_grad_norm(self):
         sqsum = 0.0
