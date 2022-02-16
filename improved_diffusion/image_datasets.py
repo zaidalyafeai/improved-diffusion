@@ -246,7 +246,7 @@ class ImageDataset(Dataset):
 
         if self.pre_resize_transform is not None:
             if self.txt and len(text) == 0:
-                pil_image = self.pre_resize_transform(pil_image)
+                pil_image = self.pre_resize_transform_for_empty_string(pil_image)
             else:
                 pil_image = self.pre_resize_transform(pil_image)
 
