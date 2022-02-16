@@ -39,6 +39,8 @@ def load_data(
     txt=False, monochrome=False, offset=0, min_filesize=0,
     txt_pdrop=0., txt_drop_string='<mask><mask><mask><mask>',
     crop_prob=0., crop_min_scale=0.75, crop_max_scale=1.,
+    use_special_crop_for_empty_string=False,
+    crop_prob_es=0., crop_min_scale_es=0.25, crop_max_scale_es=1.,
 ):
     """
     For a dataset, create a generator over (images, kwargs) pairs.
@@ -81,6 +83,7 @@ def load_data(
         classes = [sorted_classes[x] for x in class_names]
 
     pre_resize_transform = None
+    pre_resize_transform_for_empty_string = None
 
     if crop_prob > 0:
         print("using crop")
@@ -90,6 +93,16 @@ def load_data(
                 T.RandomResizedCrop(size=tsize, ratio=(1, 1), scale=(crop_min_scale, crop_max_scale), interpolation=imode),
             ],
             p=crop_prob
+        )
+
+    if use_special_crop_for_empty_string and crop_prob_es > 0:
+        print("using es crop")
+        imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
+        pre_resize_transform_for_empty_string = T.RandomApply(
+            transforms=[
+                T.RandomResizedCrop(size=tsize, ratio=(1, 1), scale=(crop_min_scale_es, crop_max_scale_es), interpolation=imode),
+            ],
+            p=crop_prob_es
         )
 
     dataset = ImageDataset(
@@ -193,7 +206,8 @@ class ImageDataset(Dataset):
                  txt_pdrop=0.,
                  txt_drop_string='<mask><mask><mask><mask>',
                  empty_string_to_drop_string=False,  # unconditional != no text
-                 pre_resize_transform=None
+                 pre_resize_transform=None,
+                 pre_resize_transform_for_empty_string=None,
                  ):
         super().__init__()
         self.resolution = resolution
@@ -206,6 +220,9 @@ class ImageDataset(Dataset):
         self.txt_drop_string = txt_drop_string
         self.empty_string_to_drop_string = empty_string_to_drop_string
         self.pre_resize_transform = pre_resize_transform
+        if pre_resize_transform_for_empty_string is None:
+            pre_resize_transform_for_empty_string = pre_resize_transform
+        self.pre_resize_transform_for_empty_string = pre_resize_transform_for_empty_string
 
         if self.txt:
             self.local_images = [p for p in self.local_images if p in image_file_to_text_file]
@@ -220,8 +237,17 @@ class ImageDataset(Dataset):
             pil_image = Image.open(f)
             pil_image.load()
 
+        text = None
+        if self.txt:
+            path_txt = self.local_texts[idx]
+            with bf.BlobFile(path_txt, "r") as f:
+                text = f.read()
+
         if self.pre_resize_transform is not None:
-            pil_image = self.pre_resize_transform(pil_image)
+            if self.txt and len(text) == 0:
+                pil_image = self.pre_resize_transform(pil_image)
+            else:
+                pil_image = self.pre_resize_transform(pil_image)
 
         # We are not on a new enough PIL to support the `reducing_gap`
         # argument, which uses BOX downsampling at powers of two first.
@@ -249,12 +275,8 @@ class ImageDataset(Dataset):
         if self.local_classes is not None:
             out_dict["y"] = np.array(self.local_classes[idx], dtype=np.int64)
         if self.txt:
-            path_txt = self.local_texts[idx]
             if (self.txt_pdrop > 0) and (random.random() < self.txt_pdrop):
                 text = self.txt_drop_string
-            else:
-                with bf.BlobFile(path_txt, "r") as f:
-                    text = f.read()
             if (len(text) == 0) and self.empty_string_to_drop_string:
                 text = self.txt_drop_string
             out_dict['txt'] = text

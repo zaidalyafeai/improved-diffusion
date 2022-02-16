@@ -100,6 +100,10 @@ def main():
         crop_prob=args.crop_prob,
         crop_min_scale=args.crop_min_scale,
         crop_max_scale=args.crop_max_scale,
+        use_special_crop_for_empty_string=args.use_special_crop_for_empty_string,
+        crop_prob_es=args.crop_prob_es,
+        crop_min_scale_es=args.crop_min_scale_es,
+        crop_max_scale_es=args.crop_max_scale_es,
     )
 
     logger.log("training...")
@@ -183,6 +187,10 @@ def create_argparser():
         crop_prob=0.,
         crop_min_scale=0.75,
         crop_max_scale=1.,
+        use_special_crop_for_empty_string=False,
+        crop_prob_es=0.,
+        crop_min_scale_es=0.25,
+        crop_max_scale_es=1.,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
