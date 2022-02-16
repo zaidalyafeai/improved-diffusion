@@ -118,6 +118,7 @@ def load_data(
         txt_pdrop=txt_pdrop,
         txt_drop_string=txt_drop_string,
         pre_resize_transform=pre_resize_transform,
+        pre_resize_transform_for_empty_string=pre_resize_transform_for_empty_string,
     )
     if deterministic:
         loader = DataLoader(
