@@ -76,8 +76,7 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
                 break
 
         if debug:
-            min_area
-            print(("target_area/min_area", target_area/min_area))
+            print(("target_area/min_area_allowed", target_area/(area*min_area)))
             print(("target_area/area", target_area/area))
             print(("target_edgesize", target_edgesize))
             print(("safebox", safebox))
