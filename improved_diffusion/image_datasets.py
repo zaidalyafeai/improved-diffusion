@@ -67,7 +67,7 @@ def load_data(
     if safebox_path and os.path.exists(safebox_path):
         print('using safebox_path')
         with open(safebox_path, 'r') as f:
-            safeboxes = json.load(safebox_path)
+            safeboxes = json.load(f)
 
     all_files, image_file_to_text_file, file_sizes, image_file_to_safebox = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize, safeboxes=safeboxes)
     print(f"found {len(all_files)} images, {len(image_file_to_text_file)} texts")
