@@ -41,21 +41,21 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
             if doleft:
                 cropbox_left = roll_minmax(0, left_s)
                 cropbox_right = cropbox_left + target_edgesize
-                ok_h = right_s < cropbox_right < width
+                ok_h = right_s <= cropbox_right <= width
             else:
                 cropbox_right = roll_minmax(right_s, width)
                 cropbox_left = cropbox_right - target_edgesize
-                ok_h = 0 < cropbox_left < left_s
+                ok_h = 0 <= cropbox_left <= left_s
 
             dotop = random.random() < 0.5
             if dotop:
                 cropbox_top = roll_minmax(0, top_s)
                 cropbox_bottom = cropbox_top + target_edgesize
-                ok_v = bottom_s < cropbox_bottom < height
+                ok_v = bottom_s <= cropbox_bottom <= height
             else:
                 cropbox_bottom = roll_minmax(bottom_s, height)
                 cropbox_top = cropbox_bottom - target_edgesize
-                ok_v = 0 < cropbox_top < top_s
+                ok_v = 0 <= cropbox_top <= top_s
 
             ok = ok_h and ok_v
             n+=1
