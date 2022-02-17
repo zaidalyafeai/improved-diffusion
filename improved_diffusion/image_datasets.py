@@ -287,7 +287,7 @@ class ImageDataset(Dataset):
                 if self.image_file_to_safebox is not None:
                     if path in self.image_file_to_safebox:
                         safebox = self.image_file_to_safebox[path]
-                        self.pre_resize_transform(pil_image, safebox)
+                        pil_image = self.pre_resize_transform(pil_image, safebox)
                 else:
                     pil_image = self.pre_resize_transform(pil_image)
 
