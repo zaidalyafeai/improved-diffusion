@@ -103,7 +103,7 @@ def load_data(
             def safebox_crop(img, safebox):
                 return T.RandomApply(
                     transforms=[
-                        T.RandomResizedProtectedCropLazy(size=tsize, min_area=crop_min_scale, max_area=crop_max_scale, interpolation=imode),
+                        RandomResizedProtectedCropLazy(size=tsize, min_area=crop_min_scale, max_area=crop_max_scale, interpolation=imode),
                     ],
                     p=crop_prob
                 )(img, safebox)
