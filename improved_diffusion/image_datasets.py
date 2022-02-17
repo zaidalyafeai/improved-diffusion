@@ -286,7 +286,7 @@ class ImageDataset(Dataset):
             if self.txt and len(text) == 0:
                 pil_image = self.pre_resize_transform_for_empty_string(pil_image)
             else:
-                if image_file_to_safebox is not None:
+                if self.image_file_to_safebox is not None:
                     if path in self.image_file_to_safebox:
                         print('hit')
                         safebox = self.image_file_to_safebox[path]
