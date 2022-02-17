@@ -222,10 +222,11 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, safeboxes
                     pass
                     # raise ValueError(path_txt)
         elif bf.isdir(full_path):
-            next_results, next_map, next_file_sizes = _list_image_files_recursively(full_path, txt=txt)
+            next_results, next_map, next_file_sizes, next_image_file_to_safebox = _list_image_files_recursively(full_path, txt=txt)
             results.extend(next_results)
             image_file_to_text_file.update(next_map)
             file_sizes.update(next_file_sizes)
+            image_file_to_safebox.update(next_image_file_to_safebox)
     image_file_to_safebox = {k: v for k, v in image_file_to_safebox.items() if v is not None}
     return results, image_file_to_text_file, file_sizes, image_file_to_safebox
 
