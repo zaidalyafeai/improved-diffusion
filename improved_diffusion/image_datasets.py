@@ -82,7 +82,7 @@ def load_data(
         frac_nonempty = n_nonempty_texts/n_texts
 
         print(f"of {n_texts} texts, {n_empty_texts} ({frac_empty:.1%}) are empty, {n_nonempty_texts} ({frac_nonempty:.1%}) are nonempty")
-        print(f"of {n_nonempty_texts}, {len(image_file_to_safebox)} have safeboxes")
+        print(f"of {n_nonempty_texts} nonempty texts, {len(image_file_to_safebox)} have safeboxes")
 
     classes = None
     if class_cond:
@@ -221,7 +221,9 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, safeboxes
                     pass
                     # raise ValueError(path_txt)
         elif bf.isdir(full_path):
-            next_results, next_map, next_file_sizes, next_image_file_to_safebox = _list_image_files_recursively(full_path, txt=txt)
+            next_results, next_map, next_file_sizes, next_image_file_to_safebox = _list_image_files_recursively(
+                full_path, txt=txt, min_filesize=min_filesize, safeboxes=safeboxes
+            )
             results.extend(next_results)
             image_file_to_text_file.update(next_map)
             file_sizes.update(next_file_sizes)
