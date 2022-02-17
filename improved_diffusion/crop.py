@@ -14,7 +14,7 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
         self.max_area = max_area
         self.interpolation = interpolation
 
-    def get_params(self, img, safebox, return_n=True):
+    def get_params(self, img, safebox, return_n=True, debug=True):
         width, height = TF.get_image_size(img)
         area = height * width
 
@@ -69,6 +69,9 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
                 break
 
         if return_n:
+            if debug:
+                print(("safebox", safebox))
+                print(("cropbox", (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom)))
             return (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom), n
 
         return (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom)

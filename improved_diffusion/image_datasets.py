@@ -286,11 +286,8 @@ class ImageDataset(Dataset):
             else:
                 if self.image_file_to_safebox is not None:
                     if path in self.image_file_to_safebox:
-                        print('hit')
                         safebox = self.image_file_to_safebox[path]
                         self.pre_resize_transform(pil_image, safebox)
-                    else:
-                        print('miss')
                 else:
                     pil_image = self.pre_resize_transform(pil_image)
 
