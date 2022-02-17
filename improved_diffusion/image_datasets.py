@@ -259,13 +259,11 @@ class ImageDataset(Dataset):
         if pre_resize_transform_for_empty_string is None:
             pre_resize_transform_for_empty_string = pre_resize_transform
         self.pre_resize_transform_for_empty_string = pre_resize_transform_for_empty_string
-        self.safeboxes = safeboxes
+        self.image_file_to_safebox = image_file_to_safebox
 
         if self.txt:
             self.local_images = [p for p in self.local_images if p in image_file_to_text_file]
             self.local_texts = [image_file_to_text_file[p] for p in self.local_images]
-            if self.safeboxes is not None:
-
 
     def __len__(self):
         return len(self.local_images)
@@ -287,9 +285,9 @@ class ImageDataset(Dataset):
                 pil_image = self.pre_resize_transform_for_empty_string(pil_image)
             else:
                 if image_file_to_safebox is not None:
-                    if path in image_file_to_safebox:
+                    if path in self.image_file_to_safebox:
                         print('hit')
-                        safebox = image_file_to_safebox[path]
+                        safebox = self.image_file_to_safebox[path]
                         self.pre_resize_transform(pil_image, safebox)
                     else:
                         print('miss')
