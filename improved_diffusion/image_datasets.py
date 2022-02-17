@@ -200,7 +200,7 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, safeboxes
         safeboxes = {}
     for entry in sorted(bf.listdir(data_dir)):
         full_path = bf.join(data_dir, entry)
-        prefix, _, ext = entry.partition(".")
+        prefix, _, ext = entry.rpartition(".")
         safebox_key = prefix.replace('/', '_')
         image_file_to_safebox[full_path] = safeboxes.get(safebox_key)
         if "." in entry and ext.lower() in ["jpg", "jpeg", "png", "gif"]:
