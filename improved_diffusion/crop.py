@@ -60,6 +60,12 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
             ok = ok_h and ok_v
             n+=1
 
+            if n > 10000:
+                print('struggling w/ image, returning uncropped')
+                print(f"safebox: {safebox}")
+                print(f"target_edgesize: {target_edgesize}")
+                print(f"protected_area: {protected_area}")
+
         if return_n:
             return (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom), n
 
