@@ -66,6 +66,7 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
                 print(f"target_edgesize: {target_edgesize}")
                 print(f"protected_area: {protected_area}")
                 cropbox_left, cropbox_top, cropbox_right, cropbox_bottom = (0, 0, width, height)
+                break
 
         if return_n:
             return (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom), n
