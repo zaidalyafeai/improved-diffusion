@@ -1,4 +1,4 @@
-import string, os, random
+import string, os, random, json
 from PIL import Image
 import blobfile as bf
 from mpi4py import MPI
@@ -6,6 +6,7 @@ import numpy as np
 from torch.utils.data import DataLoader, Dataset
 import torch.nn.functional as F
 import torchvision.transforms as T
+from .crop import RandomResizedProtectedCropLazy
 
 import tokenizers
 
@@ -41,6 +42,7 @@ def load_data(
     crop_prob=0., crop_min_scale=0.75, crop_max_scale=1.,
     use_special_crop_for_empty_string=False,
     crop_prob_es=0., crop_min_scale_es=0.25, crop_max_scale_es=1.,
+    safebox_path=""
 ):
     """
     For a dataset, create a generator over (images, kwargs) pairs.
@@ -60,7 +62,14 @@ def load_data(
     """
     if not data_dir:
         raise ValueError("unspecified data directory")
-    all_files, image_file_to_text_file, file_sizes = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize)
+
+    safeboxes = None
+    if safebox_path and os.path.exists(safebox_path):
+        print('using safebox_path')
+        with open(safebox_path, 'r') as f:
+            safeboxes = json.load(safebox_path)
+
+    all_files, image_file_to_text_file, file_sizes, image_file_to_safebox = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize, safeboxes=safeboxes)
     print(f"found {len(all_files)} images, {len(image_file_to_text_file)} texts")
     all_files = all_files[offset:]
 
@@ -73,6 +82,7 @@ def load_data(
         frac_nonempty = n_nonempty_texts/n_texts
 
         print(f"of {n_texts} texts, {n_empty_texts} ({frac_empty:.1%}) are empty, {n_nonempty_texts} ({frac_nonempty:.1%}) are nonempty")
+        print(f"of {n_nonempty_texts}, {len(image_file_to_safebox)} have safeboxes")
 
     classes = None
     if class_cond:
@@ -87,13 +97,30 @@ def load_data(
 
     if crop_prob > 0:
         print("using crop")
-        imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
-        pre_resize_transform = T.RandomApply(
-            transforms=[
-                T.RandomResizedCrop(size=tsize, ratio=(1, 1), scale=(crop_min_scale, crop_max_scale), interpolation=imode),
-            ],
-            p=crop_prob
-        )
+        if safeboxes is not None:
+            print('using safebox crop')
+            imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
+            def safebox_crop(img, safebox):
+                return T.RandomApply(
+                    transforms=[
+                        T.RandomResizedProtectedCropLazy(size=tsize, min_area=crop_min_scale, max_area=crop_max_scale, interpolation=imode),
+                    ],
+                    p=crop_prob
+                )(img, safebox)
+            pre_resize_transform = safebox_crop
+            if (not use_special_crop_for_empty_string) or (crop_prob_es <= 0):
+                use_special_crop_for_empty_string = True
+                crop_prob_es = crop_prob
+                crop_min_scale_es = crop_min_scale
+                crop_max_scale_es = crop_max_scale
+        else:
+            imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
+            pre_resize_transform = T.RandomApply(
+                transforms=[
+                    T.RandomResizedCrop(size=tsize, ratio=(1, 1), scale=(crop_min_scale, crop_max_scale), interpolation=imode),
+                ],
+                p=crop_prob
+            )
 
     if use_special_crop_for_empty_string and crop_prob_es > 0:
         print("using es crop")
@@ -119,6 +146,7 @@ def load_data(
         txt_drop_string=txt_drop_string,
         pre_resize_transform=pre_resize_transform,
         pre_resize_transform_for_empty_string=pre_resize_transform_for_empty_string,
+        image_file_to_safebox=image_file_to_safebox,
     )
     if deterministic:
         loader = DataLoader(
@@ -163,13 +191,18 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         yield large_batch, model_kwargs
 
 
-def _list_image_files_recursively(data_dir, txt=False, min_filesize=0):
+def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, safeboxes=None):
     results = []
     image_file_to_text_file = {}
     file_sizes = {}
+    image_file_to_safebox = {}
+    if safeboxes is None:
+        safeboxes = {}
     for entry in sorted(bf.listdir(data_dir)):
         full_path = bf.join(data_dir, entry)
-        ext = entry.split(".")[-1]
+        prefix, _ ext = entry.partition(".")
+        safebox_key = prefix.replace('/', '_')
+        image_file_to_safebox[full_path] = safeboxes.get(safebox_key)
         if "." in entry and ext.lower() in ["jpg", "jpeg", "png", "gif"]:
             if min_filesize > 0:
                 filesize = os.path.getsize(full_path)
@@ -193,7 +226,8 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0):
             results.extend(next_results)
             image_file_to_text_file.update(next_map)
             file_sizes.update(next_file_sizes)
-    return results, image_file_to_text_file, file_sizes
+    image_file_to_safebox = {k: v for k, v in image_file_to_safebox.items() if v is not None}
+    return results, image_file_to_text_file, file_sizes, image_file_to_safebox
 
 
 class ImageDataset(Dataset):
@@ -209,6 +243,7 @@ class ImageDataset(Dataset):
                  empty_string_to_drop_string=False,  # unconditional != no text
                  pre_resize_transform=None,
                  pre_resize_transform_for_empty_string=None,
+                 image_file_to_safebox=None,
                  ):
         super().__init__()
         self.resolution = resolution
@@ -224,10 +259,13 @@ class ImageDataset(Dataset):
         if pre_resize_transform_for_empty_string is None:
             pre_resize_transform_for_empty_string = pre_resize_transform
         self.pre_resize_transform_for_empty_string = pre_resize_transform_for_empty_string
+        self.safeboxes = safeboxes
 
         if self.txt:
             self.local_images = [p for p in self.local_images if p in image_file_to_text_file]
             self.local_texts = [image_file_to_text_file[p] for p in self.local_images]
+            if self.safeboxes is not None:
+
 
     def __len__(self):
         return len(self.local_images)
@@ -248,7 +286,15 @@ class ImageDataset(Dataset):
             if self.txt and len(text) == 0:
                 pil_image = self.pre_resize_transform_for_empty_string(pil_image)
             else:
-                pil_image = self.pre_resize_transform(pil_image)
+                if image_file_to_safebox is not None:
+                    if path in image_file_to_safebox:
+                        print('hit')
+                        safebox = image_file_to_safebox[path]
+                        self.pre_resize_transform(pil_image, safebox)
+                    else:
+                        print('miss')
+                else:
+                    pil_image = self.pre_resize_transform(pil_image)
 
         # We are not on a new enough PIL to support the `reducing_gap`
         # argument, which uses BOX downsampling at powers of two first.
