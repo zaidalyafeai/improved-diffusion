@@ -68,10 +68,11 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
                 cropbox_left, cropbox_top, cropbox_right, cropbox_bottom = (0, 0, width, height)
                 break
 
+        if debug:
+            print(("safebox", safebox))
+            print(("cropbox", (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom)))
+
         if return_n:
-            if debug:
-                print(("safebox", safebox))
-                print(("cropbox", (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom)))
             return (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom), n
 
         return (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom)
