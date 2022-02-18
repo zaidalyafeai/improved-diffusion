@@ -105,7 +105,8 @@ def main():
         crop_min_scale_es=args.crop_min_scale_es,
         crop_max_scale_es=args.crop_max_scale_es,
         safebox_path=args.safebox_path,
-        use_random_safebox_for_empty_string=args.use_random_safebox_for_empty_string
+        use_random_safebox_for_empty_string=args.use_random_safebox_for_empty_string,
+        flip_lr_prob_es=args.flip_lr_prob_es
     )
 
     logger.log("training...")
@@ -195,6 +196,7 @@ def create_argparser():
         crop_max_scale_es=1.,
         safebox_path="",
         use_random_safebox_for_empty_string=False,
+        flip_lr_prob_es=0.,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

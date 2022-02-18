@@ -91,6 +91,7 @@ def main():
         blur_sigma_max=args.blur_sigma_max,
         min_filesize=args.min_filesize,
         txt_pdrop=args.txt_pdrop,
+        flip_lr_prob_es=args.flip_lr_prob_es,
     )
 
     logger.log("training...")
@@ -165,7 +166,8 @@ def create_argparser():
         autosave=True,
         arithmetic_avg_from_step='-1',
         arithmetic_avg_extra_shift='0',
-        gain_ff_setup_step=False
+        gain_ff_setup_step=False,
+        flip_lr_prob_es=0.,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

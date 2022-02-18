@@ -43,7 +43,8 @@ def load_data(
     use_special_crop_for_empty_string=False,
     crop_prob_es=0., crop_min_scale_es=0.25, crop_max_scale_es=1.,
     safebox_path="",
-    use_random_safebox_for_empty_string=False
+    use_random_safebox_for_empty_string=False,
+    flip_lr_prob_es=0.
 ):
     """
     For a dataset, create a generator over (images, kwargs) pairs.
@@ -93,8 +94,8 @@ def load_data(
         sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
         classes = [sorted_classes[x] for x in class_names]
 
-    pre_resize_transform = None
-    pre_resize_transform_for_empty_string = None
+    pre_resize_transform = []
+    pre_resize_transform_for_empty_string = []
 
     if crop_prob > 0:
         print("using crop")
@@ -106,7 +107,7 @@ def load_data(
                 if random.random() < crop_prob:
                     return tform(img, safebox)
                 return img
-            pre_resize_transform = safebox_crop
+            pre_resize_transform.append(safebox_crop)
             if (not use_special_crop_for_empty_string) or (crop_prob_es <= 0):
                 use_special_crop_for_empty_string = True
                 crop_prob_es = crop_prob
@@ -114,22 +115,40 @@ def load_data(
                 crop_max_scale_es = crop_max_scale
         else:
             imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
-            pre_resize_transform = T.RandomApply(
-                transforms=[
-                    T.RandomResizedCrop(size=tsize, ratio=(1, 1), scale=(crop_min_scale, crop_max_scale), interpolation=imode),
-                ],
-                p=crop_prob
+            pre_resize_transform.append(
+                T.RandomApply(
+                    transforms=[
+                        T.RandomResizedCrop(size=tsize, ratio=(1, 1), scale=(crop_min_scale, crop_max_scale), interpolation=imode),
+                    ],
+                    p=crop_prob
+                )
             )
 
     if use_special_crop_for_empty_string and crop_prob_es > 0:
         print("using es crop")
         imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
-        pre_resize_transform_for_empty_string = T.RandomApply(
-            transforms=[
-                T.RandomResizedCrop(size=tsize, ratio=(1, 1), scale=(crop_min_scale_es, crop_max_scale_es), interpolation=imode),
-            ],
-            p=crop_prob_es
+        pre_resize_transform_for_empty_string.append(
+            T.RandomApply(
+                transforms=[
+                    T.RandomResizedCrop(size=tsize, ratio=(1, 1), scale=(crop_min_scale_es, crop_max_scale_es), interpolation=imode),
+                ],
+                p=crop_prob_es
+            )
         )
+
+    if flip_lr_prob_es > 0:
+        print("using flip")
+        pre_resize_transform_for_empty_string.append(T.RandomHorizontalFlip(p=0.5))
+
+    if len(pre_resize_transform) > 0:
+        pre_resize_transform = T.Compose(pre_resize_transform)
+    else:
+        pre_resize_transform = None
+
+    if len(pre_resize_transform_for_empty_string) > 0:
+        pre_resize_transform_for_empty_string = T.Compose(pre_resize_transform_for_empty_string)
+    else:
+        pre_resize_transform_for_empty_string = None
 
     dataset = ImageDataset(
         image_size,
@@ -164,7 +183,8 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
                        deterministic=False, offset=0, colorize=False,
                        blur_prob=0., blur_sigma_min=0.4, blur_sigma_max=0.6,
                        min_filesize=0,
-                       txt_pdrop=0., txt_drop_string='<mask><mask><mask><mask>'
+                       txt_pdrop=0., txt_drop_string='<mask><mask><mask><mask>',
+                       flip_lr_prob_es=0.,
                        ):
     data = load_data(
         data_dir=data_dir,
@@ -178,10 +198,12 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         min_filesize=min_filesize,
         txt_pdrop=txt_pdrop,
         txt_drop_string=txt_drop_string,
+        flip_lr_prob_es=flip_lr_prob_es,
     )
-    for large_batch, model_kwargs in data:
-        blurrer = T.RandomApply(transforms=[T.GaussianBlur(5, sigma=(blur_sigma_min, blur_sigma_max))], p=blur_prob)
 
+    blurrer = T.RandomApply(transforms=[T.GaussianBlur(5, sigma=(blur_sigma_min, blur_sigma_max))], p=blur_prob)
+
+    for large_batch, model_kwargs in data:
         model_kwargs["low_res"] = F.interpolate(large_batch, small_size, mode="area")
         if colorize:
             model_kwargs["low_res"] = model_kwargs["low_res"].mean(dim=1, keepdim=True)
@@ -267,6 +289,12 @@ class ImageDataset(Dataset):
         self.image_file_to_safebox = image_file_to_safebox
         self.use_random_safebox_for_empty_string = use_random_safebox_for_empty_string
 
+        if (self.image_file_to_safebox is not None) and (self.pre_resize_transform is None):
+            raise ValueError
+
+        print(f"ImageDataset: self.pre_resize_transform={self.pre_resize_transform}")
+        print(f"ImageDataset: self.pre_resize_transform_for_empty_string={self.pre_resize_transform_for_empty_string}")
+
         if image_file_to_safebox is not None:
             self.safebox_keys = list(image_file_to_safebox.keys())
 
@@ -289,20 +317,19 @@ class ImageDataset(Dataset):
             with bf.BlobFile(path_txt, "r") as f:
                 text = f.read()
 
-        if self.pre_resize_transform is not None:
-            if self.txt and len(text) == 0:
-                if self.use_random_safebox_for_empty_string and (self.image_file_to_safebox is not None):
-                    safebox = self.image_file_to_safebox[random.choice(self.safebox_keys)]
+        if self.txt and len(text) == 0:
+            if self.use_random_safebox_for_empty_string and (self.image_file_to_safebox is not None):
+                safebox = self.image_file_to_safebox[random.choice(self.safebox_keys)]
+                pil_image = self.pre_resize_transform(pil_image, safebox)
+            elif self.pre_resize_transform_for_empty_string is not None:
+                pil_image = self.pre_resize_transform_for_empty_string(pil_image)
+        else:
+            if self.image_file_to_safebox is not None:
+                if path in self.image_file_to_safebox:
+                    safebox = self.image_file_to_safebox[path]
                     pil_image = self.pre_resize_transform(pil_image, safebox)
-                else:
-                    pil_image = self.pre_resize_transform_for_empty_string(pil_image)
-            else:
-                if self.image_file_to_safebox is not None:
-                    if path in self.image_file_to_safebox:
-                        safebox = self.image_file_to_safebox[path]
-                        pil_image = self.pre_resize_transform(pil_image, safebox)
-                else:
-                    pil_image = self.pre_resize_transform(pil_image)
+            elif self.pre_resize_transform is not None:
+                pil_image = self.pre_resize_transform(pil_image)
 
         # We are not on a new enough PIL to support the `reducing_gap`
         # argument, which uses BOX downsampling at powers of two first.
