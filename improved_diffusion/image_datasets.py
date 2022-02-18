@@ -182,7 +182,7 @@ def _dataloader_gen(dataset, batch_size, deterministic):
 def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=False, txt=False, monochrome=False,
                        deterministic=False, offset=0, colorize=False,
                        blur_prob=0., blur_sigma_min=0.4, blur_sigma_max=0.6,
-                       blur_width=5,  # paper used 3, i later learned
+                       blur_width=5,  # paper used 3, i later learned. though that was for 64 -> 128 and 64 -> 256
                        min_filesize=0,
                        txt_pdrop=0., txt_drop_string='<mask><mask><mask><mask>',
                        flip_lr_prob_es=0.,
