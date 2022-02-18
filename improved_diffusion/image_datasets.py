@@ -42,7 +42,8 @@ def load_data(
     crop_prob=0., crop_min_scale=0.75, crop_max_scale=1.,
     use_special_crop_for_empty_string=False,
     crop_prob_es=0., crop_min_scale_es=0.25, crop_max_scale_es=1.,
-    safebox_path=""
+    safebox_path="",
+    use_random_safebox_for_empty_string=False
 ):
     """
     For a dataset, create a generator over (images, kwargs) pairs.
@@ -145,6 +146,7 @@ def load_data(
         pre_resize_transform=pre_resize_transform,
         pre_resize_transform_for_empty_string=pre_resize_transform_for_empty_string,
         image_file_to_safebox=image_file_to_safebox,
+        use_random_safebox_for_empty_string=use_random_safebox_for_empty_string,
     )
     if deterministic:
         loader = DataLoader(
@@ -246,6 +248,7 @@ class ImageDataset(Dataset):
                  pre_resize_transform=None,
                  pre_resize_transform_for_empty_string=None,
                  image_file_to_safebox=None,
+                 use_random_safebox_for_empty_string=False,
                  ):
         super().__init__()
         self.resolution = resolution
@@ -262,6 +265,9 @@ class ImageDataset(Dataset):
             pre_resize_transform_for_empty_string = pre_resize_transform
         self.pre_resize_transform_for_empty_string = pre_resize_transform_for_empty_string
         self.image_file_to_safebox = image_file_to_safebox
+
+        if image_file_to_safebox is not None:
+            self.safebox_keys = list(image_file_to_safebox.keys())
 
         if self.txt:
             self.local_images = [p for p in self.local_images if p in image_file_to_text_file]
@@ -284,7 +290,11 @@ class ImageDataset(Dataset):
 
         if self.pre_resize_transform is not None:
             if self.txt and len(text) == 0:
-                pil_image = self.pre_resize_transform_for_empty_string(pil_image)
+                if self.use_random_safebox_for_empty_string and (self.image_file_to_safebox is not None):
+                    safebox = self.image_file_to_safebox[random.choice(self.safebox_keys)]
+                    pil_image = self.pre_resize_transform(pil_image, safebox)
+                else:
+                    pil_image = self.pre_resize_transform_for_empty_string(pil_image)
             else:
                 if self.image_file_to_safebox is not None:
                     if path in self.image_file_to_safebox:
