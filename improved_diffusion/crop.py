@@ -34,38 +34,39 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
 
         target_edgesize = math.sqrt(target_area)
 
-        ok = False
+        ok_h, ok_v = False, False
         n = 0
         if target_edgesize <= protected_edgesize:
             if debug:
                 print('nocrop path')
             cropbox_left, cropbox_top, cropbox_right, cropbox_bottom = (0, 0, width, height)
-            ok = True
+            ok_h, ok_v = True, True
         else:
             if debug:
                 print('crop path')
-        while not ok:
-            doleft = random.random() < 0.5
-            if doleft:
-                cropbox_left = roll_minmax(0, left_s)
-                cropbox_right = cropbox_left + target_edgesize
-                ok_h = right_s <= cropbox_right <= width
-            else:
-                cropbox_right = roll_minmax(right_s, width)
-                cropbox_left = cropbox_right - target_edgesize
-                ok_h = 0 <= cropbox_left <= left_s
+        while not (ok_h and ok_v):
+            if not ok_h:
+                doleft = random.random() < 0.5
+                if doleft:
+                    cropbox_left = roll_minmax(0, left_s)
+                    cropbox_right = cropbox_left + target_edgesize
+                    ok_h = right_s <= cropbox_right <= width
+                else:
+                    cropbox_right = roll_minmax(right_s, width)
+                    cropbox_left = cropbox_right - target_edgesize
+                    ok_h = 0 <= cropbox_left <= left_s
 
-            dotop = random.random() < 0.5
-            if dotop:
-                cropbox_top = roll_minmax(0, top_s)
-                cropbox_bottom = cropbox_top + target_edgesize
-                ok_v = bottom_s <= cropbox_bottom <= height
-            else:
-                cropbox_bottom = roll_minmax(bottom_s, height)
-                cropbox_top = cropbox_bottom - target_edgesize
-                ok_v = 0 <= cropbox_top <= top_s
+            if not ok_v:
+                dotop = random.random() < 0.5
+                if dotop:
+                    cropbox_top = roll_minmax(0, top_s)
+                    cropbox_bottom = cropbox_top + target_edgesize
+                    ok_v = bottom_s <= cropbox_bottom <= height
+                else:
+                    cropbox_bottom = roll_minmax(bottom_s, height)
+                    cropbox_top = cropbox_bottom - target_edgesize
+                    ok_v = 0 <= cropbox_top <= top_s
 
-            ok = ok_h and ok_v
             n+=1
 
             if n > 10000:
