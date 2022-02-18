@@ -14,7 +14,7 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
         self.max_area = max_area
         self.interpolation = interpolation
 
-    def get_params(self, img, safebox, return_n=True, debug=True):
+    def get_params(self, img, safebox, return_n=True, debug=False):
         width, height = TF.get_image_size(img)
         area = height * width
 
