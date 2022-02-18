@@ -44,7 +44,8 @@ def load_data(
     crop_prob_es=0., crop_min_scale_es=0.25, crop_max_scale_es=1.,
     safebox_path="",
     use_random_safebox_for_empty_string=False,
-    flip_lr_prob_es=0.
+    flip_lr_prob_es=0.,
+    return_dataset=False,
 ):
     """
     For a dataset, create a generator over (images, kwargs) pairs.
@@ -160,6 +161,8 @@ def load_data(
         image_file_to_safebox=image_file_to_safebox,
         use_random_safebox_for_empty_string=use_random_safebox_for_empty_string,
     )
+    if return_dataset:
+        return dataset
     if deterministic:
         loader = DataLoader(
             dataset, batch_size=batch_size, shuffle=False, num_workers=1, drop_last=True,
