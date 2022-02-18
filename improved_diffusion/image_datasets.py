@@ -163,6 +163,10 @@ def load_data(
     )
     if return_dataset:
         return dataset
+    return _dataloader_gen(dataset, batch_size=batch_size, deterministic=deterministic)
+
+
+def _dataloader_gen(dataset, batch_size, deterministic):
     if deterministic:
         loader = DataLoader(
             dataset, batch_size=batch_size, shuffle=False, num_workers=1, drop_last=True,
