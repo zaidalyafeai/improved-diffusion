@@ -94,7 +94,7 @@ def load_data(
         sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
         classes = [sorted_classes[x] for x in class_names]
 
-    pre_resize_transform = []
+    pre_resize_transform = None
     pre_resize_transform_for_empty_string = []
 
     if crop_prob > 0:
@@ -107,7 +107,7 @@ def load_data(
                 if random.random() < crop_prob:
                     return tform(img, safebox)
                 return img
-            pre_resize_transform.append(safebox_crop)
+            pre_resize_transform = safebox_crop
             if (not use_special_crop_for_empty_string) or (crop_prob_es <= 0):
                 use_special_crop_for_empty_string = True
                 crop_prob_es = crop_prob
@@ -115,13 +115,11 @@ def load_data(
                 crop_max_scale_es = crop_max_scale
         else:
             imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
-            pre_resize_transform.append(
-                T.RandomApply(
-                    transforms=[
-                        T.RandomResizedCrop(size=tsize, ratio=(1, 1), scale=(crop_min_scale, crop_max_scale), interpolation=imode),
-                    ],
-                    p=crop_prob
-                )
+            pre_resize_transform = T.RandomApply(
+                transforms=[
+                    T.RandomResizedCrop(size=tsize, ratio=(1, 1), scale=(crop_min_scale, crop_max_scale), interpolation=imode),
+                ],
+                p=crop_prob
             )
 
     if use_special_crop_for_empty_string and crop_prob_es > 0:
@@ -139,11 +137,6 @@ def load_data(
     if flip_lr_prob_es > 0:
         print("using flip")
         pre_resize_transform_for_empty_string.append(T.RandomHorizontalFlip(p=0.5))
-
-    if len(pre_resize_transform) > 0:
-        pre_resize_transform = T.Compose(pre_resize_transform)
-    else:
-        pre_resize_transform = None
 
     if len(pre_resize_transform_for_empty_string) > 0:
         pre_resize_transform_for_empty_string = T.Compose(pre_resize_transform_for_empty_string)
