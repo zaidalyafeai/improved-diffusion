@@ -287,6 +287,8 @@ class ImageDataset(Dataset):
             pre_resize_transform_for_empty_string = pre_resize_transform
         self.pre_resize_transform_for_empty_string = pre_resize_transform_for_empty_string
         self.image_file_to_safebox = image_file_to_safebox
+        if len(self.image_file_to_safebox) == 0:
+            self.image_file_to_safebox = None
         self.use_random_safebox_for_empty_string = use_random_safebox_for_empty_string
 
         if (self.image_file_to_safebox is not None) and (self.pre_resize_transform is None):
