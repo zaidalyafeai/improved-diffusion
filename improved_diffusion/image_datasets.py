@@ -123,8 +123,14 @@ def load_data(
                 p=crop_prob
             )
 
-    if use_special_crop_for_empty_string and crop_prob_es > 0:
-        print("using es crop")
+    use_es_crop = use_special_crop_for_empty_string and (crop_prob_es > 0)
+    use_es_regular_crop = use_es_crop and (not use_random_safebox_for_empty_string)
+
+    if use_es_crop:
+        print('using es crop')
+
+    if use_es_regular_crop:
+        print("using es regular crop")
         imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
         pre_resize_transform_for_empty_string.append(
             T.RandomApply(
@@ -321,11 +327,12 @@ class ImageDataset(Dataset):
                 text = f.read()
 
         if self.txt and len(text) == 0:
+            if self.pre_resize_transform_for_empty_string is not None:
+                # eg lr flip -- this stacks on top of random safebox crop
+                pil_image = self.pre_resize_transform_for_empty_string(pil_image)
             if self.use_random_safebox_for_empty_string and (self.image_file_to_safebox is not None):
                 safebox = self.image_file_to_safebox[random.choice(self.safebox_keys)]
                 pil_image = self.pre_resize_transform(pil_image, safebox)
-            elif self.pre_resize_transform_for_empty_string is not None:
-                pil_image = self.pre_resize_transform_for_empty_string(pil_image)
         else:
             if self.image_file_to_safebox is not None:
                 if path in self.image_file_to_safebox:
