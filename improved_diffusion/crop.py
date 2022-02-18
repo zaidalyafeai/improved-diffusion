@@ -37,11 +37,13 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
         ok = False
         n = 0
         if target_edgesize <= protected_edgesize:
-            print('nocrop path')
+            if debug:
+                print('nocrop path')
             cropbox_left, cropbox_top, cropbox_right, cropbox_bottom = (0, 0, width, height)
             ok = True
         else:
-            print('crop path')
+            if debug:
+                print('crop path')
         while not ok:
             doleft = random.random() < 0.5
             if doleft:
