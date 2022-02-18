@@ -182,6 +182,7 @@ def _dataloader_gen(dataset, batch_size, deterministic):
 def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=False, txt=False, monochrome=False,
                        deterministic=False, offset=0, colorize=False,
                        blur_prob=0., blur_sigma_min=0.4, blur_sigma_max=0.6,
+                       blur_width=5,  # paper used 3, i later learned
                        min_filesize=0,
                        txt_pdrop=0., txt_drop_string='<mask><mask><mask><mask>',
                        flip_lr_prob_es=0.,
@@ -201,7 +202,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         flip_lr_prob_es=flip_lr_prob_es,
     )
 
-    blurrer = T.RandomApply(transforms=[T.GaussianBlur(5, sigma=(blur_sigma_min, blur_sigma_max))], p=blur_prob)
+    blurrer = T.RandomApply(transforms=[T.GaussianBlur(blur_width, sigma=(blur_sigma_min, blur_sigma_max))], p=blur_prob)
 
     for large_batch, model_kwargs in data:
         model_kwargs["low_res"] = F.interpolate(large_batch, small_size, mode="area")
