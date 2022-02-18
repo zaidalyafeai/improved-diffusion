@@ -194,6 +194,7 @@ class SamplingPipeline(nn.Module):
         clf_free_guidance_sres=False,
         guidance_scale_sres=0.,
         strip_space=True,
+        return_both_resolutions=False
     ):
         if isinstance(text, list):
             text = [_strip_space(s) for s in text]
@@ -228,6 +229,8 @@ class SamplingPipeline(nn.Module):
             seed=seed,
             from_visible=False,
         )
+        if return_both_resolutions:
+            return high_res, low_res
         return high_res
 
     def sample_with_pruning(
@@ -249,6 +252,7 @@ class SamplingPipeline(nn.Module):
         clf_free_guidance_sres=False,
         guidance_scale_sres=0.,
         strip_space=True,
+        return_both_resolutions=False,
     ):
         if strip_space:
             if isinstance(text, list):
@@ -306,4 +310,6 @@ class SamplingPipeline(nn.Module):
             seed=seed,
             from_visible=True,
         )
+        if return_both_resolutions:
+            return high_res, low_res
         return high_res
