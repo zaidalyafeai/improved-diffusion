@@ -82,6 +82,7 @@ def model_and_diffusion_defaults():
         weave_v2=False,
         use_checkpoint_lowcost=False,
         weave_use_ff_gain=False,
+        return_diffusion_factory=False,
     )
 
 
@@ -150,6 +151,7 @@ def create_model_and_diffusion(
     weave_v2=False,
     use_checkpoint_lowcost=False,
     weave_use_ff_gain=False,
+    return_diffusion_factory=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     print(f"create_model_and_diffusion: use_checkpoint={use_checkpoint}")
@@ -220,6 +222,7 @@ def create_model_and_diffusion(
         rescale_timesteps=rescale_timesteps,
         rescale_learned_sigmas=rescale_learned_sigmas,
         timestep_respacing=timestep_respacing,
+        return_diffusion_factory=return_diffusion_factory,
     )
     if verbose:
         print(model)
@@ -469,6 +472,7 @@ def sr_create_model_and_diffusion(
     weave_v2=False,
     use_checkpoint_lowcost=False,
     weave_use_ff_gain=False,
+    return_diffusion_factory=False,
 ):
     model = sr_create_model(
         large_size,
@@ -536,6 +540,7 @@ def sr_create_model_and_diffusion(
         rescale_timesteps=rescale_timesteps,
         rescale_learned_sigmas=rescale_learned_sigmas,
         timestep_respacing=timestep_respacing,
+        return_diffusion_factory=return_diffusion_factory,
     )
     if verbose:
         print(model)
@@ -602,6 +607,7 @@ def create_gaussian_diffusion(
     rescale_timesteps=False,
     rescale_learned_sigmas=False,
     timestep_respacing="",
+    return_diffusion_factory=False,
 ):
     betas = gd.get_named_beta_schedule(noise_schedule, steps)
     if use_kl:
@@ -612,24 +618,28 @@ def create_gaussian_diffusion(
         loss_type = gd.LossType.MSE
     if not timestep_respacing:
         timestep_respacing = [steps]
-    return SpacedDiffusion(
-        use_timesteps=space_timesteps(steps, timestep_respacing),
-        betas=betas,
-        model_mean_type=(
-            gd.ModelMeanType.EPSILON if not predict_xstart else gd.ModelMeanType.START_X
-        ),
-        model_var_type=(
-            (
-                gd.ModelVarType.FIXED_LARGE
-                if not sigma_small
-                else gd.ModelVarType.FIXED_SMALL
-            )
-            if not learn_sigma
-            else gd.ModelVarType.LEARNED_RANGE
-        ),
-        loss_type=loss_type,
-        rescale_timesteps=rescale_timesteps,
-    )
+    def diffusion_factory(timestep_respacing_):
+        return SpacedDiffusion(
+            use_timesteps=space_timesteps(steps, timestep_respacing_),
+            betas=betas,
+            model_mean_type=(
+                gd.ModelMeanType.EPSILON if not predict_xstart else gd.ModelMeanType.START_X
+            ),
+            model_var_type=(
+                (
+                    gd.ModelVarType.FIXED_LARGE
+                    if not sigma_small
+                    else gd.ModelVarType.FIXED_SMALL
+                )
+                if not learn_sigma
+                else gd.ModelVarType.LEARNED_RANGE
+            ),
+            loss_type=loss_type,
+            rescale_timesteps=rescale_timesteps,
+        )
+    if return_diffusion_factory:
+        return diffusion_factory
+    return diffusion_factory(timestep_respacing_=timestep_respacing)
 
 
 def add_dict_to_argparser(parser, default_dict):
@@ -677,12 +687,11 @@ def load_config_to_args(config_path, args):
     return args, is_super_res
 
 
-def load_config_to_model(config_path, timestep_respacing=""):
+def load_config_to_model(config_path):
     with open(config_path, 'r') as f:
         conf = json.load(f)
 
-    if timestep_respacing:
-        conf['timestep_respacing'] = timestep_respacing
+    conf['return_diffusion_factory'] = True
 
     is_super_res = conf['is_super_res']
 
@@ -701,9 +710,9 @@ def load_config_to_model(config_path, timestep_respacing=""):
         model_diffusion_args['tokenizer'] = tokenizer
 
     creator = sr_create_model_and_diffusion if is_super_res else create_model_and_diffusion
-    model, diffusion = creator(**model_diffusion_args)
+    model, diffusion_factory = creator(**model_diffusion_args)
 
-    return model, diffusion, tokenizer, is_super_res
+    return model, diffusion_factory, tokenizer, is_super_res
 
 
 def save_config(config_path, model_diffusion_args, tokenizer_config, is_super_res):

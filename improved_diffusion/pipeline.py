@@ -31,19 +31,25 @@ class SamplingModel(nn.Module):
     def __init__(
         self,
         model: UNetModel,
-        diffusion: SpacedDiffusion,
+        diffusion_factory,
         tokenizer,
+        timestep_respacing,
         is_super_res=False,
     ):
         super().__init__()
         self.model = model
-        self.diffusion = diffusion  # TODO: allow changing spacing w/o reloading model
+        self.diffusion_factory = diffusion_factory
         self.tokenizer = tokenizer
         self.is_super_res = is_super_res
 
+        self.set_timestep_respacing(timestep_respacing)
+
+    def set_timestep_respacing(self, timestep_respacing):
+        self.diffusion = self.diffusion_factory(timestep_respacing)
+
     @staticmethod
     def from_config(checkpoint_path, config_path, timestep_respacing=""):
-        model, diffusion, tokenizer, is_super_res = load_config_to_model(
+        model, diffusion_factory, tokenizer, is_super_res = load_config_to_model(
             config_path, timestep_respacing=timestep_respacing
         )
         model.load_state_dict(
@@ -54,9 +60,10 @@ class SamplingModel(nn.Module):
 
         return SamplingModel(
             model=model,
-            diffusion=diffusion,
+            diffusion_factory=diffusion_factory,
             tokenizer=tokenizer,
             is_super_res=is_super_res,
+            timestep_respacing=timestep_respacing,
         )
 
     def sample(
