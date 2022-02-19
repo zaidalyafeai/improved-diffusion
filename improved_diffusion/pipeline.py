@@ -50,7 +50,7 @@ class SamplingModel(nn.Module):
     @staticmethod
     def from_config(checkpoint_path, config_path, timestep_respacing=""):
         model, diffusion_factory, tokenizer, is_super_res = load_config_to_model(
-            config_path, timestep_respacing=timestep_respacing
+            config_path,
         )
         model.load_state_dict(
             dist_util.load_state_dict(checkpoint_path, map_location="cpu")
