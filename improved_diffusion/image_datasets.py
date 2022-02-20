@@ -143,7 +143,7 @@ def load_data(
 
     if flip_lr_prob_es > 0:
         print("using flip")
-        pre_resize_transform_for_empty_string.append(T.RandomHorizontalFlip(p=0.5))
+        pre_resize_transform_for_empty_string.append(T.RandomHorizontalFlip(p=flip_lr_prob_es))
 
     if len(pre_resize_transform_for_empty_string) > 0:
         pre_resize_transform_for_empty_string = T.Compose(pre_resize_transform_for_empty_string)
