@@ -79,12 +79,16 @@ class SamplingModel(nn.Module):
         from_visible=True,
         clf_free_guidance=False,
         guidance_scale=0.,
-        txt_drop_string='<mask><mask><mask><mask>'
+        txt_drop_string='<mask><mask><mask><mask>',
+        return_intermedates=False
     ):
         dist_util.setup_dist()
 
         if self.is_super_res and low_res is None:
             raise ValueError("must pass low_res for super res")
+
+        if return_intermedates and use_ddim:
+            raise ValueError('not supported')
 
         if isinstance(text, str):
             batch_text = batch_size * [text]
@@ -99,11 +103,19 @@ class SamplingModel(nn.Module):
             print(f"setting seed to {seed}")
             th.manual_seed(seed)
 
-        sample_fn = (
-            self.diffusion.p_sample_loop
-            if not use_ddim
-            else self.diffusion.ddim_sample_loop
-        )
+        if return_intermedates:
+            def sample_fn_(*args, **kwargs):
+                sample_array, xstart_array = [], []
+                for out in self.diffusion.p_sample_loop_progressive:
+                    sample_array.append(out['sample'])
+                    xstart_array.append(out['pred_xstart'])
+                return {'sample': sample_array, 'xstart': xstart_array}
+
+            sample_fn = sample_fn_
+        elif use_ddim:
+            sample_fn = self.diffusion.ddim_sample_loop
+        else:
+            sample_fn = self.diffusion.p_sample_loop
 
         model_kwargs = {}
 
@@ -142,6 +154,14 @@ class SamplingModel(nn.Module):
             image_channels -= all_low_res.shape[1]
 
         all_images = []
+        all_sample_sequences = []
+        all_xstart_sequences = []
+
+        def _to_visible(img):
+            img = ((img + 1) * 127.5).clamp(0, 255).to(th.uint8)
+            img = sample.permute(0, 2, 3, 1)
+            img = img.contiguous()
+            return img
 
         while len(all_images) * batch_size < n_samples:
             offset = len(all_images)
@@ -162,18 +182,34 @@ class SamplingModel(nn.Module):
                 clip_denoised=clip_denoised,
                 model_kwargs=model_kwargs,
             )
-            if to_visible:
-                sample = ((sample + 1) * 127.5).clamp(0, 255).to(th.uint8)
-                sample = sample.permute(0, 2, 3, 1)
-                sample = sample.contiguous()
 
-            gathered_samples = [
-                th.zeros_like(sample) for _ in range(dist.get_world_size())
-            ]
-            dist.all_gather(gathered_samples, sample)  # gather not supported with NCCL
-            all_images.extend([sample.cpu().numpy() for sample in gathered_samples])
+            if return_sequences:
+                sample_sequence = sample['sample']
+                xstart_sequence = sample['xstart']
+                sample = sample_sequence[-1]
+
+            if to_visible:
+                sample = _to_visible(sample)
+                if return_sequences:
+                    # todo: vectorize
+                    sample_sequence = [_to_visible(x) for x in sample_sequence]
+                    xstart_sequence = [_to_visible(x) for x in xstart_sequence]
+
+            all_images.extend([x.cpu().numpy() for x in sample])
+
+            if return_sequences:
+                sample_sequence = th.stack(sample_sequence, dim=1)
+                xstart_sequence = th.stack(xstart_sequence, dim=1)
+                all_sample_sequences.extend(all_images.extend([x.cpu().numpy() for x in sample_sequence]))
+                all_xstart_sequences.extend(all_images.extend([x.cpu().numpy() for x in xstart_sequence]))
 
         all_images = np.concatenate(all_images, axis=0)
+
+        if return_sequences:
+            all_sample_sequences = np.concatenate(all_sample_sequences, axis=0)
+            all_xstart_sequences = np.concatenate(all_xstart_sequences, axis=0)
+
+            return all_images, all_sample_sequences, all_xstart_sequences
 
         return all_images
 
