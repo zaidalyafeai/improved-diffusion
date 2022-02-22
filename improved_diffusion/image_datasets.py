@@ -191,6 +191,11 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
                        blur_width=5,  # paper used 3, i later learned. though that was for 64 -> 128 and 64 -> 256
                        min_filesize=0,
                        txt_pdrop=0., txt_drop_string='<mask><mask><mask><mask>',
+                       crop_prob=0., crop_min_scale=0.75, crop_max_scale=1.,
+                       use_special_crop_for_empty_string=False,
+                       crop_prob_es=0., crop_min_scale_es=0.25, crop_max_scale_es=1.,
+                       safebox_path="",
+                       use_random_safebox_for_empty_string=False,
                        flip_lr_prob_es=0.,
                        ):
     data = load_data(
@@ -205,6 +210,15 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         min_filesize=min_filesize,
         txt_pdrop=txt_pdrop,
         txt_drop_string=txt_drop_string,
+        crop_prob=crop_prob,
+        crop_min_scale=crop_min_scale,
+        crop_max_scale=crop_max_scale,
+        use_special_crop_for_empty_string=use_special_crop_for_empty_string,
+        crop_prob_es=crop_prob_es,
+        crop_min_scale_es=crop_min_scale_es,
+        crop_max_scale_es=crop_max_scale_es,
+        safebox_path=safebox_path,
+        use_random_safebox_for_empty_string=use_random_safebox_for_empty_string,
         flip_lr_prob_es=flip_lr_prob_es,
     )
 
