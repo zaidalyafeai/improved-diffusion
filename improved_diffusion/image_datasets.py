@@ -93,7 +93,9 @@ def load_data(
 
         print(f"of {n_texts} texts, {n_empty_texts} ({frac_empty:.1%}) are empty, {n_nonempty_texts} ({frac_nonempty:.1%}) are nonempty")
         print(f"of {n_nonempty_texts} nonempty texts, {len(image_file_to_safebox)} have safeboxes")
-        print(f"of {n_nonempty_texts} nonempty texts, {len(image_file_to_px_scales)} have px scales")
+
+    if px_scales is not None:
+        print(f"of {n_texts} texts, {len(image_file_to_px_scales)} have px scales")
 
     classes = None
     if class_cond:
