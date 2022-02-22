@@ -25,8 +25,15 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
         if minscales is None:
             minscales = (0., 0.)
 
+        if debug:
+            print(f"minscales: {minscales}")
+            print(f"before: {protected_space_h}, {protected_space_v}")
+
         protected_space_h = max(protected_space_h, min(1., minscales[0]) * width)
         protected_space_v = max(protected_space_v, min(1., minscales[1]) * height)
+
+        if debug:
+            print(f"after: {protected_space_h}, {protected_space_v}")
 
         protected_edgesize = max(protected_space_h, protected_space_v)
         protected_area = (protected_edgesize) * (protected_edgesize)
