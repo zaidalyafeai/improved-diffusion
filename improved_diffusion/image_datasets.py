@@ -45,6 +45,7 @@ def load_data(
     safebox_path="",
     use_random_safebox_for_empty_string=False,
     flip_lr_prob_es=0.,
+    px_scales_path="",
     return_dataset=False,
 ):
     """
@@ -72,7 +73,13 @@ def load_data(
         with open(safebox_path, 'r') as f:
             safeboxes = json.load(f)
 
-    all_files, image_file_to_text_file, file_sizes, image_file_to_safebox = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize, safeboxes=safeboxes)
+    px_scales = None
+    if px_scales_path and os.path.exists(px_scales_path):
+        print('using px_scales_path')
+        with open(px_scales_path, 'r') as f:
+            px_scales = json.load(f)
+
+    all_files, image_file_to_text_file, file_sizes, image_file_to_safebox, image_file_to_px_scales = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize, safeboxes=safeboxes, px_scales=px_scales)
     print(f"found {len(all_files)} images, {len(image_file_to_text_file)} texts")
     all_files = all_files[offset:]
 
@@ -86,6 +93,7 @@ def load_data(
 
         print(f"of {n_texts} texts, {n_empty_texts} ({frac_empty:.1%}) are empty, {n_nonempty_texts} ({frac_nonempty:.1%}) are nonempty")
         print(f"of {n_nonempty_texts} nonempty texts, {len(image_file_to_safebox)} have safeboxes")
+        print(f"of {n_nonempty_texts} nonempty texts, {len(image_file_to_px_scales)} have px scales")
 
     classes = None
     if class_cond:
@@ -103,10 +111,10 @@ def load_data(
         if safeboxes is not None:
             print('using safebox crop')
             imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
-            def safebox_crop(img, safebox):
+            def safebox_crop(img, safebox, minscales):
                 tform = RandomResizedProtectedCropLazy(size=tsize, min_area=crop_min_scale, max_area=crop_max_scale, interpolation=imode)
                 if random.random() < crop_prob:
-                    return tform(img, safebox)
+                    return tform(img, safebox, minscales)
                 return img
             pre_resize_transform = safebox_crop
             if (not use_special_crop_for_empty_string) or (crop_prob_es <= 0):
@@ -166,6 +174,7 @@ def load_data(
         pre_resize_transform_for_empty_string=pre_resize_transform_for_empty_string,
         image_file_to_safebox=image_file_to_safebox,
         use_random_safebox_for_empty_string=use_random_safebox_for_empty_string,
+        image_file_to_px_scales=image_file_to_px_scales,
     )
     if return_dataset:
         return dataset
@@ -234,13 +243,16 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         yield large_batch, model_kwargs
 
 
-def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, safeboxes=None):
+def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, safeboxes=None, px_scales=None):
     results = []
     image_file_to_text_file = {}
     file_sizes = {}
     image_file_to_safebox = {}
+    image_file_to_px_scales = {}
     if safeboxes is None:
         safeboxes = {}
+    if px_scales is None:
+        px_scales = {}
     for entry in sorted(bf.listdir(data_dir)):
         full_path = bf.join(data_dir, entry)
         prefix, _, ext = entry.rpartition(".")
@@ -262,19 +274,22 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, safeboxes
                     file_sizes[path_txt] = filesize
 
                     image_file_to_safebox[full_path] = safeboxes.get(safebox_key)
+                    image_file_to_px_scales[full_path] = px_scales.get(safebox_key)
                 else:
                     pass
                     # raise ValueError(path_txt)
         elif bf.isdir(full_path):
-            next_results, next_map, next_file_sizes, next_image_file_to_safebox = _list_image_files_recursively(
-                full_path, txt=txt, min_filesize=min_filesize, safeboxes=safeboxes
+            next_results, next_map, next_file_sizes, next_image_file_to_safebox, next_image_file_to_px_scales = _list_image_files_recursively(
+                full_path, txt=txt, min_filesize=min_filesize, safeboxes=safeboxes, px_scales=px_scales
             )
             results.extend(next_results)
             image_file_to_text_file.update(next_map)
             file_sizes.update(next_file_sizes)
             image_file_to_safebox.update(next_image_file_to_safebox)
+            image_file_to_px_scales.update(next_image_file_to_px_scales)
     image_file_to_safebox = {k: v for k, v in image_file_to_safebox.items() if v is not None}
-    return results, image_file_to_text_file, file_sizes, image_file_to_safebox
+    image_file_to_px_scales = {k: v for k, v in image_file_to_px_scales.items() if v is not None}
+    return results, image_file_to_text_file, file_sizes, image_file_to_safebox, image_file_to_px_scales
 
 
 class ImageDataset(Dataset):
@@ -292,6 +307,7 @@ class ImageDataset(Dataset):
                  pre_resize_transform_for_empty_string=None,
                  image_file_to_safebox=None,
                  use_random_safebox_for_empty_string=False,
+                 image_file_to_px_scales=None,
                  ):
         super().__init__()
         self.resolution = resolution
@@ -311,6 +327,10 @@ class ImageDataset(Dataset):
         if len(self.image_file_to_safebox) == 0:
             self.image_file_to_safebox = None
         self.use_random_safebox_for_empty_string = use_random_safebox_for_empty_string
+
+        self.image_file_to_px_scales = image_file_to_px_scales
+        if self.image_file_to_px_scales is None:
+            self.image_file_to_px_scales = {}
 
         if (self.image_file_to_safebox is not None) and (self.pre_resize_transform is None):
             raise ValueError
@@ -346,12 +366,14 @@ class ImageDataset(Dataset):
                 pil_image = self.pre_resize_transform_for_empty_string(pil_image)
             if self.use_random_safebox_for_empty_string and (self.image_file_to_safebox is not None):
                 safebox = self.image_file_to_safebox[random.choice(self.safebox_keys)]
-                pil_image = self.pre_resize_transform(pil_image, safebox)
+                px_scale = self.image_file_to_px_scales.get(path)
+                pil_image = self.pre_resize_transform(pil_image, safebox, minscales=px_scale)
         else:
             if self.image_file_to_safebox is not None:
                 if path in self.image_file_to_safebox:
                     safebox = self.image_file_to_safebox[path]
-                    pil_image = self.pre_resize_transform(pil_image, safebox)
+                    px_scale = self.image_file_to_px_scales.get(path)
+                    pil_image = self.pre_resize_transform(pil_image, safebox, minscales=px_scale)
             elif self.pre_resize_transform is not None:
                 pil_image = self.pre_resize_transform(pil_image)
 

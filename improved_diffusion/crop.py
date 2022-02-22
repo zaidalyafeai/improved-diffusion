@@ -14,13 +14,19 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
         self.max_area = max_area
         self.interpolation = interpolation
 
-    def get_params(self, img, safebox, return_n=True, debug=False):
+    def get_params(self, img, safebox, minscales=None, return_n=True, debug=True):
         width, height = TF.get_image_size(img)
         area = height * width
 
         left_s, top_s, right_s, bottom_s = safebox
         protected_space_h = right_s - left_s
         protected_space_v = bottom_s - top_s
+
+        if minscales is None:
+            minscales = (0., 0.)
+
+        protected_space_h = max(protected_space_h, min(1., minscales[0]) * width)
+        protected_space_v = max(protected_space_v, min(1., minscales[1]) * height)
 
         protected_edgesize = max(protected_space_h, protected_space_v)
         protected_area = (protected_edgesize) * (protected_edgesize)
