@@ -369,13 +369,13 @@ class ImageDataset(Dataset):
             if self.use_random_safebox_for_empty_string and (self.image_file_to_safebox is not None):
                 safebox = self.image_file_to_safebox[random.choice(self.safebox_keys)]
                 px_scale = self.image_file_to_px_scales.get(path)
-                pil_image = self.pre_resize_transform(pil_image, safebox, minscales=px_scale)
+                pil_image = self.pre_resize_transform(pil_image, safebox, px_scale)
         else:
             if self.image_file_to_safebox is not None:
                 if path in self.image_file_to_safebox:
                     safebox = self.image_file_to_safebox[path]
                     px_scale = self.image_file_to_px_scales.get(path)
-                    pil_image = self.pre_resize_transform(pil_image, safebox, minscales=px_scale)
+                    pil_image = self.pre_resize_transform(pil_image, safebox, px_scale)
             elif self.pre_resize_transform is not None:
                 pil_image = self.pre_resize_transform(pil_image)
 
