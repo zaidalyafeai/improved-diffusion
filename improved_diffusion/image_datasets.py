@@ -117,7 +117,7 @@ def load_data(
                 tform = RandomResizedProtectedCropLazy(size=tsize, min_area=crop_min_scale, max_area=crop_max_scale, interpolation=imode)
                 print(f'got minscales {minscales}')
                 if random.random() < crop_prob:
-                    return tform(img, safebox, minscales)
+                    return tform(img, safebox, px_scales=minscales)
                 return img
             pre_resize_transform = safebox_crop
             if (not use_special_crop_for_empty_string) or (crop_prob_es <= 0):
