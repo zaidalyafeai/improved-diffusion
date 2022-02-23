@@ -101,6 +101,7 @@ def main():
         safebox_path=args.safebox_path,
         use_random_safebox_for_empty_string=args.use_random_safebox_for_empty_string,
         flip_lr_prob_es=args.flip_lr_prob_es,
+        px_scales_path=args.px_scales_path
     )
 
     logger.log("training...")
@@ -186,6 +187,7 @@ def create_argparser():
         safebox_path="",
         use_random_safebox_for_empty_string=False,
         flip_lr_prob_es=0.,
+        px_scales_path=""
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
