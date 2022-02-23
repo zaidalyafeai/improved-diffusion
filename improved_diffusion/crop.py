@@ -65,6 +65,13 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
             if not isinstance(res_model, int):
                 res_model = res_model[0]
             protected_edgesize_from_pre_applied_rescale = res_model * pre_applied_rescale_factor
+
+            # don't protect more than the image we have on hand
+            protected_edgesize_from_pre_applied_rescale = min(
+                protected_edgesize_from_pre_applied_rescale,
+                min(width, height)
+            )
+
             edgesize_ratio = protected_edgesize_from_pre_applied_rescale / max(protected_space_h, protected_space_v)
             print(f"protected_edgesize_from_pre_applied_rescale: {protected_edgesize_from_pre_applied_rescale}")
             print(f"edgesize_ratio: {edgesize_ratio}")
