@@ -47,6 +47,7 @@ def load_data(
     flip_lr_prob_es=0.,
     px_scales_path="",
     return_dataset=False,
+    debug=False,
 ):
     """
     For a dataset, create a generator over (images, kwargs) pairs.
@@ -114,7 +115,7 @@ def load_data(
             print('using safebox crop')
             imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
             def safebox_crop(img, safebox, pre_applied_rescale_factor):
-                tform = RandomResizedProtectedCropLazy(size=tsize, min_area=crop_min_scale, max_area=crop_max_scale, interpolation=imode)
+                tform = RandomResizedProtectedCropLazy(size=tsize, min_area=crop_min_scale, max_area=crop_max_scale, interpolation=imode, debug=debug)
                 if random.random() < crop_prob:
                     return tform(img, safebox, pre_applied_rescale_factor=pre_applied_rescale_factor)
                 return img
