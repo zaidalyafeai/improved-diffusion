@@ -45,7 +45,7 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
 
         if debug:
             print(f"pre_applied_rescale_factor: {pre_applied_rescale_factor}")
-            print(f"before: {protected_space_h}, {protected_space_v}")
+            # print(f"before: {protected_space_h}, {protected_space_v}")
 
         if pre_applied_rescale_factor <= 1:
             if debug:
@@ -59,6 +59,9 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
             #
             # criterion:
             #               Res_Dynamic > Res_Model * (Res_Saved / Res_Orig)
+            res_model = self.size
+            if not isinstance(res_model, int):
+                res_model = res_model[0]
             protected_edgesize_from_pre_applied_rescale = self.size * pre_applied_rescale_factor
             area_ratio = protected_edgesize_from_pre_applied_rescale / max(protected_space_h, protected_space_v)
             print(f"area ratio: {area_ratio}")
