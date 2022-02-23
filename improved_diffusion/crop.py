@@ -14,7 +14,7 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
         self.max_area = max_area
         self.interpolation = interpolation
 
-    def get_params(self, img, safebox, minscales=None, return_n=True, debug=True):
+    def get_params(self, img, safebox, pre_applied_rescale_factor=None, return_n=True, debug=True, legacy=False):
         width, height = TF.get_image_size(img)
         area = height * width
 
@@ -22,15 +22,42 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
         protected_space_h = right_s - left_s
         protected_space_v = bottom_s - top_s
 
-        if minscales is None:
-            minscales = (0., 0.)
+        if debug:
+            legacy__pre_applied_rescale_factor = pre_applied_rescale_factor
+            if legacy__pre_applied_rescale_factor is None:
+                legacy__pre_applied_rescale_factor = (0, 0)
+
+                print(f"LEGACY: pre_applied_rescale_factor: {legacy__pre_applied_rescale_factor}")
+                print(f"LEGACY: before: {protected_space_h}, {protected_space_v}")
+
+                legacy__protected_space_h = max(protected_space_h, min(1., legacy__pre_applied_rescale_factor[0]) * width)
+                legacy__protected_space_v = max(protected_space_v, min(1., legacy__pre_applied_rescale_factor[1]) * height)
+
+                print(f"LEGACY: after: {legacy__protected_space_h}, {legacy__protected_space_v}")
+
+        if pre_applied_rescale_factor is None:
+            pre_applied_rescale_factor = (1, 1)
+
+        pre_applied_rescale_factor = max(pre_applied_rescale_factor)
 
         if debug:
-            print(f"minscales: {minscales}")
+            print(f"pre_applied_rescale_factor: {pre_applied_rescale_factor}")
             print(f"before: {protected_space_h}, {protected_space_v}")
 
-        protected_space_h = max(protected_space_h, min(1., minscales[0]) * width)
-        protected_space_v = max(protected_space_v, min(1., minscales[1]) * height)
+        if pre_applied_rescale_factor <= 1:
+            if debug:
+                print('on irrelevant branch')
+        else:
+            if debug:
+                print('on relevant branch')
+            # Res_Saved / Res_Orig = pre_applied_rescale_factor
+            # Res_Model = self.size
+            #
+            # criterion:
+            #               Res_Dynamic > Res_Model * (Res_Saved / Res_Orig)
+            protected_edgesize_from_pre_applied_rescale = self.size * pre_applied_rescale_factor
+            protected_space_h = max(protected_space_h, protected_edgesize_from_pre_applied_rescale)
+            protected_space_v = max(protected_space_v, protected_edgesize_from_pre_applied_rescale)
 
         if debug:
             print(f"after: {protected_space_h}, {protected_space_v}")
@@ -103,8 +130,8 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
 
         return (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom)
 
-    def forward(self, img, safebox, px_scales=None, debug=False):
-        cropbox = self.get_params(img, safebox, px_scales, return_n=False, debug=debug)
+    def forward(self, img, safebox, pre_applied_rescale_factor=None, debug=False):
+        cropbox = self.get_params(img, safebox, pre_applied_rescale_factor, return_n=False, debug=debug)
         i, j = cropbox[1], cropbox[0]
         h, w = cropbox[2] - j, cropbox[3] - i
         # display(img.crop(cropbox).resize((self.size, self.size)))

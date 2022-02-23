@@ -113,10 +113,10 @@ def load_data(
         if safeboxes is not None:
             print('using safebox crop')
             imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
-            def safebox_crop(img, safebox, minscales):
+            def safebox_crop(img, safebox, pre_applied_rescale_factor):
                 tform = RandomResizedProtectedCropLazy(size=tsize, min_area=crop_min_scale, max_area=crop_max_scale, interpolation=imode)
                 if random.random() < crop_prob:
-                    return tform(img, safebox, px_scales=minscales)
+                    return tform(img, safebox, pre_applied_rescale_factor=pre_applied_rescale_factor)
                 return img
             pre_resize_transform = safebox_crop
             if (not use_special_crop_for_empty_string) or (crop_prob_es <= 0):
