@@ -28,13 +28,13 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
             if legacy__pre_applied_rescale_factor is None:
                 legacy__pre_applied_rescale_factor = (0, 0)
 
-                print(f"LEGACY: pre_applied_rescale_factor: {legacy__pre_applied_rescale_factor}")
-                print(f"LEGACY: before: {protected_space_h}, {protected_space_v}")
+            print(f"LEGACY: pre_applied_rescale_factor: {legacy__pre_applied_rescale_factor}")
+            print(f"LEGACY: before: {protected_space_h}, {protected_space_v}")
 
-                legacy__protected_space_h = max(protected_space_h, min(1., legacy__pre_applied_rescale_factor[0]) * width)
-                legacy__protected_space_v = max(protected_space_v, min(1., legacy__pre_applied_rescale_factor[1]) * height)
+            legacy__protected_space_h = max(protected_space_h, min(1., legacy__pre_applied_rescale_factor[0]) * width)
+            legacy__protected_space_v = max(protected_space_v, min(1., legacy__pre_applied_rescale_factor[1]) * height)
 
-                print(f"LEGACY: after: {legacy__protected_space_h}, {legacy__protected_space_v}")
+            print(f"LEGACY: after: {legacy__protected_space_h}, {legacy__protected_space_v}")
 
         if pre_applied_rescale_factor is None:
             pre_applied_rescale_factor = (1, 1)
