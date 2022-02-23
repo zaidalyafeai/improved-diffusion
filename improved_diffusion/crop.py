@@ -35,7 +35,7 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
 
             # print(f"LEGACY: after: {legacy__protected_space_h}, {legacy__protected_space_v}")
             legacy__area_ratio = max(legacy__protected_space_h, legacy__protected_space_h) / max(protected_space_h, protected_space_v)
-            print(f"LEGACY: area ratio: {legacy__protected_space_h}, {legacy__protected_space_h}")
+            print(f"LEGACY: area ratio: {legacy__area_ratio}")
             print()
 
         if pre_applied_rescale_factor is None:
@@ -50,6 +50,7 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
         if pre_applied_rescale_factor <= 1:
             if debug:
                 print('on irrelevant branch')
+                print(f"area ratio: 1")
         else:
             if debug:
                 print('on relevant branch')
@@ -59,6 +60,8 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
             # criterion:
             #               Res_Dynamic > Res_Model * (Res_Saved / Res_Orig)
             protected_edgesize_from_pre_applied_rescale = self.size * pre_applied_rescale_factor
+            area_ratio = protected_edgesize_from_pre_applied_rescale / max(protected_space_h, protected_space_v)
+            print(f"area ratio: {area_ratio}")
             protected_space_h = max(protected_space_h, protected_edgesize_from_pre_applied_rescale)
             protected_space_v = max(protected_space_v, protected_edgesize_from_pre_applied_rescale)
 
