@@ -34,8 +34,8 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
             legacy__protected_space_v = max(protected_space_v, min(1., legacy__pre_applied_rescale_factor[1]) * height)
 
             # print(f"LEGACY: after: {legacy__protected_space_h}, {legacy__protected_space_v}")
-            legacy__area_ratio = max(legacy__protected_space_h, legacy__protected_space_h) / max(protected_space_h, protected_space_v)
-            print(f"LEGACY: area ratio: {legacy__area_ratio}")
+            legacy__edgesize_ratio = max(legacy__protected_space_h, legacy__protected_space_h) / max(protected_space_h, protected_space_v)
+            print(f"LEGACY: edgesize_ratio: {legacy__edgesize_ratio}")
             print()
 
         if pre_applied_rescale_factor is None:
@@ -45,7 +45,7 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
 
         if debug:
             print(f"pre_applied_rescale_factor: {pre_applied_rescale_factor}")
-            # print(f"before: {protected_space_h}, {protected_space_v}")
+            print(f"before: {max(protected_space_h, protected_space_v)}")
 
         if pre_applied_rescale_factor <= 1:
             if debug:
@@ -63,13 +63,13 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
             if not isinstance(res_model, int):
                 res_model = res_model[0]
             protected_edgesize_from_pre_applied_rescale = res_model * pre_applied_rescale_factor
-            area_ratio = protected_edgesize_from_pre_applied_rescale / max(protected_space_h, protected_space_v)
-            print(f"area ratio: {area_ratio}")
+            edgesize_ratio = protected_edgesize_from_pre_applied_rescale / max(protected_space_h, protected_space_v)
+            print(f"edgesize_ratio: {edgesize_ratio}")
             protected_space_h = max(protected_space_h, protected_edgesize_from_pre_applied_rescale)
             protected_space_v = max(protected_space_v, protected_edgesize_from_pre_applied_rescale)
 
         if debug:
-            print(f"after: {protected_space_h}, {protected_space_v}")
+            print(f"after: {max(protected_space_h, protected_space_v)}")
 
         protected_edgesize = max(protected_space_h, protected_space_v)
         protected_area = (protected_edgesize) * (protected_edgesize)
