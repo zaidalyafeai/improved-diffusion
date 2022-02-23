@@ -103,7 +103,7 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
 
         return (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom)
 
-    def forward(self, img, safebox, px_scales=None, debug=True):
+    def forward(self, img, safebox, px_scales=None, debug=False):
         cropbox = self.get_params(img, safebox, px_scales, return_n=False, debug=debug)
         i, j = cropbox[1], cropbox[0]
         h, w = cropbox[2] - j, cropbox[3] - i
