@@ -16,6 +16,10 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
         self.debug = debug
 
     def get_params(self, img, safebox, pre_applied_rescale_factor=None, return_n=True, debug=True):
+        def dprint(*args, **kwargs):
+            if debug:
+                print(*args, **kwargs)
+
         width, height = TF.get_image_size(img)
         area = height * width
 
@@ -28,33 +32,30 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
             if legacy__pre_applied_rescale_factor is None:
                 legacy__pre_applied_rescale_factor = (0, 0)
 
-            print(f"LEGACY: before: {max(protected_space_h, protected_space_v)}")
+            dprint(f"LEGACY: before: {max(protected_space_h, protected_space_v)}")
 
             legacy__protected_space_h = max(protected_space_h, min(1., legacy__pre_applied_rescale_factor[0]) * width)
             legacy__protected_space_v = max(protected_space_v, min(1., legacy__pre_applied_rescale_factor[1]) * height)
 
-            print(f"LEGACY: after: {max(legacy__protected_space_h, legacy__protected_space_h)}")
+            dprint(f"LEGACY: after: {max(legacy__protected_space_h, legacy__protected_space_h)}")
             legacy__edgesize_ratio = max(legacy__protected_space_h, legacy__protected_space_h) / max(protected_space_h, protected_space_v)
-            print(f"LEGACY: edgesize_ratio: {legacy__edgesize_ratio}")
-            print()
+            dprint(f"LEGACY: edgesize_ratio: {legacy__edgesize_ratio}")
+            dprint()
 
         if pre_applied_rescale_factor is None:
             pre_applied_rescale_factor = (1, 1)
 
         pre_applied_rescale_factor = max(pre_applied_rescale_factor)
 
-        if debug:
-            print(f"pre_applied_rescale_factor: {pre_applied_rescale_factor}\n")
-            print(f"before: {max(protected_space_h, protected_space_v)}")
+        dprint(f"pre_applied_rescale_factor: {pre_applied_rescale_factor}\n")
+        dprint(f"before: {max(protected_space_h, protected_space_v)}")
 
         if pre_applied_rescale_factor <= 1:
-            if debug:
-                pass
-                # print('on irrelevant branch\n')
-                # print(f"edgesize_ratio: 1")
+            pass
+            # dprint('on irrelevant branch\n')
+            # dprint(f"edgesize_ratio: 1")
         else:
-            # if debug:
-            #     print('on relevant branch\n')
+            # dprint('on relevant branch\n')
 
             # Res_Saved / Res_Orig = pre_applied_rescale_factor
             # Res_Model = self.size
@@ -73,13 +74,12 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
             )
 
             edgesize_ratio = protected_edgesize_from_pre_applied_rescale / max(protected_space_h, protected_space_v)
-            print(f"protected_edgesize_from_pre_applied_rescale: {protected_edgesize_from_pre_applied_rescale}")
-            print(f"edgesize_ratio: {edgesize_ratio}")
+            dprint(f"protected_edgesize_from_pre_applied_rescale: {protected_edgesize_from_pre_applied_rescale}")
+            dprint(f"edgesize_ratio: {edgesize_ratio}")
             protected_space_h = max(protected_space_h, protected_edgesize_from_pre_applied_rescale)
             protected_space_v = max(protected_space_v, protected_edgesize_from_pre_applied_rescale)
 
-        if debug:
-            print(f"after: {max(protected_space_h, protected_space_v)}")
+        dprint(f"after: {max(protected_space_h, protected_space_v)}")
 
         protected_edgesize = max(protected_space_h, protected_space_v)
         protected_area = (protected_edgesize) * (protected_edgesize)
@@ -96,13 +96,11 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
         ok_h, ok_v = False, False
         n = 0
         if target_edgesize <= protected_edgesize:
-            if debug:
-                print('nocrop path')
+            dcprint('nocrop path')
             cropbox_left, cropbox_top, cropbox_right, cropbox_bottom = (0, 0, width, height)
             ok_h, ok_v = True, True
         else:
-            if debug:
-                print('crop path')
+            dprint('crop path')
         while not (ok_h and ok_v):
             if not ok_h:
                 doleft = random.random() < 0.5
@@ -137,12 +135,11 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
                 cropbox_left, cropbox_top, cropbox_right, cropbox_bottom = (0, 0, width, height)
                 break
 
-        if debug:
-            print(("target_area/min_area_allowed", target_area/(area*min_area)))
-            print(("target_area/area", target_area/area))
-            print(("target_edgesize", target_edgesize))
-            print(("safebox", safebox))
-            print(("cropbox", (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom)))
+        dprint(("target_area/min_area_allowed", target_area/(area*min_area)))
+        dprint(("target_area/area", target_area/area))
+        dprint(("target_edgesize", target_edgesize))
+        dprint(("safebox", safebox))
+        dprint(("cropbox", (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom)))
 
         if return_n:
             return (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom), n
