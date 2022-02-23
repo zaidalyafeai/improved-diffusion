@@ -62,7 +62,7 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
             res_model = self.size
             if not isinstance(res_model, int):
                 res_model = res_model[0]
-            protected_edgesize_from_pre_applied_rescale = self.size * pre_applied_rescale_factor
+            protected_edgesize_from_pre_applied_rescale = res_model * pre_applied_rescale_factor
             area_ratio = protected_edgesize_from_pre_applied_rescale / max(protected_space_h, protected_space_v)
             print(f"area ratio: {area_ratio}")
             protected_space_h = max(protected_space_h, protected_edgesize_from_pre_applied_rescale)
