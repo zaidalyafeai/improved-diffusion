@@ -44,7 +44,7 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
         pre_applied_rescale_factor = max(pre_applied_rescale_factor)
 
         if debug:
-            print(f"pre_applied_rescale_factor: {pre_applied_rescale_factor}")
+            print(f"pre_applied_rescale_factor: {pre_applied_rescale_factor}\n")
             print(f"before: {max(protected_space_h, protected_space_v)}")
 
         if pre_applied_rescale_factor <= 1:
