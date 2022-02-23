@@ -49,11 +49,11 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
 
         if pre_applied_rescale_factor <= 1:
             if debug:
-                print('on irrelevant branch')
-                print(f"area ratio: 1")
+                # print('on irrelevant branch\n')
+                print(f"edgesize_ratio: 1")
         else:
-            if debug:
-                print('on relevant branch')
+            # if debug:
+            #     print('on relevant branch\n')
             # Res_Saved / Res_Orig = pre_applied_rescale_factor
             # Res_Model = self.size
             #
