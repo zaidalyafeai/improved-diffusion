@@ -34,15 +34,14 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
 
         pre_applied_rescale_factor = max(pre_applied_rescale_factor)
 
-        dprint(f"pre_applied_rescale_factor: {pre_applied_rescale_factor}\n")
-        dprint(f"before: {max(protected_space_h, protected_space_v)}")
-
         if pre_applied_rescale_factor <= 1:
             pass
             # dprint('on irrelevant branch\n')
             # dprint(f"edgesize_ratio: 1")
         else:
-            # dprint('on relevant branch\n')
+            dprint('on relevant branch\n')
+            dprint(f"pre_applied_rescale_factor: {pre_applied_rescale_factor}\n")
+            dprint(f"before: {max(protected_space_h, protected_space_v)}")
 
             # Res_Saved / Res_Orig = pre_applied_rescale_factor
             # Res_Model = self.size
@@ -66,7 +65,7 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
             protected_space_h = max(protected_space_h, protected_edgesize_from_pre_applied_rescale)
             protected_space_v = max(protected_space_v, protected_edgesize_from_pre_applied_rescale)
 
-        dprint(f"after: {max(protected_space_h, protected_space_v)}")
+            dprint(f"after: {max(protected_space_h, protected_space_v)}")
 
         protected_edgesize = max(protected_space_h, protected_space_v)
         protected_area = (protected_edgesize) * (protected_edgesize)
