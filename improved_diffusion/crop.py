@@ -79,9 +79,9 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
 
         target_edgesize = math.sqrt(target_area)
 
-        dprint(f'\tprotected_edgesize: {protected_edgesize:.1f}')
-        dprint(f'\ttarget_edgesize: {target_edgesize:.1f}')
-        dprint(f'\tmax_possible_edgesize: {max_possible_edgesize:.1f}')
+        dprint(f'\tprotected_edgesize:\t{protected_edgesize:.1f}')
+        dprint(f'\ttarget_edgesize:\t{target_edgesize:.1f}')
+        dprint(f'\tmax_possible_edgesize:\t{max_possible_edgesize:.1f}')
 
         ok_h, ok_v = False, False
         n = 0
