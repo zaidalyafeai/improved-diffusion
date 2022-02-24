@@ -85,7 +85,7 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
 
         ok_h, ok_v = False, False
         n = 0
-        if (target_edgesize <= protected_edgesize) or (target_edgesize >= max_possible_edgesize):
+        if (target_edgesize <= protected_edgesize) or (target_edgesize >= max_possible_edgesize) or (protected_edgesize >= max_possible_edgesize):
             dprint('nocrop path')
             cropbox_left, cropbox_top, cropbox_right, cropbox_bottom = (0, 0, width, height)
             ok_h, ok_v = True, True
