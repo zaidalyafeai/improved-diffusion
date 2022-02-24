@@ -21,7 +21,8 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
                 print(*args, **kwargs)
 
         width, height = TF.get_image_size(img)
-        area = height * width
+        # area = height * width
+        area = min(height, width) ** 2  # square crops --> don't try target edgesize bigger than shortest edge
 
         left_s, top_s, right_s, bottom_s = safebox
         protected_space_h = right_s - left_s
