@@ -29,21 +29,6 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
         protected_space_h = right_s - left_s
         protected_space_v = bottom_s - top_s
 
-        if debug:
-            legacy__pre_applied_rescale_factor = pre_applied_rescale_factor
-            if legacy__pre_applied_rescale_factor is None:
-                legacy__pre_applied_rescale_factor = (0, 0)
-
-            dprint(f"LEGACY: before: {max(protected_space_h, protected_space_v)}")
-
-            legacy__protected_space_h = max(protected_space_h, min(1., legacy__pre_applied_rescale_factor[0]) * width)
-            legacy__protected_space_v = max(protected_space_v, min(1., legacy__pre_applied_rescale_factor[1]) * height)
-
-            dprint(f"LEGACY: after: {max(legacy__protected_space_h, legacy__protected_space_h)}")
-            legacy__edgesize_ratio = max(legacy__protected_space_h, legacy__protected_space_h) / max(protected_space_h, protected_space_v)
-            dprint(f"LEGACY: edgesize_ratio: {legacy__edgesize_ratio}")
-            dprint()
-
         if pre_applied_rescale_factor is None:
             pre_applied_rescale_factor = (1, 1)
 
