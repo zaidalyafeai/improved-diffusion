@@ -22,7 +22,8 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
 
         width, height = TF.get_image_size(img)
         # area = height * width
-        area = min(height, width) ** 2  # square crops --> don't try target edgesize bigger than shortest edge
+        max_possible_edgesize = min(height, width)
+        area = max_possible_edgesize ** 2  # square crops --> don't try target edgesize bigger than shortest edge
 
         left_s, top_s, right_s, bottom_s = safebox
         protected_space_h = right_s - left_s
@@ -96,7 +97,7 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
 
         ok_h, ok_v = False, False
         n = 0
-        if target_edgesize <= protected_edgesize:
+        if (target_edgesize <= protected_edgesize) or (target_edgesize >= max_possible_edgesize):
             dprint('nocrop path')
             cropbox_left, cropbox_top, cropbox_right, cropbox_bottom = (0, 0, width, height)
             ok_h, ok_v = True, True
