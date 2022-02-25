@@ -7,20 +7,65 @@ def roll_minmax(low, high):
     return roll*(high-low) + low
 
 class RandomResizedProtectedCropLazy(torch.nn.Module):
-    def __init__(self, size, min_area, max_area=1, interpolation=TF.InterpolationMode.BILINEAR):
+    def __init__(self, size, min_area, max_area=1, interpolation=TF.InterpolationMode.BILINEAR, debug=False):
         super().__init__()
         self.size = size
         self.min_area = min_area
         self.max_area = max_area
         self.interpolation = interpolation
+        self.debug = debug
 
-    def get_params(self, img, safebox, return_n=True, debug=False):
+    def get_params(self, img, safebox, pre_applied_rescale_factor=None, return_n=True, debug=True):
+        def dprint(*args, **kwargs):
+            if debug:
+                print(*args, **kwargs)
+
         width, height = TF.get_image_size(img)
-        area = height * width
+        # area = height * width
+        max_possible_edgesize = min(height, width)
+        area = max_possible_edgesize ** 2  # square crops --> don't try target edgesize bigger than shortest edge
 
         left_s, top_s, right_s, bottom_s = safebox
         protected_space_h = right_s - left_s
         protected_space_v = bottom_s - top_s
+
+        if pre_applied_rescale_factor is None:
+            pre_applied_rescale_factor = (1, 1)
+
+        pre_applied_rescale_factor = max(pre_applied_rescale_factor)
+
+        if pre_applied_rescale_factor <= 1:
+            pass
+            # dprint('on irrelevant branch\n')
+            # dprint(f"edgesize_ratio: 1")
+        else:
+            dprint('on relevant branch\n')
+            dprint(f"pre_applied_rescale_factor: {pre_applied_rescale_factor}\n")
+            dprint(f"before: {max(protected_space_h, protected_space_v)}")
+
+            # Res_Saved / Res_Orig = pre_applied_rescale_factor
+            # Res_Model = self.size
+            #
+            # criterion:
+            #               Res_Dynamic > Res_Model * (Res_Saved / Res_Orig)
+            res_model = self.size
+            if not isinstance(res_model, int):
+                res_model = res_model[0]
+            protected_edgesize_from_pre_applied_rescale = res_model * pre_applied_rescale_factor
+
+            # don't protect more than the image we have on hand
+            protected_edgesize_from_pre_applied_rescale = min(
+                protected_edgesize_from_pre_applied_rescale,
+                min(width, height)
+            )
+
+            edgesize_ratio = protected_edgesize_from_pre_applied_rescale / max(protected_space_h, protected_space_v)
+            dprint(f"protected_edgesize_from_pre_applied_rescale: {protected_edgesize_from_pre_applied_rescale}")
+            dprint(f"edgesize_ratio: {edgesize_ratio}")
+            protected_space_h = max(protected_space_h, protected_edgesize_from_pre_applied_rescale)
+            protected_space_v = max(protected_space_v, protected_edgesize_from_pre_applied_rescale)
+
+            dprint(f"after: {max(protected_space_h, protected_space_v)}")
 
         protected_edgesize = max(protected_space_h, protected_space_v)
         protected_area = (protected_edgesize) * (protected_edgesize)
@@ -34,16 +79,18 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
 
         target_edgesize = math.sqrt(target_area)
 
+        dprint(f'\tprotected_edgesize:\t{protected_edgesize:.1f}')
+        dprint(f'\ttarget_edgesize:\t{target_edgesize:.1f}')
+        dprint(f'\tmax_possible_edgesize:\t{max_possible_edgesize:.1f}')
+
         ok_h, ok_v = False, False
         n = 0
-        if target_edgesize <= protected_edgesize:
-            if debug:
-                print('nocrop path')
+        if (target_edgesize <= protected_edgesize) or (target_edgesize >= max_possible_edgesize) or (protected_edgesize >= max_possible_edgesize):
+            dprint('nocrop path')
             cropbox_left, cropbox_top, cropbox_right, cropbox_bottom = (0, 0, width, height)
             ok_h, ok_v = True, True
         else:
-            if debug:
-                print('crop path')
+            dprint('crop path')
         while not (ok_h and ok_v):
             if not ok_h:
                 doleft = random.random() < 0.5
@@ -75,23 +122,23 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
                 print(f"attempt: {(cropbox_left, cropbox_top, cropbox_right, cropbox_bottom)}")
                 print(f"target_edgesize: {target_edgesize}")
                 print(f"protected_edgesize: {protected_edgesize}")
+                print(f"max_possible_edgesize: {max_possible_edgesize}")
                 cropbox_left, cropbox_top, cropbox_right, cropbox_bottom = (0, 0, width, height)
                 break
 
-        if debug:
-            print(("target_area/min_area_allowed", target_area/(area*min_area)))
-            print(("target_area/area", target_area/area))
-            print(("target_edgesize", target_edgesize))
-            print(("safebox", safebox))
-            print(("cropbox", (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom)))
+        dprint(("target_area/min_area_allowed", target_area/(area*min_area)))
+        dprint(("target_area/area", target_area/area))
+        dprint(("target_edgesize", target_edgesize))
+        dprint(("safebox", safebox))
+        dprint(("cropbox", (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom)))
 
         if return_n:
             return (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom), n
 
         return (cropbox_left, cropbox_top, cropbox_right, cropbox_bottom)
 
-    def forward(self, img, safebox, debug=False):
-        cropbox = self.get_params(img, safebox, return_n=False, debug=debug)
+    def forward(self, img, safebox, pre_applied_rescale_factor=None):
+        cropbox = self.get_params(img, safebox, pre_applied_rescale_factor, return_n=False, debug=self.debug)
         i, j = cropbox[1], cropbox[0]
         h, w = cropbox[2] - j, cropbox[3] - i
         # display(img.crop(cropbox).resize((self.size, self.size)))

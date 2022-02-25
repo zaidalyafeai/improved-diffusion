@@ -91,7 +91,17 @@ def main():
         blur_sigma_max=args.blur_sigma_max,
         min_filesize=args.min_filesize,
         txt_pdrop=args.txt_pdrop,
+        crop_prob=args.crop_prob,
+        crop_min_scale=args.crop_min_scale,
+        crop_max_scale=args.crop_max_scale,
+        use_special_crop_for_empty_string=args.use_special_crop_for_empty_string,
+        crop_prob_es=args.crop_prob_es,
+        crop_min_scale_es=args.crop_min_scale_es,
+        crop_max_scale_es=args.crop_max_scale_es,
+        safebox_path=args.safebox_path,
+        use_random_safebox_for_empty_string=args.use_random_safebox_for_empty_string,
         flip_lr_prob_es=args.flip_lr_prob_es,
+        px_scales_path=args.px_scales_path
     )
 
     logger.log("training...")
@@ -167,7 +177,17 @@ def create_argparser():
         arithmetic_avg_from_step='-1',
         arithmetic_avg_extra_shift='0',
         gain_ff_setup_step=False,
+        crop_prob=0.,
+        crop_min_scale=0.75,
+        crop_max_scale=1.,
+        use_special_crop_for_empty_string=False,
+        crop_prob_es=0.,
+        crop_min_scale_es=0.25,
+        crop_max_scale_es=1.,
+        safebox_path="",
+        use_random_safebox_for_empty_string=False,
         flip_lr_prob_es=0.,
+        px_scales_path=""
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
