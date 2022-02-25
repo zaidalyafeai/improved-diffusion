@@ -159,11 +159,14 @@ class SamplingModel(nn.Module):
                 sample = ((sample + 1) * 127.5).clamp(0, 255).to(th.uint8)
                 sample = sample.permute(0, 2, 3, 1)
                 sample = sample.contiguous()
+            print(('sample.shape', sample.shape))
 
             gathered_samples = [
                 th.zeros_like(sample) for _ in range(dist.get_world_size())
             ]
+            print(('[x.shape for x in gathered_samples]', [x.shape for x in gathered_samples]))
             dist.all_gather(gathered_samples, sample)  # gather not supported with NCCL
+            print(('[x.shape for x in gathered_samples]', [x.shape for x in gathered_samples]))
             all_images.extend([sample.cpu().numpy() for sample in gathered_samples])
 
         all_images = np.concatenate(all_images, axis=0)
