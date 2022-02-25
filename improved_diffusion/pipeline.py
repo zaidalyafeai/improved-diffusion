@@ -188,8 +188,6 @@ class SamplingModel(nn.Module):
                 xstart_sequence = sample['xstart']
                 sample = sample_sequence[-1]
 
-            print(('sample.shape', sample.shape))
-
             if to_visible:
                 sample = _to_visible(sample)
                 if return_intermediates:
@@ -197,10 +195,7 @@ class SamplingModel(nn.Module):
                     sample_sequence = [_to_visible(x) for x in sample_sequence]
                     xstart_sequence = [_to_visible(x) for x in xstart_sequence]
 
-                print(('sample.shape', sample.shape))
-
             all_images.append(sample.cpu().numpy())
-            print(('[x.shape for x in all_images]', [x.shape for x in all_images]))
 
             if return_intermediates:
                 sample_sequence = th.stack(sample_sequence, dim=1)
