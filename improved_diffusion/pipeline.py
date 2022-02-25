@@ -199,14 +199,14 @@ class SamplingModel(nn.Module):
 
                 print(('sample.shape', sample.shape))
 
-            all_images.extend([x.cpu().numpy() for x in sample])
+            all_images.append(sample.cpu().numpy())
             print(('[x.shape for x in all_images]', [x.shape for x in all_images]))
 
             if return_intermediates:
                 sample_sequence = th.stack(sample_sequence, dim=1)
                 xstart_sequence = th.stack(xstart_sequence, dim=1)
-                all_sample_sequences.extend([x.cpu().numpy() for x in sample_sequence])
-                all_xstart_sequences.extend([x.cpu().numpy() for x in xstart_sequence])
+                all_sample_sequences.append(sample_sequence.cpu().numpy())
+                all_xstart_sequences.append(xstart_sequence.cpu().numpy())
 
         all_images = np.concatenate(all_images, axis=0)
 
