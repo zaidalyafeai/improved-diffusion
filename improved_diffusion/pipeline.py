@@ -106,7 +106,7 @@ class SamplingModel(nn.Module):
         if return_intermediates:
             def sample_fn_(*args, **kwargs):
                 sample_array, xstart_array = [], []
-                for out in self.diffusion.p_sample_loop_progressive:
+                for out in self.diffusion.p_sample_loop_progressive(*args, **kwargs):
                     sample_array.append(out['sample'])
                     xstart_array.append(out['pred_xstart'])
                 return {'sample': sample_array, 'xstart': xstart_array}
