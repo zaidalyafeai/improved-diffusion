@@ -80,14 +80,14 @@ class SamplingModel(nn.Module):
         clf_free_guidance=False,
         guidance_scale=0.,
         txt_drop_string='<mask><mask><mask><mask>',
-        return_intermedates=False
+        return_intermediates=False
     ):
         dist_util.setup_dist()
 
         if self.is_super_res and low_res is None:
             raise ValueError("must pass low_res for super res")
 
-        if return_intermedates and use_ddim:
+        if return_intermediates and use_ddim:
             raise ValueError('not supported')
 
         if isinstance(text, str):
@@ -103,7 +103,7 @@ class SamplingModel(nn.Module):
             print(f"setting seed to {seed}")
             th.manual_seed(seed)
 
-        if return_intermedates:
+        if return_intermediates:
             def sample_fn_(*args, **kwargs):
                 sample_array, xstart_array = [], []
                 for out in self.diffusion.p_sample_loop_progressive:
@@ -183,21 +183,21 @@ class SamplingModel(nn.Module):
                 model_kwargs=model_kwargs,
             )
 
-            if return_intermedates:
+            if return_intermediates:
                 sample_sequence = sample['sample']
                 xstart_sequence = sample['xstart']
                 sample = sample_sequence[-1]
 
             if to_visible:
                 sample = _to_visible(sample)
-                if return_intermedates:
+                if return_intermediates:
                     # todo: vectorize
                     sample_sequence = [_to_visible(x) for x in sample_sequence]
                     xstart_sequence = [_to_visible(x) for x in xstart_sequence]
 
             all_images.extend([x.cpu().numpy() for x in sample])
 
-            if return_intermedates:
+            if return_intermediates:
                 sample_sequence = th.stack(sample_sequence, dim=1)
                 xstart_sequence = th.stack(xstart_sequence, dim=1)
                 all_sample_sequences.extend(all_images.extend([x.cpu().numpy() for x in sample_sequence]))
@@ -205,7 +205,7 @@ class SamplingModel(nn.Module):
 
         all_images = np.concatenate(all_images, axis=0)
 
-        if return_intermedates:
+        if return_intermediates:
             all_sample_sequences = np.concatenate(all_sample_sequences, axis=0)
             all_xstart_sequences = np.concatenate(all_xstart_sequences, axis=0)
 
