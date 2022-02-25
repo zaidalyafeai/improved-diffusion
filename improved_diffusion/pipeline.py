@@ -183,21 +183,21 @@ class SamplingModel(nn.Module):
                 model_kwargs=model_kwargs,
             )
 
-            if return_sequences:
+            if return_intermedates:
                 sample_sequence = sample['sample']
                 xstart_sequence = sample['xstart']
                 sample = sample_sequence[-1]
 
             if to_visible:
                 sample = _to_visible(sample)
-                if return_sequences:
+                if return_intermedates:
                     # todo: vectorize
                     sample_sequence = [_to_visible(x) for x in sample_sequence]
                     xstart_sequence = [_to_visible(x) for x in xstart_sequence]
 
             all_images.extend([x.cpu().numpy() for x in sample])
 
-            if return_sequences:
+            if return_intermedates:
                 sample_sequence = th.stack(sample_sequence, dim=1)
                 xstart_sequence = th.stack(xstart_sequence, dim=1)
                 all_sample_sequences.extend(all_images.extend([x.cpu().numpy() for x in sample_sequence]))
@@ -205,7 +205,7 @@ class SamplingModel(nn.Module):
 
         all_images = np.concatenate(all_images, axis=0)
 
-        if return_sequences:
+        if return_intermedates:
             all_sample_sequences = np.concatenate(all_sample_sequences, axis=0)
             all_xstart_sequences = np.concatenate(all_xstart_sequences, axis=0)
 
