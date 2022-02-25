@@ -428,13 +428,14 @@ def to_visible(img):
 def save_first_batch(dataloader, path):
     os.makedirs(path, exist_ok=True)
     batch, cond = next(dataloader)
+    batch = to_visible(batch)
     txts = cond['txt']
 
     for i in trange(len(batch)):
         img = batch[i]
         txt = txts[i]
 
-        a = to_visible(img).cpu().numpy()
+        a = img.cpu().numpy()
         im = Image.from_array(a)
         im.save(os.path.join(path, f'{i:04d}.jpg'))
 
