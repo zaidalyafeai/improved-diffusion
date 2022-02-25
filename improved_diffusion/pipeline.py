@@ -182,11 +182,14 @@ class SamplingModel(nn.Module):
                 clip_denoised=clip_denoised,
                 model_kwargs=model_kwargs,
             )
+            if not isinstance(sample, dict):
 
             if return_intermediates:
                 sample_sequence = sample['sample']
                 xstart_sequence = sample['xstart']
                 sample = sample_sequence[-1]
+
+            print(('sample.shape', sample.shape))
 
             if to_visible:
                 sample = _to_visible(sample)
@@ -195,7 +198,10 @@ class SamplingModel(nn.Module):
                     sample_sequence = [_to_visible(x) for x in sample_sequence]
                     xstart_sequence = [_to_visible(x) for x in xstart_sequence]
 
+                print(('sample.shape', sample.shape))
+
             all_images.extend([x.cpu().numpy() for x in sample])
+            print(('[x.shape for x in all_images]', [x.shape for x in all_images]))
 
             if return_intermediates:
                 sample_sequence = th.stack(sample_sequence, dim=1)
