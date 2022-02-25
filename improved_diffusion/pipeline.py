@@ -160,7 +160,7 @@ class SamplingModel(nn.Module):
         def _to_visible(img):
             print('_to_visible called')
             img = ((img + 1) * 127.5).clamp(0, 255).to(th.uint8)
-            img = sample.permute(0, 2, 3, 1)
+            img = img.permute(0, 2, 3, 1)
             img = img.contiguous()
             print('_to_visible returning')
             print(img)
