@@ -158,9 +158,12 @@ class SamplingModel(nn.Module):
         all_xstart_sequences = []
 
         def _to_visible(img):
+            print('_to_visible called')
             img = ((img + 1) * 127.5).clamp(0, 255).to(th.uint8)
             img = sample.permute(0, 2, 3, 1)
             img = img.contiguous()
+            print('_to_visible returning')
+            print(img)
             return img
 
         while len(all_images) * batch_size < n_samples:
@@ -188,8 +191,12 @@ class SamplingModel(nn.Module):
                 xstart_sequence = sample['xstart']
                 sample = sample_sequence[-1]
 
+            print('branch reached')
             if to_visible:
+                print('branch entered')
+                print(sample)
                 sample = _to_visible(sample)
+                print(sample)
                 if return_intermediates:
                     # todo: vectorize
                     sample_sequence = [_to_visible(x) for x in sample_sequence]
