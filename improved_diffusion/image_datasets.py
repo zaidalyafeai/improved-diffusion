@@ -427,7 +427,6 @@ def to_visible(img):
 def save_first_batch(dataloader, path):
     os.makedirs(path, exist_ok=True)
     batch, cond = next(dataloader)
-    batch = batch.cpu().numpy()
     txts = cond['txt']
 
     for i in trange(len(batch)):
