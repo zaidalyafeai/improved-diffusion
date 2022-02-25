@@ -182,7 +182,6 @@ class SamplingModel(nn.Module):
                 clip_denoised=clip_denoised,
                 model_kwargs=model_kwargs,
             )
-            if not isinstance(sample, dict):
 
             if return_intermediates:
                 sample_sequence = sample['sample']
