@@ -200,8 +200,8 @@ class SamplingModel(nn.Module):
             if return_intermediates:
                 sample_sequence = th.stack(sample_sequence, dim=1)
                 xstart_sequence = th.stack(xstart_sequence, dim=1)
-                all_sample_sequences.extend(all_images.extend([x.cpu().numpy() for x in sample_sequence]))
-                all_xstart_sequences.extend(all_images.extend([x.cpu().numpy() for x in xstart_sequence]))
+                all_sample_sequences.extend([x.cpu().numpy() for x in sample_sequence])
+                all_xstart_sequences.extend([x.cpu().numpy() for x in xstart_sequence])
 
         all_images = np.concatenate(all_images, axis=0)
 
