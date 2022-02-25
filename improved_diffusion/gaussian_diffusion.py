@@ -272,6 +272,7 @@ class GaussianDiffusion:
         unconditional_model_output = None
         if is_guided:
             unconditional_model_output = model(x, self._scale_timesteps(t), **unconditional_model_kwargs)
+            model_output = (1 + guidance_scale) * model_output - guidance_scale * unconditional_model_output
 
         if self.model_var_type in [ModelVarType.LEARNED, ModelVarType.LEARNED_RANGE]:
             assert model_output.shape == (B, C * 2, *x.shape[2:])
@@ -325,19 +326,19 @@ class GaussianDiffusion:
                 pred_xstart = process_xstart(
                     self._predict_xstart_from_eps(x_t=x, t=t, eps=model_output)
                 )
-                if is_guided:
-                    unconditional_pred_xstart = process_xstart(
-                        self._predict_xstart_from_eps(x_t=x, t=t, eps=unconditional_model_output)
-                    )
+                # if is_guided:
+                #     unconditional_pred_xstart = process_xstart(
+                #         self._predict_xstart_from_eps(x_t=x, t=t, eps=unconditional_model_output)
+                #     )
             model_mean, _, _ = self.q_posterior_mean_variance(
                 x_start=pred_xstart, x_t=x, t=t
             )
-            if is_guided:
-                # print(f'using guidance scale {guidance_scale}')
-                unconditional_model_mean, _, _ = self.q_posterior_mean_variance(
-                    x_start=unconditional_pred_xstart, x_t=x, t=t
-                )
-                model_mean = (1 + guidance_scale) * model_mean - guidance_scale * unconditional_model_mean
+            # if is_guided:
+            #     # print(f'using guidance scale {guidance_scale}')
+            #     unconditional_model_mean, _, _ = self.q_posterior_mean_variance(
+            #         x_start=unconditional_pred_xstart, x_t=x, t=t
+            #     )
+            #     model_mean = (1 + guidance_scale) * model_mean - guidance_scale * unconditional_model_mean
         else:
             raise NotImplementedError(self.model_mean_type)
 
