@@ -436,7 +436,7 @@ def save_first_batch(dataloader, path):
         txt = txts[i]
 
         a = img.cpu().numpy()
-        im = Image.from_array(a)
+        im = Image.fromarray(a)
         im.save(os.path.join(path, f'{i:04d}.jpg'))
 
         with open(os.path.join(path, f'{i:04d}.txt'), 'w') as f:
