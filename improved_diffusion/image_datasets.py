@@ -9,6 +9,7 @@ import torchvision.transforms as T
 from .crop import RandomResizedProtectedCropLazy
 
 import tokenizers
+from tqdm.auto import trange
 
 
 def make_char_level_tokenizer():
@@ -414,3 +415,28 @@ class ImageDataset(Dataset):
                 text = self.txt_drop_string
             out_dict['txt'] = text
         return np.transpose(arr, [2, 0, 1]), out_dict
+
+
+def to_visible(img):
+    img = ((img + 1) * 127.5).clamp(0, 255).to(th.uint8)
+    img = img.permute(0, 2, 3, 1)
+    img = img.contiguous()
+    return img
+
+
+def save_first_batch(dataloader, path):
+    os.makedirs(path, exist_ok=True)
+    batch, cond = next(dataloader)
+    batch = batch.cpu().numpy()
+    txts = cond['txt']
+
+    for i in trange(len(batch)):
+        img = batch[i]
+        txt = txts[i]
+
+        a = to_visible(img).cpu().numpy()
+        im = Image.from_array(a)
+        im.save(os.path.join(path, f'{i:04d}.jpg'))
+
+        with open(os.path.join(path, f'{i:04d}.txt'), 'w') as f:
+            f.write(txt)

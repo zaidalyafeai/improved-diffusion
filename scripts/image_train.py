@@ -6,7 +6,7 @@ import argparse, os, json
 import torch as th
 
 from improved_diffusion import dist_util, logger
-from improved_diffusion.image_datasets import load_data, load_tokenizer
+from improved_diffusion.image_datasets import load_data, load_tokenizer, save_first_batch
 from improved_diffusion.resample import create_named_schedule_sampler
 from improved_diffusion.script_util import (
     model_and_diffusion_defaults,
@@ -110,6 +110,9 @@ def main():
         px_scales_path=args.px_scales_path
     )
 
+    if args.save_first_batch:
+        save_first_batch(data, 'first_batch/')
+
     logger.log("training...")
     TrainLoop(
         model=model,
@@ -142,7 +145,7 @@ def main():
         autosave=args.autosave,
         arithmetic_avg_from_step=args.arithmetic_avg_from_step,
         arithmetic_avg_extra_shift=args.arithmetic_avg_extra_shift,
-        gain_ff_setup_step=args.gain_ff_setup_step
+        gain_ff_setup_step=args.gain_ff_setup_step,
     ).run_loop()
 
 
@@ -198,7 +201,8 @@ def create_argparser():
         safebox_path="",
         use_random_safebox_for_empty_string=False,
         flip_lr_prob_es=0.,
-        px_scales_path=""
+        px_scales_path="",
+        save_first_batch=False
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
