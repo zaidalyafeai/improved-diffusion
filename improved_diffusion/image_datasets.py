@@ -4,6 +4,7 @@ import blobfile as bf
 from mpi4py import MPI
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
+import torch as th
 import torch.nn.functional as F
 import torchvision.transforms as T
 from .crop import RandomResizedProtectedCropLazy
@@ -427,15 +428,15 @@ def to_visible(img):
 def save_first_batch(dataloader, path):
     os.makedirs(path, exist_ok=True)
     batch, cond = next(dataloader)
-    batch = batch.cpu().numpy()
+    batch = to_visible(batch)
     txts = cond['txt']
 
     for i in trange(len(batch)):
         img = batch[i]
         txt = txts[i]
 
-        a = to_visible(img).cpu().numpy()
-        im = Image.from_array(a)
+        a = img.cpu().numpy()
+        im = Image.fromarray(a)
         im.save(os.path.join(path, f'{i:04d}.jpg'))
 
         with open(os.path.join(path, f'{i:04d}.txt'), 'w') as f:
