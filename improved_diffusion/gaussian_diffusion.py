@@ -791,7 +791,8 @@ class GaussianDiffusion:
                 target = noise
                 mse_base = (target - model_output) ** 2
                 ratio = ((snr + 1.) / snr)
-                ratio_weights = ratio / ratio.mean()
+                # ratio_weights = ratio / ratio.mean()
+                ratio_weights = ratio
                 terms["mse"] = mean_flat(ratio_weights * mse_base)
             elif self.loss_type == LossType.RESCALED_MSE_V:
                 # don't this this is correct...
