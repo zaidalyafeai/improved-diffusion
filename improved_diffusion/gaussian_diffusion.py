@@ -789,7 +789,7 @@ class GaussianDiffusion:
             if self.loss_type == LossType.RESCALED_MSE_SNR_PLUS_ONE:
                 snr = _extract_into_tensor(self.alphas_cumprod, t, model_output.shape) / _extract_into_tensor(self.one_minus_alphas_cumprod, t, model_output.shape)
                 target = noise
-                mse_base = (target - model_output) ** 2)
+                mse_base = (target - model_output) ** 2
                 ratio = ((snr + 1.) / snr)
                 ratio_weights = ratio / ratio.mean()
                 terms["mse"] = mean_flat(ratio_weights * mse_base)
