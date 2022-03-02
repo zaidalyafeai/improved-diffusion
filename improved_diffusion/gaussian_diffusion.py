@@ -54,7 +54,8 @@ def get_schedule_fn(schedule_name, num_diffusion_timesteps):
             return beta_start + ratio * (beta_end - beta_start)
         return schedule_fn
     else:
-        raise NotImplementedError(f"get_schedule_fn: {schedule_name}")
+        return None
+        # raise NotImplementedError(f"get_schedule_fn: {schedule_name}")
 
 
 def betas_for_alpha_bar(num_diffusion_timesteps, alpha_bar, max_beta=0.999):
@@ -110,12 +111,13 @@ class LossType(enum.Enum):
     RESCALED_KL = enum.auto()  # like KL, but rescale to estimate the full VLB
     RESCALED_MSE_BALANCED = enum.auto()
     RESCALED_MSE_V = enum.auto()
+    RESCALED_MSE_SNR_PLUS_ONE = enum.auto()
 
     def is_vb(self):
         return self == LossType.KL or self == LossType.RESCALED_KL
 
     def is_mse(self):
-        return self == LossType.MSE or self == LossType.RESCALED_MSE or self == LossType.RESCALED_MSE_BALANCED or LossType.RESCALED_MSE_V
+        return self == LossType.MSE or self == LossType.RESCALED_MSE or self == LossType.RESCALED_MSE_BALANCED or LossType.RESCALED_MSE_V or self == LossType.RESCALED_MSE_SNR_PLUS_ONE
 
 
 class GaussianDiffusion:
@@ -143,6 +145,7 @@ class GaussianDiffusion:
         model_var_type,
         loss_type,
         rescale_timesteps=False,
+        schedule_fn=None,
     ):
         self.model_mean_type = model_mean_type
         self.model_var_type = model_var_type
@@ -170,6 +173,8 @@ class GaussianDiffusion:
         self.sqrt_recip_alphas_cumprod = np.sqrt(1.0 / self.alphas_cumprod)
         self.sqrt_recipm1_alphas_cumprod = np.sqrt(1.0 / self.alphas_cumprod - 1)
 
+        self.one_minus_alphas_cumprod = 1.0 - self.alphas_cumprod
+
         # calculations for posterior q(x_{t-1} | x_t, x_0)
         self.posterior_variance = (
             betas * (1.0 - self.alphas_cumprod_prev) / (1.0 - self.alphas_cumprod)
@@ -187,6 +192,8 @@ class GaussianDiffusion:
             * np.sqrt(alphas)
             / (1.0 - self.alphas_cumprod)
         )
+
+        self.schedule_fn = schedule_fn
 
     def q_mean_variance(self, x_start, t):
         """
@@ -779,7 +786,13 @@ class GaussianDiffusion:
                     # Without a factor of 1/1000, the VB term hurts the MSE term.
                     terms["vb"] *= self.num_timesteps / 1000.0
 
-            if self.loss_type == LossType.RESCALED_MSE_V:
+            if self.loss_type == LossType.RESCALED_MSE_SNR_PLUS_ONE:
+                snr = _extract_into_tensor(self.alphas_cumprod, t, pred_xstart.shape) / _extract_into_tensor(self.one_minus_alphas_cumprod, t, pred_xstart.shape)
+                target = noise
+                mse_base = mean_flat((target - model_output) ** 2)
+                terms["mse"] = ((snr + 1.) / snr) * mse_base
+            elif self.loss_type == LossType.RESCALED_MSE_V:
+                # don't this this is correct...
                 pred_xstart = self._predict_xstart_from_eps(x_t=x_t, t=t, eps=model_output)
                 v_alpha = _extract_into_tensor(self.sqrt_alphas_cumprod, t, pred_xstart.shape)
                 v_sigma = _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, pred_xstart.shape)

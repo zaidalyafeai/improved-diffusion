@@ -85,6 +85,7 @@ def model_and_diffusion_defaults():
         return_diffusion_factory=False,
         use_balanced_loss=False,
         use_v_loss=False,
+        use_snr_plus_one_loss=False,
     )
 
 
@@ -156,6 +157,7 @@ def create_model_and_diffusion(
     return_diffusion_factory=False,
     use_balanced_loss=False,
     use_v_loss=False,
+    use_snr_plus_one_loss=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     print(f"create_model_and_diffusion: use_checkpoint={use_checkpoint}")
@@ -229,6 +231,7 @@ def create_model_and_diffusion(
         return_diffusion_factory=return_diffusion_factory,
         use_balanced_loss=use_balanced_loss,
         use_v_loss=use_v_loss,
+        use_snr_plus_one_loss=use_snr_plus_one_loss,
     )
     if verbose:
         print(model)
@@ -481,6 +484,7 @@ def sr_create_model_and_diffusion(
     return_diffusion_factory=False,
     use_balanced_loss=False,
     use_v_loss=False,
+    use_snr_plus_one_loss=False,
 ):
     model = sr_create_model(
         large_size,
@@ -551,6 +555,7 @@ def sr_create_model_and_diffusion(
         return_diffusion_factory=return_diffusion_factory,
         use_balanced_loss=use_balanced_loss,
         use_v_loss=use_v_loss,
+        use_snr_plus_one_loss=use_snr_plus_one_loss,
     )
     if verbose:
         print(model)
@@ -620,9 +625,12 @@ def create_gaussian_diffusion(
     return_diffusion_factory=False,
     use_balanced_loss=False,
     use_v_loss=False,
+    use_snr_plus_one_loss=False
 ):
     betas = gd.get_named_beta_schedule(noise_schedule, steps)
-    if use_v_loss:
+    if use_snr_plus_one_loss:
+        loss_type = gd.LossType.RESCALED_MSE_SNR_PLUS_ONE
+    elif use_v_loss:
         loss_type = gd.LossType.RESCALED_MSE_V
     elif use_balanced_loss:
         loss_type = gd.LossType.RESCALED_MSE_BALANCED
