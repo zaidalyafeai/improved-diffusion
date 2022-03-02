@@ -42,6 +42,21 @@ def get_named_beta_schedule(schedule_name, num_diffusion_timesteps):
         raise NotImplementedError(f"unknown beta schedule: {schedule_name}")
 
 
+def get_schedule_fn(schedule_name, num_diffusion_timesteps):
+    if schedule_name == "linear":
+        # Linear schedule from Ho et al, extended to work for any number of
+        # diffusion steps.
+        scale = 1000 / num_diffusion_timesteps
+        beta_start = scale * 0.0001
+        beta_end = scale * 0.02
+        def schedule_fn(t):
+            ratio = t / (num_diffusion_timesteps - 1)
+            return beta_start + ratio * (beta_end - beta_start)
+        return schedule_fn
+    else:
+        raise NotImplementedError(f"get_schedule_fn: {schedule_name}")
+
+
 def betas_for_alpha_bar(num_diffusion_timesteps, alpha_bar, max_beta=0.999):
     """
     Create a beta schedule that discretizes the given alpha_t_bar function,
@@ -100,7 +115,7 @@ class LossType(enum.Enum):
         return self == LossType.KL or self == LossType.RESCALED_KL
 
     def is_mse(self):
-        return self.loss_type == LossType.MSE or self.loss_type == LossType.RESCALED_MSE or self.loss_type == LossType.RESCALED_MSE_BALANCED or LossType.RESCALED_MSE_V
+        return self == LossType.MSE or self == LossType.RESCALED_MSE or self == LossType.RESCALED_MSE_BALANCED or LossType.RESCALED_MSE_V
 
 
 class GaussianDiffusion:
