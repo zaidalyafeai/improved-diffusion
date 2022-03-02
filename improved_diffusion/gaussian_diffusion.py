@@ -94,9 +94,13 @@ class LossType(enum.Enum):
     KL = enum.auto()  # use the variational lower-bound
     RESCALED_KL = enum.auto()  # like KL, but rescale to estimate the full VLB
     RESCALED_MSE_BALANCED = enum.auto()
+    RESCALED_MSE_V = enum.auto()
 
     def is_vb(self):
         return self == LossType.KL or self == LossType.RESCALED_KL
+
+    def is_mse(self):
+        return self.loss_type == LossType.MSE or self.loss_type == LossType.RESCALED_MSE or self.loss_type == LossType.RESCALED_MSE_BALANCED or LossType.RESCALED_MSE_V
 
 
 class GaussianDiffusion:
@@ -734,7 +738,7 @@ class GaussianDiffusion:
             )["output"]
             if self.loss_type == LossType.RESCALED_KL:
                 terms["loss"] *= self.num_timesteps
-        elif self.loss_type == LossType.MSE or self.loss_type == LossType.RESCALED_MSE or self.loss_type == LossType.RESCALED_MSE_BALANCED:
+        elif self.loss_type.is_mse():
             model_output = model(x_t, self._scale_timesteps(t), **model_kwargs)
 
             if self.model_var_type in [
@@ -759,12 +763,16 @@ class GaussianDiffusion:
                     # Divide by 1000 for equivalence with initial implementation.
                     # Without a factor of 1/1000, the VB term hurts the MSE term.
                     terms["vb"] *= self.num_timesteps / 1000.0
-            elif self.loss_type == LossType.RESCALED_MSE_BALANCED:
-                raise ValueError(f'not implemented: {self.loss_type} with {self.model_var_type}')
 
-            if self.loss_type == LossType.RESCALED_MSE_BALANCED:
+            if self.loss_type == LossType.RESCALED_MSE_V:
+                pred_xstart = self._predict_xstart_from_eps(x_t=x_t, t=t, eps=model_output)
+                v = self.sqrt_alphas_cumprod * model_output - self.sqrt_one_minus_alphas_cumprod * pred_xstart
+                target = self.sqrt_alphas_cumprod * noise - self.sqrt_one_minus_alphas_cumprod * x_start
+                terms["mse"] = mean_flat((target - v) ** 2)
+            elif self.loss_type == LossType.RESCALED_MSE_BALANCED:
+                pred_xstart = self._predict_xstart_from_eps(x_t=x_t, t=t, eps=model_output)
                 mse_eps = mean_flat((noise - model_output) ** 2)
-                mse_xstart = mean_flat((x_start - vb_out["pred_xstart"]) ** 2)
+                mse_xstart = mean_flat((x_start - pred_xstart) ** 2)
                 terms['mse'] = (mse_eps + mse_xstart) / 2.
             else:
                 target = {
