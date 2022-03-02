@@ -781,8 +781,10 @@ class GaussianDiffusion:
 
             if self.loss_type == LossType.RESCALED_MSE_V:
                 pred_xstart = self._predict_xstart_from_eps(x_t=x_t, t=t, eps=model_output)
-                v = self.sqrt_alphas_cumprod * model_output - self.sqrt_one_minus_alphas_cumprod * pred_xstart
-                target = self.sqrt_alphas_cumprod * noise - self.sqrt_one_minus_alphas_cumprod * x_start
+                v_alpha = _extract_into_tensor(self.sqrt_alphas_cumprod, t, pred_xstart.shape)
+                v_sigma = _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, pred_xstart.shape)
+                v = v_alpha * model_output - v_sigma * pred_xstart
+                target = v_alpha * noise - v_sigma * x_start
                 terms["mse"] = mean_flat((target - v) ** 2)
             elif self.loss_type == LossType.RESCALED_MSE_BALANCED:
                 pred_xstart = self._predict_xstart_from_eps(x_t=x_t, t=t, eps=model_output)
