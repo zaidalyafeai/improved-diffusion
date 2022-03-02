@@ -787,7 +787,7 @@ class GaussianDiffusion:
                     terms["vb"] *= self.num_timesteps / 1000.0
 
             if self.loss_type == LossType.RESCALED_MSE_SNR_PLUS_ONE:
-                snr = _extract_into_tensor(self.alphas_cumprod, t, pred_xstart.shape) / _extract_into_tensor(self.one_minus_alphas_cumprod, t, pred_xstart.shape)
+                snr = _extract_into_tensor(self.alphas_cumprod, t, model_output.shape) / _extract_into_tensor(self.one_minus_alphas_cumprod, t, model_output.shape)
                 target = noise
                 mse_base = mean_flat((target - model_output) ** 2)
                 ratio = ((snr + 1.) / snr)
