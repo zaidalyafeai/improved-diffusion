@@ -789,10 +789,10 @@ class GaussianDiffusion:
             if self.loss_type == LossType.RESCALED_MSE_SNR_PLUS_ONE:
                 snr = _extract_into_tensor(self.alphas_cumprod, t, model_output.shape) / _extract_into_tensor(self.one_minus_alphas_cumprod, t, model_output.shape)
                 target = noise
-                mse_base = mean_flat((target - model_output) ** 2)
+                mse_base = (target - model_output) ** 2)
                 ratio = ((snr + 1.) / snr)
                 ratio_weights = ratio / ratio.mean()
-                terms["mse"] = ratio_weights * mse_base
+                terms["mse"] = mean_flat(ratio_weights * mse_base)
             elif self.loss_type == LossType.RESCALED_MSE_V:
                 # don't this this is correct...
                 pred_xstart = self._predict_xstart_from_eps(x_t=x_t, t=t, eps=model_output)
