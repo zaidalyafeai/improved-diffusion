@@ -654,7 +654,7 @@ class GaussianDiffusion:
             eps = self._predict_eps_from_xstart(x_, t_, out["pred_xstart"])
             return eps
 
-        def transfer(x_, eps, t1_, t2_):
+        def transfer(x_, eps, t1_, t2_, eta_=0.0):
             xstart = self._predict_xstart_from_eps(x_, t1_, eps)
             if clip_denoised:
                 xstart = xstart.clamp(-1, 1)
@@ -663,7 +663,7 @@ class GaussianDiffusion:
             alpha_bar_t2 = _extract_into_tensor(self.alphas_cumprod, t2_, x.shape)
 
             sigma = (
-                eta
+                eta_
                 * th.sqrt((1 - alpha_bar_t2) / (1 - alpha_bar_t1))
                 * th.sqrt(1 - alpha_bar_t1 / alpha_bar_t2)
             )
@@ -697,7 +697,7 @@ class GaussianDiffusion:
 
         eps_prime = (eps1 + 2 * eps2 + 2 * eps3 + eps4) / 6
         # eps_prime = eps1
-        x_new, pred = transfer(x, eps_prime, t1, t2)
+        x_new, pred = transfer(x, eps_prime, t1, t2, eta_=eta)
         # eps_prime = eps1  # debug
         # x_new, pred = transfer(x, eps_prime, t1, t_mid)  # debug
 
