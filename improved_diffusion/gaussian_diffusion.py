@@ -634,7 +634,7 @@ class GaussianDiffusion:
             coef_xstart = th.sqrt(alpha_bar_t2)
             coef_eps = th.sqrt(1 - alpha_bar_t2 - sigma ** 2)
 
-            print(("min", th.exp(min_log)[0,0,0,0]))
+            print(("max", th.exp(max_log)[0,0,0,0]))
             print(("vs", (1 - alpha_bar_t2)[0,0,0,0]))
             print(('minsqrt', (1 - alpha_bar_t2 - sigma ** 2).min()))
 
