@@ -613,6 +613,7 @@ class GaussianDiffusion:
 
             frac = (model_var_values + 1) / 2
             print(("frac", frac.mean(), frac.max()))
+            print(("eps", eps[0,0,0,0]))
             if use_model_var:
                 min_log = th.log(((1 - alpha_bar_t2) / (1 - alpha_bar_t1)) * (1 - alpha_bar_t1 / alpha_bar_t2))
                 max_log = th.log((1 - alpha_bar_t1 / alpha_bar_t2))
