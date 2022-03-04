@@ -612,12 +612,6 @@ class GaussianDiffusion:
                 * th.sqrt((1 - alpha_bar_t2) / (1 - alpha_bar_t1))
                 * th.sqrt(1 - alpha_bar_t1 / alpha_bar_t2)
             )
-            print(alpha_bar_t1[0, 0, 0, 0])
-            print(alpha_bar_t2[0, 0, 0, 0])
-            print(((1 - alpha_bar_t1) / (1 - alpha_bar_t2))[0, 0, 0, 0])
-            print((1 - alpha_bar_t2 / alpha_bar_t1)[0, 0, 0, 0])
-            print(sigma)
-            print()
 
             coef_xstart = th.sqrt(alpha_bar_t2)
             coef_eps = th.sqrt(1 - alpha_bar_t2 - sigma ** 2)
@@ -627,12 +621,7 @@ class GaussianDiffusion:
             nonzero_mask = (
                 (t1_ != 0).float().view(-1, *([1] * (len(x_.shape) - 1)))
             )  # no noise when t == 0
-            print(mean_pred[0, 0, 0, 0])
-            print(noise[0, 0, 0, 0])
-            print(nonzero_mask[0, 0, 0, 0])
             sample = mean_pred + nonzero_mask * sigma * noise
-            print(sample[0, 0, 0, 0])
-            print('---')
 
             return sample, xstart
 
