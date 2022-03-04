@@ -590,8 +590,6 @@ class GaussianDiffusion:
         ddim_fallback=False,
         use_model_var=True,
     ):
-        if th.isnan(x).any():
-            print('isnan x')
         def model_step(x_, t_):
             out = self.p_mean_variance(
                 model,
@@ -614,7 +612,6 @@ class GaussianDiffusion:
             alpha_bar_t2 = _extract_into_tensor(self.alphas_cumprod, t2_, x.shape)
 
             frac = (model_var_values + 1) / 2
-            print(("frac", frac.mean()))
             if use_model_var:
                 min_log = th.log(((1 - alpha_bar_t2) / (1 - alpha_bar_t1)) * (1 - alpha_bar_t1 / alpha_bar_t2))
                 max_log = th.log((1 - alpha_bar_t1 / alpha_bar_t2))
@@ -624,7 +621,6 @@ class GaussianDiffusion:
 
                 model_log_variance = frac * max_log + (1 - frac) * min_log
                 sigma = th.sqrt(th.exp(model_log_variance))
-                print(("sigma", sigma.mean()))
             else:
                 sigma = (
                     eta
@@ -634,10 +630,6 @@ class GaussianDiffusion:
 
             coef_xstart = th.sqrt(alpha_bar_t2)
             coef_eps = th.sqrt(1 - alpha_bar_t2 - sigma ** 2)
-
-            print(("max", th.exp(max_log)[0,0,0,0]))
-            print(("vs", (1 - alpha_bar_t2)[0,0,0,0]))
-            print(('minsqrt', (1 - alpha_bar_t2 - sigma ** 2).min()))
 
             mean_pred = xstart * coef_xstart + coef_eps * eps
             noise = th.randn_like(x_)
@@ -656,10 +648,6 @@ class GaussianDiffusion:
             eps_prime = (55 * eps - 59 * old_eps[-1] + 37 * old_eps[-2] - 9 * old_eps[-3]) / 24
         # eps_prime = eps  # debug
         x_new, pred = transfer(x, eps_prime, t, t2, model_var_values)
-        if th.isnan(x_new).any():
-            print('isnan x_new')
-            # x_new = x
-        print()
         return {"sample": x_new, "pred_xstart": pred, 'eps': eps}
 
     def prk_double_step(
