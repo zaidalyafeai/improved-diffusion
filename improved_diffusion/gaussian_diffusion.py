@@ -612,8 +612,7 @@ class GaussianDiffusion:
             alpha_bar_t2 = _extract_into_tensor(self.alphas_cumprod, t2_, x.shape)
 
             frac = (model_var_values + 1) / 2
-            print(("frac", frac.mean(), frac.max()))
-            print(("eps", eps[0,0,0,0]))
+            print(("frac", frac.mean()))
             if use_model_var:
                 min_log = th.log(((1 - alpha_bar_t2) / (1 - alpha_bar_t1)) * (1 - alpha_bar_t1 / alpha_bar_t2))
                 max_log = th.log((1 - alpha_bar_t1 / alpha_bar_t2))
@@ -624,8 +623,7 @@ class GaussianDiffusion:
                 sigma = th.where(th.isnan(model_log_variance),
                                  th.sqrt(th.exp(min_log)),
                                  th.sqrt(th.exp(model_log_variance)))
-                print(("t1_", t1_))
-                print(("sigma", sigma[0,0,0,0]))
+                print(("sigma", sigma.mean()))
             else:
                 sigma = (
                     eta
@@ -654,7 +652,8 @@ class GaussianDiffusion:
         # eps_prime = eps  # debug
         x_new, pred = transfer(x, eps_prime, t, t2, model_var_values)
         if th.isnan(x_new).any():
-            x_new = x
+            print('isnan')
+            # x_new = x
         return {"sample": x_new, "pred_xstart": pred, 'eps': eps}
 
     def prk_double_step(
