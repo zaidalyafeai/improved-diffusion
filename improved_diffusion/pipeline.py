@@ -89,9 +89,6 @@ class SamplingModel(nn.Module):
         if self.is_super_res and low_res is None:
             raise ValueError("must pass low_res for super res")
 
-        if return_intermediates and use_ddim:
-            raise ValueError('not supported')
-
         if isinstance(text, str):
             batch_text = batch_size * [text]
         else:
