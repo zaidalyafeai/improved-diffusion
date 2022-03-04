@@ -693,7 +693,7 @@ class GaussianDiffusion:
                 yield out
                 img = out["sample"]
 
-    def plms_step(
+    def plms_double_step(
         self,
         model,
         x,
@@ -943,7 +943,7 @@ class GaussianDiffusion:
         for i in indices:
             t = th.tensor([i] * shape[0], device=device)
             with th.no_grad():
-                out = self.plms_step(
+                out = self.plms_double_step(
                     model,
                     img,
                     t,
