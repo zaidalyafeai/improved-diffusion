@@ -827,6 +827,7 @@ class GaussianDiffusion:
             t = th.tensor([i] * shape[0], device=device)
             with th.no_grad():
                 ddim_fallback = step_counter < ddim_first_n
+                print((step_counter, 'using ddim' if ddim_fallback else 'using prk'))
                 out = self.prk_double_step(
                     model,
                     img,
@@ -847,6 +848,7 @@ class GaussianDiffusion:
             t = th.tensor([i] * shape[0], device=device)
             with th.no_grad():
                 ddim_fallback = step_counter < ddim_first_n
+                print((step_counter, 'using ddim' if ddim_fallback else 'using prk'))
                 out = self.plms_steps(
                     model,
                     img,
