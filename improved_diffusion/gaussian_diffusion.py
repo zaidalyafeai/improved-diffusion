@@ -621,7 +621,8 @@ class GaussianDiffusion:
 
                 model_log_variance = frac * max_log + (1 - frac) * min_log
                 sigma = th.where(t1_ != 0, th.sqrt(th.exp(model_log_variance)), th.zeros_like(model_log_variance))
-                print(("sigma", sigma))
+                print(("t1_", t1_))
+                print(("sigma", sigma[0,0,0,0]))
             else:
                 sigma = (
                     eta
