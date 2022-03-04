@@ -634,8 +634,8 @@ class GaussianDiffusion:
             coef_xstart = th.sqrt(alpha_bar_t2)
             coef_eps = th.sqrt(1 - alpha_bar_t2 - sigma ** 2)
 
-            print(("min_log", min_log))
-            print(("vs", 1 - alpha_bar_t2))
+            print(("min", th.exp(min_log)[0,0,0,0]))
+            print(("vs", (1 - alpha_bar_t2)[0,0,0,0]))
             print(('minsqrt', (1 - alpha_bar_t2 - sigma ** 2).min()))
 
             mean_pred = xstart * coef_xstart + coef_eps * eps
