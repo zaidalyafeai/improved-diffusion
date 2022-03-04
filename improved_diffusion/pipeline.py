@@ -314,6 +314,8 @@ class SamplingPipeline(nn.Module):
         return_both_resolutions=False,
         use_plms=False,
         use_plms_sres=False,
+        plms_ddim_last_n=None,
+        plms_ddim_last_n_sres=None,
     ):
         if strip_space:
             if isinstance(text, list):
@@ -336,6 +338,7 @@ class SamplingPipeline(nn.Module):
             seed=seed,
             use_plms=use_plms,
             to_visible=True,
+            plms_ddim_last_n=plms_ddim_last_n,
         )
         low_res_pruned, text_pruned = prune_fn(low_res, text)
         if len(low_res_pruned) == 0:
@@ -371,6 +374,7 @@ class SamplingPipeline(nn.Module):
             txt_drop_string=txt_drop_string,
             seed=seed,
             use_plms=use_plms_sres,
+            plms_ddim_last_n=plms_ddim_last_n_sres,
             from_visible=True,
         )
         if return_both_resolutions:
