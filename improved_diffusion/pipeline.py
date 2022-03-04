@@ -84,6 +84,7 @@ class SamplingModel(nn.Module):
         use_prk=False,
         use_plms=False,
         ddim_eta=0.,
+        plms_ddim_first_n=0
     ):
         dist_util.setup_dist()
 
@@ -128,6 +129,8 @@ class SamplingModel(nn.Module):
         sample_fn_kwargs = {}
         if use_ddim or use_prk or use_plms:
             sample_fn_kwargs['eta'] = ddim_eta
+        if use_plms:
+            sample_fn_kwargs['ddim_first_n'] = plms_ddim_first_n
 
         txt = tokenize(self.tokenizer, batch_text)
         txt = th.as_tensor(txt).to(dist_util.dev())

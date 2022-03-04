@@ -575,7 +575,7 @@ class GaussianDiffusion:
         sample = mean_pred + nonzero_mask * sigma * noise
         return {"sample": sample, "pred_xstart": out["pred_xstart"]}
 
-    def plms_double_step(
+    def plms_steps(
         self,
         model,
         x,
@@ -586,6 +586,7 @@ class GaussianDiffusion:
         denoised_fn=None,
         model_kwargs=None,
         eta=0.0,
+        ddim_fallback=False,
     ):
         def model_step(x_, t_):
             out = self.p_mean_variance(
@@ -627,7 +628,10 @@ class GaussianDiffusion:
 
         eps = model_step(x, t)
 
-        eps_prime = (55 * eps - 59 * old_eps[-1] + 37 * old_eps[-2] - 9 * old_eps[-3]) / 24
+        if ddim_fallback:
+            eps_prime = eps
+        else:
+            eps_prime = (55 * eps - 59 * old_eps[-1] + 37 * old_eps[-2] - 9 * old_eps[-3]) / 24
         # eps_prime = eps  # debug
         x_new, pred = transfer(x, eps_prime, t, t2)
         return {"sample": x_new, "pred_xstart": pred, 'eps': eps}
@@ -641,6 +645,7 @@ class GaussianDiffusion:
         denoised_fn=None,
         model_kwargs=None,
         eta=0.0,
+        ddim_fallback=False,
     ):
         def model_step(x_, t_):
             out = self.p_mean_variance(
@@ -685,17 +690,21 @@ class GaussianDiffusion:
         t2 = t-2
 
         eps1 = model_step(x, t1)
-        x1, _ = transfer(x, eps1, t1, t_mid)
 
-        eps2 = model_step(x1, t_mid)
-        x2, _ = transfer(x, eps2, t1, t_mid)
+        if ddim_fallback:
+            eps_prime = eps1
+        else:
+            x1, _ = transfer(x, eps1, t1, t_mid)
 
-        eps3 = model_step(x2, t_mid)
-        x3, _ = transfer(x, eps3, t1, t2)
+            eps2 = model_step(x1, t_mid)
+            x2, _ = transfer(x, eps2, t1, t_mid)
 
-        eps4 = model_step(x3, t2)
+            eps3 = model_step(x2, t_mid)
+            x3, _ = transfer(x, eps3, t1, t2)
 
-        eps_prime = (eps1 + 2 * eps2 + 2 * eps3 + eps4) / 6
+            eps4 = model_step(x3, t2)
+
+            eps_prime = (eps1 + 2 * eps2 + 2 * eps3 + eps4) / 6
         # eps_prime = eps1
         x_new, pred = transfer(x, eps_prime, t1, t2, eta_=eta)
         # eps_prime = eps1  # debug
@@ -795,6 +804,7 @@ class GaussianDiffusion:
         device=None,
         progress=False,
         eta=0.0,
+        ddim_first_n=0,
     ):
         if device is None:
             device = next(model.parameters()).device
@@ -810,6 +820,8 @@ class GaussianDiffusion:
         rk_indices = indices[:3]
         indices = indices[3:]
 
+        step_counter = 0
+
         old_eps = []
         for i in rk_indices:
             t = th.tensor([i] * shape[0], device=device)
@@ -822,8 +834,10 @@ class GaussianDiffusion:
                     denoised_fn=denoised_fn,
                     model_kwargs=model_kwargs,
                     eta=eta,
+                    ddim_fallback=step_counter < ddim_first_n
                 )
                 old_eps.append(out['eps'])
+                step_counter += 1
                 # print(('rk', i, [t[0, 0, 0, 0] for t in old_eps]))
 
                 # yield out
@@ -831,7 +845,7 @@ class GaussianDiffusion:
         for i in indices:
             t = th.tensor([i] * shape[0], device=device)
             with th.no_grad():
-                out = self.plms_double_step(
+                out = self.plms_steps(
                     model,
                     img,
                     t,
@@ -841,9 +855,11 @@ class GaussianDiffusion:
                     denoised_fn=denoised_fn,
                     model_kwargs=model_kwargs,
                     eta=eta,
+                    ddim_fallback=step_counter < ddim_first_n
                 )
                 old_eps.pop(0)
                 old_eps.append(out['eps'])
+                step_counter += 1
                 # print(('plms', i, [t[0, 0, 0, 0] for t in old_eps]))
 
                 yield out
@@ -861,6 +877,7 @@ class GaussianDiffusion:
             device=None,
             progress=False,
             eta=0.0,
+            ddim_first_n=0,
         ):
             final = None
             for sample in self.plms_sample_loop_progressive(
@@ -873,6 +890,7 @@ class GaussianDiffusion:
                 device=device,
                 progress=progress,
                 eta=eta,
+                ddim_first_n=ddim_first_n
             ):
                 final = sample
             return final["sample"]
