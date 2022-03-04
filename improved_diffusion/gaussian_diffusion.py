@@ -640,6 +640,7 @@ class GaussianDiffusion:
         clip_denoised=True,
         denoised_fn=None,
         model_kwargs=None,
+        eta=0.0,
     ):
         def model_step(x_, t_):
             out = self.p_mean_variance(
@@ -661,24 +662,23 @@ class GaussianDiffusion:
             alpha_bar_t1 = _extract_into_tensor(self.alphas_cumprod, t1_, x.shape)
             alpha_bar_t2 = _extract_into_tensor(self.alphas_cumprod, t2_, x.shape)
 
-            # sqrt_alpha_bar_t1 = th.sqrt(alpha_bar_t1)
-            # sqrt_alpha_bar_t2 = th.sqrt(alpha_bar_t2)
-
-            # coef_x = sqrt_alpha_bar_t2 / sqrt_alpha_bar_t1
-            # coef_eps = (sqrt_alpha_bar_t2 - sqrt_alpha_bar_t1) / (
-            #     sqrt_alpha_bar_t1 * (
-            #         th.sqrt((1-alpha_bar_t2) * alpha_bar_t1) +
-            #         th.sqrt((1-alpha_bar_t1) * alpha_bar_t2)
-            #     )
-            # )
-            #
-            # return coef_x * x_ + coef_eps * eps, xstart
+            sigma = (
+                eta
+                * th.sqrt((1 - alpha_bar_t2) / (1 - alpha_bar_t1))
+                * th.sqrt(1 - alpha_bar_t1 / alpha_bar_t2)
+            )
 
             coef_xstart = th.sqrt(alpha_bar_t2)
-            coef_eps = th.sqrt(1 - alpha_bar_t2)
-            return (
-                xstart * coef_xstart + coef_eps * eps
-            ), xstart
+            coef_eps = th.sqrt(1 - alpha_bar_t2 - sigma ** 2)
+
+            mean_pred = xstart * coef_xstart + coef_eps * eps
+            noise = th.randn_like(x_)
+            nonzero_mask = (
+                (t1_ != 0).float().view(-1, *([1] * (len(x_.shape) - 1)))
+            )  # no noise when t == 0
+            sample = mean_pred + nonzero_mask * sigma * noise
+
+            return sample, xstart
 
         t1 = t
         t_mid = t-1
@@ -713,6 +713,7 @@ class GaussianDiffusion:
         model_kwargs=None,
         device=None,
         progress=False,
+        eta=0.0,
     ):
         """
         Use DDIM to sample from the model and yield intermediate samples from
@@ -747,6 +748,7 @@ class GaussianDiffusion:
                     clip_denoised=clip_denoised,
                     denoised_fn=denoised_fn,
                     model_kwargs=model_kwargs,
+                    eta=eta,
                 )
                 old_eps.append(out['eps'])
                 # print(('rk', i, [t[0, 0, 0, 0] for t in old_eps]))
@@ -765,6 +767,7 @@ class GaussianDiffusion:
         model_kwargs=None,
         device=None,
         progress=False,
+        eta=0.0,
     ):
         final = None
         for sample in self.prk_sample_loop_progressive(
@@ -776,6 +779,7 @@ class GaussianDiffusion:
             model_kwargs=model_kwargs,
             device=device,
             progress=progress,
+            eta=eta,
         ):
             final = sample
         return final["sample"]
@@ -790,6 +794,7 @@ class GaussianDiffusion:
         model_kwargs=None,
         device=None,
         progress=False,
+        eta=0.0,
     ):
         if device is None:
             device = next(model.parameters()).device
@@ -816,6 +821,7 @@ class GaussianDiffusion:
                     clip_denoised=clip_denoised,
                     denoised_fn=denoised_fn,
                     model_kwargs=model_kwargs,
+                    eta=eta,
                 )
                 old_eps.append(out['eps'])
                 # print(('rk', i, [t[0, 0, 0, 0] for t in old_eps]))
@@ -834,6 +840,7 @@ class GaussianDiffusion:
                     clip_denoised=clip_denoised,
                     denoised_fn=denoised_fn,
                     model_kwargs=model_kwargs,
+                    eta=eta,
                 )
                 old_eps.pop(0)
                 old_eps.append(out['eps'])
@@ -853,6 +860,7 @@ class GaussianDiffusion:
             model_kwargs=None,
             device=None,
             progress=False,
+            eta=0.0,
         ):
             final = None
             for sample in self.plms_sample_loop_progressive(
@@ -864,6 +872,7 @@ class GaussianDiffusion:
                 model_kwargs=model_kwargs,
                 device=device,
                 progress=progress,
+                eta=eta,
             ):
                 final = sample
             return final["sample"]

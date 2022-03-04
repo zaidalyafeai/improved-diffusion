@@ -126,7 +126,7 @@ class SamplingModel(nn.Module):
 
         model_kwargs = {}
         sample_fn_kwargs = {}
-        if use_ddim:
+        if use_ddim or use_prk or use_plms:
             sample_fn_kwargs['eta'] = ddim_eta
 
         txt = tokenize(self.tokenizer, batch_text)
