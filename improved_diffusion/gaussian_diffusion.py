@@ -585,6 +585,7 @@ class GaussianDiffusion:
         clip_denoised=True,
         denoised_fn=None,
         model_kwargs=None,
+        eta=0.0,
     ):
         def model_step(x_, t_):
             out = self.p_mean_variance(
@@ -606,24 +607,23 @@ class GaussianDiffusion:
             alpha_bar_t1 = _extract_into_tensor(self.alphas_cumprod, t1_, x.shape)
             alpha_bar_t2 = _extract_into_tensor(self.alphas_cumprod, t2_, x.shape)
 
-            # sqrt_alpha_bar_t1 = th.sqrt(alpha_bar_t1)
-            # sqrt_alpha_bar_t2 = th.sqrt(alpha_bar_t2)
-
-            # coef_x = sqrt_alpha_bar_t2 / sqrt_alpha_bar_t1
-            # coef_eps = (sqrt_alpha_bar_t2 - sqrt_alpha_bar_t1) / (
-            #     sqrt_alpha_bar_t1 * (
-            #         th.sqrt((1-alpha_bar_t2) * alpha_bar_t1) +
-            #         th.sqrt((1-alpha_bar_t1) * alpha_bar_t2)
-            #     )
-            # )
-            #
-            # return coef_x * x_ + coef_eps * eps, xstart
+            sigma = (
+                eta
+                * th.sqrt((1 - alpha_bar_t1) / (1 - alpha_bar_t2))
+                * th.sqrt(1 - alpha_bar_t2 / alpha_bar_t1)
+            )
 
             coef_xstart = th.sqrt(alpha_bar_t2)
-            coef_eps = th.sqrt(1 - alpha_bar_t2)
-            return (
-                xstart * coef_xstart + coef_eps * eps
-            ), xstart
+            coef_eps = th.sqrt(1 - alpha_bar_t2 - sigma ** 2)
+
+            mean_pred = xstart * coef_xstart + coef_eps * eps
+            noise = th.randn_like(x)
+            nonzero_mask = (
+                (t1 != 0).float().view(-1, *([1] * (len(x.shape) - 1)))
+            )  # no noise when t == 0
+            sample = mean_pred + nonzero_mask * sigma * noise
+
+            return sample, xstart
 
         eps = model_step(x, t)
 
