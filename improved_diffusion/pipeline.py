@@ -80,7 +80,9 @@ class SamplingModel(nn.Module):
         clf_free_guidance=False,
         guidance_scale=0.,
         txt_drop_string='<mask><mask><mask><mask>',
-        return_intermediates=False
+        return_intermediates=False,
+        use_prk=False,
+        use_plms=False,
     ):
         dist_util.setup_dist()
 
@@ -112,6 +114,10 @@ class SamplingModel(nn.Module):
                 return {'sample': sample_array, 'xstart': xstart_array}
 
             sample_fn = sample_fn_
+        elif use_plms:
+            sample_fn = self.diffusion.plms_sample_loop
+        elif use_prk:
+            sample_fn = self.diffusion.prk_sample_loop
         elif use_ddim:
             sample_fn = self.diffusion.ddim_sample_loop
         else:
@@ -296,6 +302,8 @@ class SamplingPipeline(nn.Module):
         guidance_scale_sres=0.,
         strip_space=True,
         return_both_resolutions=False,
+        use_plms=False,
+        use_plms_sres=False,
     ):
         if strip_space:
             if isinstance(text, list):
@@ -316,6 +324,7 @@ class SamplingPipeline(nn.Module):
             guidance_scale=guidance_scale,
             txt_drop_string=txt_drop_string,
             seed=seed,
+            use_plms=use_plms,
             to_visible=True,
         )
         low_res_pruned, text_pruned = prune_fn(low_res, text)
@@ -351,6 +360,7 @@ class SamplingPipeline(nn.Module):
             guidance_scale=guidance_scale_sres,
             txt_drop_string=txt_drop_string,
             seed=seed,
+            use_plms=use_plms_sres,
             from_visible=True,
         )
         if return_both_resolutions:
