@@ -611,11 +611,12 @@ class GaussianDiffusion:
             alpha_bar_t1 = _extract_into_tensor(self.alphas_cumprod, t1_, x.shape)
             alpha_bar_t2 = _extract_into_tensor(self.alphas_cumprod, t2_, x.shape)
 
+            frac = (model_var_values + 1) / 2
+            print(("frac", frac.mean(), frac.max()))
             if use_model_var:
                 min_log = th.log(((1 - alpha_bar_t2) / (1 - alpha_bar_t1)) * (1 - alpha_bar_t1 / alpha_bar_t2))
                 max_log = th.log((1 - alpha_bar_t1 / alpha_bar_t2))
                 # The model_var_values is [-1, 1] for [min_var, max_var].
-                # frac = (model_var_values + 1) / 2
                 model_log_variance = frac * max_log + (1 - frac) * min_log
                 sigma = th.sqrt(th.exp(model_log_variance))
             else:
