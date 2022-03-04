@@ -618,6 +618,7 @@ class GaussianDiffusion:
             if use_model_var:
                 min_log = th.log(((1 - alpha_bar_t2) / (1 - alpha_bar_t1)) * (1 - alpha_bar_t1 / alpha_bar_t2))
                 max_log = th.log((1 - alpha_bar_t1 / alpha_bar_t2))
+                max_log = th.min(1 - alpha_bar_t2, max_log)  # prevent sqrt(neg)
                 # The model_var_values is [-1, 1] for [min_var, max_var].
                 # print((min_log[0,0,0,0], max_log[0,0,0,0]))
 
