@@ -612,8 +612,10 @@ class GaussianDiffusion:
                 * th.sqrt((1 - alpha_bar_t1) / (1 - alpha_bar_t2))
                 * th.sqrt(1 - alpha_bar_t2 / alpha_bar_t1)
             )
-            print(alpha_bar_t1)
-            print(alpha_bar_t2)
+            print(alpha_bar_t1[0, 0, 0, 0])
+            print(alpha_bar_t2[0, 0, 0, 0])
+            print(((1 - alpha_bar_t1) / (1 - alpha_bar_t2))[0, 0, 0, 0])
+            print((1 - alpha_bar_t2 / alpha_bar_t1)[0, 0, 0, 0])
             print(sigma)
             print()
 
