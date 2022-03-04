@@ -83,6 +83,7 @@ class SamplingModel(nn.Module):
         return_intermediates=False,
         use_prk=False,
         use_plms=False,
+        ddim_eta=0.,
     ):
         dist_util.setup_dist()
 
@@ -124,6 +125,9 @@ class SamplingModel(nn.Module):
             sample_fn = sample_fn_base
 
         model_kwargs = {}
+        sample_fn_kwargs = {}
+        if use_ddim:
+            sample_fn_kwargs['eta'] = ddim_eta
 
         txt = tokenize(self.tokenizer, batch_text)
         txt = th.as_tensor(txt).to(dist_util.dev())
@@ -187,6 +191,7 @@ class SamplingModel(nn.Module):
                 ),
                 clip_denoised=clip_denoised,
                 model_kwargs=model_kwargs,
+                **sample_fn_kwargs
             )
 
             if return_intermediates:
