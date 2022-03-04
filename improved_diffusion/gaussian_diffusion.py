@@ -805,6 +805,7 @@ class GaussianDiffusion:
         progress=False,
         eta=0.0,
         ddim_first_n=0,
+        ddim_last_n=None,
     ):
         if device is None:
             device = next(model.parameters()).device
@@ -817,6 +818,7 @@ class GaussianDiffusion:
         # rk_indices = [self.num_timesteps-1, self.num_timesteps-3, self.num_timesteps-5]
         # indices = list(range(2, self.num_timesteps-5, 2))[::-1]
         indices = list(range(2, self.num_timesteps, 2))[::-1]
+        nsteps = len(indices)
         rk_indices = indices[:3]
         indices = indices[3:]
 
@@ -826,7 +828,7 @@ class GaussianDiffusion:
         for i in rk_indices:
             t = th.tensor([i] * shape[0], device=device)
             with th.no_grad():
-                ddim_fallback = step_counter < ddim_first_n
+                ddim_fallback = (step_counter < ddim_first_n) or (ddim_last_n is not None and (nsteps - step_counter) < ddim_last_n)
                 out = self.prk_double_step(
                     model,
                     img,
@@ -846,7 +848,7 @@ class GaussianDiffusion:
         for i in indices:
             t = th.tensor([i] * shape[0], device=device)
             with th.no_grad():
-                ddim_fallback = step_counter < ddim_first_n
+                ddim_fallback = (step_counter < ddim_first_n) or (ddim_last_n is not None and (nsteps - step_counter) < ddim_last_n)
                 out = self.plms_steps(
                     model,
                     img,
@@ -880,6 +882,7 @@ class GaussianDiffusion:
             progress=False,
             eta=0.0,
             ddim_first_n=0,
+            ddim_last_n=None,
         ):
             final = None
             for sample in self.plms_sample_loop_progressive(
@@ -892,7 +895,8 @@ class GaussianDiffusion:
                 device=device,
                 progress=progress,
                 eta=eta,
-                ddim_first_n=ddim_first_n
+                ddim_first_n=ddim_first_n,
+                ddim_last_n=ddim_last_n
             ):
                 final = sample
             return final["sample"]
