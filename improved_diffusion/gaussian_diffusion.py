@@ -617,11 +617,16 @@ class GaussianDiffusion:
             coef_eps = th.sqrt(1 - alpha_bar_t2 - sigma ** 2)
 
             mean_pred = xstart * coef_xstart + coef_eps * eps
-            noise = th.randn_like(x)
+            noise = th.randn_like(x_)
             nonzero_mask = (
                 (t1_ != 0).float().view(-1, *([1] * (len(x_.shape) - 1)))
             )  # no noise when t == 0
+            print(mean_pred[0, 0, 0, 0])
+            print(noise[0, 0, 0, 0])
+            print(nonzero_mask[0, 0, 0, 0])
             sample = mean_pred + nonzero_mask * sigma * noise
+            print(sample[0, 0, 0, 0])
+            print()
 
             return sample, xstart
 
