@@ -879,7 +879,7 @@ class GaussianDiffusion:
                     model_kwargs=model_kwargs,
                     eta=eta if ddim_fallback else 0.0,
                     ddim_fallback=ddim_fallback,
-                    use_model_var=ddim_fallback,
+                    use_model_var=False, # ddim_fallback,
                 )
                 old_eps.pop(0)
                 old_eps.append(out['eps'])
