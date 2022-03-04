@@ -377,6 +377,7 @@ class GaussianDiffusion:
             "variance": model_variance,
             "log_variance": model_log_variance,
             "pred_xstart": pred_xstart,
+            "model_var_values": model_var_values
         }
 
     def _predict_xstart_from_eps(self, x_t, t, eps):
@@ -587,6 +588,7 @@ class GaussianDiffusion:
         model_kwargs=None,
         eta=0.0,
         ddim_fallback=False,
+        use_model_var=True,
     ):
         def model_step(x_, t_):
             out = self.p_mean_variance(
@@ -598,9 +600,10 @@ class GaussianDiffusion:
                 model_kwargs=model_kwargs,
             )
             eps = self._predict_eps_from_xstart(x_, t_, out["pred_xstart"])
-            return eps
+            model_var_values = out['model_var_values']
+            return eps, model_var_values
 
-        def transfer(x_, eps, t1_, t2_):
+        def transfer(x_, eps, t1_, t2_, model_var_values):
             xstart = self._predict_xstart_from_eps(x_, t1_, eps)
             if clip_denoised:
                 xstart = xstart.clamp(-1, 1)
@@ -608,11 +611,19 @@ class GaussianDiffusion:
             alpha_bar_t1 = _extract_into_tensor(self.alphas_cumprod, t1_, x.shape)
             alpha_bar_t2 = _extract_into_tensor(self.alphas_cumprod, t2_, x.shape)
 
-            sigma = (
-                eta
-                * th.sqrt((1 - alpha_bar_t2) / (1 - alpha_bar_t1))
-                * th.sqrt(1 - alpha_bar_t1 / alpha_bar_t2)
-            )
+            if use_model_var:
+                min_log = th.sqrt((1 - alpha_bar_t2) / (1 - alpha_bar_t1)) * th.sqrt(1 - alpha_bar_t1 / alpha_bar_t2)
+                max_log = th.sqrt(1 - alpha_bar_t1 / alpha_bar_t2)
+                # The model_var_values is [-1, 1] for [min_var, max_var].
+                frac = (model_var_values + 1) / 2
+                model_log_variance = frac * max_log + (1 - frac) * min_log
+                sigma = th.exp(model_log_variance)
+            else:
+                sigma = (
+                    eta
+                    * th.sqrt((1 - alpha_bar_t2) / (1 - alpha_bar_t1))
+                    * th.sqrt(1 - alpha_bar_t1 / alpha_bar_t2)
+                )
 
             coef_xstart = th.sqrt(alpha_bar_t2)
             coef_eps = th.sqrt(1 - alpha_bar_t2 - sigma ** 2)
@@ -626,14 +637,14 @@ class GaussianDiffusion:
 
             return sample, xstart
 
-        eps = model_step(x, t)
+        eps, model_var_values = model_step(x, t)
 
         if ddim_fallback:
             eps_prime = eps
         else:
             eps_prime = (55 * eps - 59 * old_eps[-1] + 37 * old_eps[-2] - 9 * old_eps[-3]) / 24
         # eps_prime = eps  # debug
-        x_new, pred = transfer(x, eps_prime, t, t2)
+        x_new, pred = transfer(x, eps_prime, t, t2, model_var_values)
         return {"sample": x_new, "pred_xstart": pred, 'eps': eps}
 
     def prk_double_step(
