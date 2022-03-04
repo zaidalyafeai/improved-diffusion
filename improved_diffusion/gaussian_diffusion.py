@@ -653,6 +653,8 @@ class GaussianDiffusion:
             eps_prime = (55 * eps - 59 * old_eps[-1] + 37 * old_eps[-2] - 9 * old_eps[-3]) / 24
         # eps_prime = eps  # debug
         x_new, pred = transfer(x, eps_prime, t, t2, model_var_values)
+        if th.isnan(x_new).any():
+            x_new = x
         return {"sample": x_new, "pred_xstart": pred, 'eps': eps}
 
     def prk_double_step(
@@ -879,7 +881,7 @@ class GaussianDiffusion:
                     model_kwargs=model_kwargs,
                     eta=eta if ddim_fallback else 0.0,
                     ddim_fallback=ddim_fallback,
-                    use_model_var=False, # ddim_fallback,
+                    use_model_var=ddim_fallback,
                 )
                 old_eps.pop(0)
                 old_eps.append(out['eps'])
