@@ -826,6 +826,7 @@ class GaussianDiffusion:
         for i in rk_indices:
             t = th.tensor([i] * shape[0], device=device)
             with th.no_grad():
+                ddim_fallback = step_counter < ddim_first_n
                 out = self.prk_double_step(
                     model,
                     img,
@@ -833,8 +834,8 @@ class GaussianDiffusion:
                     clip_denoised=clip_denoised,
                     denoised_fn=denoised_fn,
                     model_kwargs=model_kwargs,
-                    eta=eta,
-                    ddim_fallback=step_counter < ddim_first_n
+                    eta=eta if ddim_fallback else 0.0,
+                    ddim_fallback=ddim_fallback
                 )
                 old_eps.append(out['eps'])
                 step_counter += 1
@@ -845,6 +846,7 @@ class GaussianDiffusion:
         for i in indices:
             t = th.tensor([i] * shape[0], device=device)
             with th.no_grad():
+                ddim_fallback = step_counter < ddim_first_n
                 out = self.plms_steps(
                     model,
                     img,
@@ -854,8 +856,8 @@ class GaussianDiffusion:
                     clip_denoised=clip_denoised,
                     denoised_fn=denoised_fn,
                     model_kwargs=model_kwargs,
-                    eta=eta,
-                    ddim_fallback=step_counter < ddim_first_n
+                    eta=eta if ddim_fallback else 0.0,
+                    ddim_fallback=ddim_fallback
                 )
                 old_eps.pop(0)
                 old_eps.append(out['eps'])
