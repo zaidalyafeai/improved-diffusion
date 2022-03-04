@@ -105,23 +105,26 @@ class SamplingModel(nn.Module):
             print(f"setting seed to {seed}")
             th.manual_seed(seed)
 
+        if use_plms:
+            sample_fn_base = self.diffusion.plms_sample_loop_progressive if return_intermediates else self.diffusion.plms_sample_loop
+        elif use_prk:
+            sample_fn_base = self.diffusion.prk_sample_loop_progressive if return_intermediates else self.diffusion.prk_sample_loop
+        elif use_ddim:
+            sample_fn_base = self.diffusion.ddim_sample_loop_progressive if return_intermediates else self.diffusion.ddim_sample_loop
+        else:
+            sample_fn_base = self.diffusion.p_sample_loop_progressive if return_intermediates else self.diffusion.p_sample_loop
+
         if return_intermediates:
             def sample_fn_(*args, **kwargs):
                 sample_array, xstart_array = [], []
-                for out in self.diffusion.p_sample_loop_progressive(*args, **kwargs):
+                for out in sample_fn_base(*args, **kwargs):
                     sample_array.append(out['sample'])
                     xstart_array.append(out['pred_xstart'])
                 return {'sample': sample_array, 'xstart': xstart_array}
 
             sample_fn = sample_fn_
-        elif use_plms:
-            sample_fn = self.diffusion.plms_sample_loop
-        elif use_prk:
-            sample_fn = self.diffusion.prk_sample_loop
-        elif use_ddim:
-            sample_fn = self.diffusion.ddim_sample_loop
         else:
-            sample_fn = self.diffusion.p_sample_loop
+            sample_fn = sample_fn_base
 
         model_kwargs = {}
 

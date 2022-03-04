@@ -821,7 +821,7 @@ class GaussianDiffusion:
 
         return {"sample": x_new, "pred_xstart": pred, 'eps': eps_prime}
 
-    def prk_sample_loop(
+    def prk_sample_loop_progressive(
         self,
         model,
         shape,
@@ -869,11 +869,11 @@ class GaussianDiffusion:
                 old_eps.append(out['eps'])
                 # print(('rk', i, [t[0, 0, 0, 0] for t in old_eps]))
 
-                # yield out
+                yield out
                 img = out["sample"]
-        return img
+        # return img
 
-    def plms_sample_loop(
+    def prk_sample_loop(
         self,
         model,
         shape,
@@ -884,12 +884,31 @@ class GaussianDiffusion:
         device=None,
         progress=False,
     ):
-        """
-        Use DDIM to sample from the model and yield intermediate samples from
-        each timestep of DDIM.
+        final = None
+        for sample in self.prk_sample_loop_progressive(
+            model,
+            shape,
+            noise=noise,
+            clip_denoised=clip_denoised,
+            denoised_fn=denoised_fn,
+            model_kwargs=model_kwargs,
+            device=device,
+            progress=progress,
+        ):
+            final = sample
+        return final["sample"]
 
-        Same usage as p_sample_loop_progressive().
-        """
+    def plms_sample_loop_progressive(
+        self,
+        model,
+        shape,
+        noise=None,
+        clip_denoised=True,
+        denoised_fn=None,
+        model_kwargs=None,
+        device=None,
+        progress=False,
+    ):
         if device is None:
             device = next(model.parameters()).device
         assert isinstance(shape, (tuple, list))
@@ -938,9 +957,34 @@ class GaussianDiffusion:
                 old_eps.append(out['eps'])
                 # print(('plms', i, [t[0, 0, 0, 0] for t in old_eps]))
 
-                # yield out
+                yield out
                 img = out["sample"]
-        return img
+        # return img
+
+    def plms_sample_loop(
+            self,
+            model,
+            shape,
+            noise=None,
+            clip_denoised=True,
+            denoised_fn=None,
+            model_kwargs=None,
+            device=None,
+            progress=False,
+        ):
+            final = None
+            for sample in self.plms_sample_loop_progressive(
+                model,
+                shape,
+                noise=noise,
+                clip_denoised=clip_denoised,
+                denoised_fn=denoised_fn,
+                model_kwargs=model_kwargs,
+                device=device,
+                progress=progress,
+            ):
+                final = sample
+            return final["sample"]
 
     def _vb_terms_bpd(
         self, model, x_start, x_t, t, clip_denoised=True, model_kwargs=None
