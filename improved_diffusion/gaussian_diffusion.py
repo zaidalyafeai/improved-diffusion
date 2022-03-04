@@ -590,6 +590,8 @@ class GaussianDiffusion:
         ddim_fallback=False,
         use_model_var=True,
     ):
+        if th.isnan(x).any():
+            print('isnan x')
         def model_step(x_, t_):
             out = self.p_mean_variance(
                 model,
@@ -620,9 +622,7 @@ class GaussianDiffusion:
                 # print((min_log[0,0,0,0], max_log[0,0,0,0]))
 
                 model_log_variance = frac * max_log + (1 - frac) * min_log
-                sigma = th.where(th.isnan(model_log_variance),
-                                 th.sqrt(th.exp(min_log)),
-                                 th.sqrt(th.exp(model_log_variance)))
+                sigma = th.sqrt(th.exp(model_log_variance))
                 print(("sigma", sigma.mean()))
             else:
                 sigma = (
@@ -652,8 +652,9 @@ class GaussianDiffusion:
         # eps_prime = eps  # debug
         x_new, pred = transfer(x, eps_prime, t, t2, model_var_values)
         if th.isnan(x_new).any():
-            print('isnan')
+            print('isnan x_new')
             # x_new = x
+        print()
         return {"sample": x_new, "pred_xstart": pred, 'eps': eps}
 
     def prk_double_step(
