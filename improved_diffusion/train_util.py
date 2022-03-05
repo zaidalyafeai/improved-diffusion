@@ -641,7 +641,9 @@ class TrainLoop:
             gn = 0.
             for p in pp:
                 if p.grad is None:
+                    print(f'None grad for {name}')
                     continue
+                print(f'have grad for {name}')
                 gn_sq = (p.grad.float() ** 2).sum().item()
                 # gn += np.sqrt(gn_sq)
                 gn += gn_sq
