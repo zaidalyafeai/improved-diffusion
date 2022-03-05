@@ -169,7 +169,7 @@ class TrainLoop:
                     is_bread = num < state_dict_sandwich
                 elif 'output_blocks' in n:
                     num = int(n.split('.')[1])
-                    is_bread = (len(model.output_blocks) - num) < state_dict_sandwich
+                    is_bread = (len(model.output_blocks) - num - 1) < state_dict_sandwich
 
                 if is_bread:
                     print(f"is_bread: {n}")
