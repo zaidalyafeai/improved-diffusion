@@ -243,11 +243,11 @@ class TrainLoop:
                     [*[self.text_lr for _ in self.text_mods],
                      *[self.text_lr for _ in self.xattn_mods],
                      *[self.text_lr for _ in self.itot_mods],
-                      self.gain_lr, self.lr],
+                      self.bread_lr, self.gain_lr, self.lr],
                     [*[0. for _ in self.text_mods],
                      *[0. for _ in self.xattn_mods],
                      *[0. for _ in self.itot_mods],
-                      0., self.weight_decay]
+                      0., 0., self.weight_decay]
                 )
             ],
             lr=self.lr,
