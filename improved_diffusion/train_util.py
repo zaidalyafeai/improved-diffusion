@@ -68,6 +68,7 @@ class TrainLoop:
         arithmetic_avg_from_step=-1,
         arithmetic_avg_extra_shift=0,
         gain_ff_setup_step=False,
+        only_optimize_bread=False,
     ):
         self.model = model
         self.diffusion = diffusion
@@ -114,6 +115,7 @@ class TrainLoop:
             if isinstance(arithmetic_avg_extra_shift, float)
             else [float(x) for x in arithmetic_avg_extra_shift.split(",") if len(x) > 0]
         )
+        self.only_optimize_bread = only_optimize_bread
         print(f"TrainLoop self.master_device: {self.master_device}, use_amp={use_amp}, autosave={self.autosave}")
         print(f"TrainLoop self.arithmetic_avg_from_step: {self.arithmetic_avg_from_step}, self.arithmetic_avg_extra_shift={self.arithmetic_avg_extra_shift}")
 
@@ -235,27 +237,53 @@ class TrainLoop:
         print(f"\t{xattn_nparams/1e6:.1f}M xattn params")
         print(f"\t{itot_nparams/1e6:.1f}M itot params")
 
-        self.opt = AdamW(
-            [
-                {"params": params, "lr": lr, "weight_decay": wd}
-                for params, lr, wd in zip(
-                    self.master_params,
-                    [*[self.text_lr for _ in self.text_mods],
-                     *[self.text_lr for _ in self.xattn_mods],
-                     *[self.text_lr for _ in self.itot_mods],
-                      self.bread_lr, self.gain_lr, self.lr],
-                    [*[0. for _ in self.text_mods],
-                     *[0. for _ in self.xattn_mods],
-                     *[0. for _ in self.itot_mods],
-                      0., 0., self.weight_decay]
-                )
-            ],
-            lr=self.lr,
-            weight_decay=self.weight_decay,
-            betas=(beta1, beta2)
-        )
+        if self.only_optimize_bread:
+            self.opt = AdamW(
+                [
+                    {"params": params, "lr": lr, "weight_decay": wd}
+                    for params, is_bread, lr, wd in zip(
+                        self.master_params,
+                        [*[False for _ in self.text_mods],
+                         *[False for _ in self.xattn_mods],
+                         *[False for _ in self.itot_mods],
+                          True, False, False],
+                        [*[self.text_lr for _ in self.text_mods],
+                         *[self.text_lr for _ in self.xattn_mods],
+                         *[self.text_lr for _ in self.itot_mods],
+                          self.bread_lr, self.gain_lr, self.lr],
+                        [*[0. for _ in self.text_mods],
+                         *[0. for _ in self.xattn_mods],
+                         *[0. for _ in self.itot_mods],
+                          0., 0., self.weight_decay]
+                    )
+                    if is_bread
+                ],
+                lr=self.lr,
+                weight_decay=self.weight_decay,
+                betas=(beta1, beta2)
+            )
+        else:
+            self.opt = AdamW(
+                [
+                    {"params": params, "lr": lr, "weight_decay": wd}
+                    for params, lr, wd in zip(
+                        self.master_params,
+                        [*[self.text_lr for _ in self.text_mods],
+                         *[self.text_lr for _ in self.xattn_mods],
+                         *[self.text_lr for _ in self.itot_mods],
+                          self.bread_lr, self.gain_lr, self.lr],
+                        [*[0. for _ in self.text_mods],
+                         *[0. for _ in self.xattn_mods],
+                         *[0. for _ in self.itot_mods],
+                          0., 0., self.weight_decay]
+                    )
+                ],
+                lr=self.lr,
+                weight_decay=self.weight_decay,
+                betas=(beta1, beta2)
+            )
 
-        if not gain_ff_setup_step:
+        if not gain_ff_setup_step and not self.only_optimize_bread:
             self.opt.add_param_group({"params": ff_gain_params, "lr": self.gain_lr, "weight_decay": 0.})
 
         if self.resume_step:
@@ -649,7 +677,10 @@ class TrainLoop:
         else:
             frac_done = (self.step + self.resume_step) / self.lr_anneal_steps
 
-        lr_variants = (len(self.opt.param_groups)-4) * [self.text_lr] + [self.gain_lr, self.bread_lr, self.lr, self.gain_lr]
+        if self.only_optimize_bread:
+            lr_variants = [self.bread_lr]
+        else:
+            lr_variants = (len(self.opt.param_groups)-4) * [self.text_lr] + [self.gain_lr, self.bread_lr, self.lr, self.gain_lr]
 
         for param_group, lr_variant in zip(self.opt.param_groups, lr_variants):
             this_lr = lr_variant * (1 - frac_done)
