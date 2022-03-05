@@ -43,6 +43,9 @@ def main():
     if args.gain_lr < 0:
         args.gain_lr = None
 
+    if args.bread_lr < 0:
+        args.bread_lr = None
+
     config_path = args.config_path
     have_config_path = config_path != ""
     using_config = have_config_path and os.path.exists(config_path)
@@ -123,6 +126,7 @@ def main():
         lr=args.lr,
         text_lr=args.text_lr,
         gain_lr=args.gain_lr,
+        bread_lr=args.bread_lr,
         ema_rate=args.ema_rate,
         log_interval=args.log_interval,
         save_interval=args.save_interval,
@@ -173,6 +177,7 @@ def create_argparser():
         txt_resolutions="8",
         text_lr=-1.,
         gain_lr=-1.,
+        bread_lr=-1.,
         beta1=0.9,
         beta2=0.999,
         verbose=False,
