@@ -53,6 +53,7 @@ class TrainLoop:
         tokenizer=None,
         text_lr=None,
         gain_lr=None,
+        bread_lr=None,
         lg_loss_scale = INITIAL_LOG_LOSS_SCALE,
         beta1=0.9,
         beta2=0.999,
@@ -66,7 +67,7 @@ class TrainLoop:
         autosave_dir="gs://nost_ar_work/improved-diffusion/",
         arithmetic_avg_from_step=-1,
         arithmetic_avg_extra_shift=0,
-        gain_ff_setup_step=False
+        gain_ff_setup_step=False,
     ):
         self.model = model
         self.diffusion = diffusion
@@ -76,7 +77,8 @@ class TrainLoop:
         self.lr = lr
         self.text_lr = text_lr if text_lr is not None else lr
         self.gain_lr = gain_lr if gain_lr is not None else lr
-        print(f"train loop: text_lr={text_lr}, gain_lr={gain_lr}")
+        self.bread_lr = bread_lr if bread_lr is not None else lr
+        print(f"train loop: text_lr={text_lr}, gain_lr={gain_lr}, bread_lr={bread_lr}")
         self.ema_rate = (
             [ema_rate]
             if isinstance(ema_rate, float)
@@ -127,6 +129,7 @@ class TrainLoop:
         gain_params, self.gain_param_names = [], []
         other_params, self.other_param_names = [], []
         ff_gain_params, self.ff_gain_param_names = [], []
+        bread_params, self.bread_param_names = [], []
         for n, p in model.named_parameters():
             if 'text_encoder' in n:
                 # subname = 'text'
@@ -159,8 +162,22 @@ class TrainLoop:
                 itot_param_names[subname].append(n)
                 itot_params[subname].append(p)
             else:
-                self.other_param_names.append(n)
-                other_params.append(p)
+                is_bread = False
+
+                if 'input_blocks' in n:
+                    num = int(n.split('.')[1])
+                    is_bread = num < state_dict_sandwich
+                elif 'output_blocks' in n:
+                    num = int(n.split('.')[1])
+                    is_bread = (len(model.output_blocks) - num) < state_dict_sandwich
+
+                if is_bread:
+                    print(f"is_bread: {n}")
+                    self.bread_param_names.append(n)
+                    bread_params.append(p)
+                else:
+                    self.other_param_names.append(n)
+                    other_params.append(p)
 
         self.text_mods = list(text_param_names.keys())
         text_params = [text_params[n] for n in self.text_mods]
@@ -174,9 +191,9 @@ class TrainLoop:
         itot_params = [itot_params[n] for n in self.itot_mods]
         self.itot_param_names = [itot_param_names[n] for n in self.itot_mods]
 
-        self.param_name_groups = [*self.text_param_names, *self.xattn_param_names, *self.itot_param_names, self.gain_param_names, self.other_param_names, self.ff_gain_param_names]
+        self.param_name_groups = [*self.text_param_names, *self.xattn_param_names, *self.itot_param_names, self.gain_param_names, self.bread_param_names, self.other_param_names, self.ff_gain_param_names]
         # self.model_params = list(self.model.parameters())
-        self.model_params = [*text_params, *xattn_params, *itot_params, gain_params, other_params, ff_gain_params]
+        self.model_params = [*text_params, *xattn_params, *itot_params, gain_params, bread_params, other_params, ff_gain_params]
         if len(gain_params) == 0:
             self.param_name_groups = [self.other_param_names]
             self.model_params = [other_params]
@@ -198,7 +215,7 @@ class TrainLoop:
         text_nparams = 0
         xattn_nparams = 0
         itot_nparams = 0
-        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'other', 'xgainff']):
+        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff']):
             if isinstance(p, list):
                 nparams = sum(np.product(pp.shape) for pp in p)
             else:
@@ -587,7 +604,7 @@ class TrainLoop:
 
         gn_xattn, gn_text, gn_itot = 0., 0., 0.
 
-        for p_, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'other', 'xgainff']):
+        for p_, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff']):
             if isinstance(p_, list):
                 pp = p_
             else:
@@ -632,7 +649,7 @@ class TrainLoop:
         else:
             frac_done = (self.step + self.resume_step) / self.lr_anneal_steps
 
-        lr_variants = (len(self.opt.param_groups)-3) * [self.text_lr] + [self.gain_lr, self.lr, self.gain_lr]
+        lr_variants = (len(self.opt.param_groups)-4) * [self.text_lr] + [self.gain_lr, self.bread_lr, self.lr, self.gain_lr]
 
         for param_group, lr_variant in zip(self.opt.param_groups, lr_variants):
             this_lr = lr_variant * (1 - frac_done)
