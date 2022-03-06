@@ -639,14 +639,19 @@ class TrainLoop:
         for p, name, name_group in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff'], self.param_name_groups):
             if isinstance(p_, list):
                 pp = p_
-                ng = name_group
             else:
                 pp = [p_]
+
+            if isinstance(name_group, list):
+                ng = name_group
+            else:
                 ng = [name_group]
 
             gn = 0.
             if len(pp) != len(ng):
                 print(f"!! pp {len(pp)} vs ng {len(ng)} | {name} | {ng}")
+            while len(pp) > len(ng):
+                ng.append('unk')
             for p, n in zip(pp, ng):
                 if p.grad is None:
                     print(f'None grad for {name} | {n}')
