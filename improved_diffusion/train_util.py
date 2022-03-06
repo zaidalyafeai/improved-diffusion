@@ -630,44 +630,19 @@ class TrainLoop:
                 sqsum += (p.grad ** 2).sum().item()
         logger.logkv_mean("grad_norm", np.sqrt(sqsum))
 
-        for n, p in self.model.named_parameters():
-            if p.grad is None:
-                print(f'None grad for {n}')
-                continue
-            gn_sq = (p.grad.float() ** 2).sum().item()
-            if gn_sq <= 0.0:
-                print(f'have zero grad {gn_sq} for {n}')
-            else:
-                print(f'have non-zero grad {gn_sq} for {n}')
-
         gn_xattn, gn_text, gn_itot = 0., 0., 0.
 
-        print(("self.master_params", len(self.master_params)))
-        print(("[*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff']", len([*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff'])))
-        print(("self.param_name_groups", len(self.param_name_groups)))
-
-        for p_, name, name_group in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff'], self.param_name_groups):
+        for p_, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff']):
             if isinstance(p_, list):
                 pp = p_
             else:
                 pp = [p_]
 
-            if isinstance(name_group, list):
-                ng = name_group
-            else:
-                ng = [name_group]
-
             gn = 0.
-            if len(pp) != len(ng):
-                print(f"!! pp {len(pp)} vs ng {len(ng)} | {name} | {ng}")
-            while len(pp) > len(ng):
-                ng.append('unk')
-            for p, n in zip(pp, ng):
+            for p in pp:
                 if p.grad is None:
-                    print(f'None grad for {name} | {n}')
                     continue
                 gn_sq = (p.grad.float() ** 2).sum().item()
-                print(f'have grad {gn_sq} for {name} | {n}')
                 # gn += np.sqrt(gn_sq)
                 gn += gn_sq
                 # nz = (p.grad == 0.).sum().item()
