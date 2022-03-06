@@ -217,7 +217,7 @@ class TrainLoop:
         text_nparams = 0
         xattn_nparams = 0
         itot_nparams = 0
-        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff']):
+        for p, name, name_group in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff']):
             if isinstance(p, list):
                 nparams = sum(np.product(pp.shape) for pp in p)
             else:
@@ -632,19 +632,21 @@ class TrainLoop:
 
         gn_xattn, gn_text, gn_itot = 0., 0., 0.
 
-        for p_, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff']):
+        for p, name, name_group in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff'], param_name_groups):
             if isinstance(p_, list):
                 pp = p_
+                ng = name_group
             else:
                 pp = [p_]
+                ng = [name_group]
 
             gn = 0.
-            for p in pp:
+            for p, n in zip(pp, ng):
                 if p.grad is None:
-                    print(f'None grad for {name}')
+                    print(f'None grad for {ng}')
                     continue
                 gn_sq = (p.grad.float() ** 2).sum().item()
-                print(f'have grad for {name}: {gn_sq}')
+                print(f'have grad for {ng}: {gn_sq}')
                 # gn += np.sqrt(gn_sq)
                 gn += gn_sq
                 # nz = (p.grad == 0.).sum().item()
