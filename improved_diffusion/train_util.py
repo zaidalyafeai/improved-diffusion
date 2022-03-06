@@ -646,7 +646,7 @@ class TrainLoop:
         print(("[*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff']", len([*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff'])))
         print(("self.param_name_groups", len(self.param_name_groups)))
 
-        for p, name, name_group in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff'], self.param_name_groups):
+        for p_, name, name_group in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff'], self.param_name_groups):
             if isinstance(p_, list):
                 pp = p_
             else:
