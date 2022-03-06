@@ -632,7 +632,7 @@ class TrainLoop:
 
         gn_xattn, gn_text, gn_itot = 0., 0., 0.
 
-        for p, name, name_group in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff'], param_name_groups):
+        for p, name, name_group in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff'], self.param_name_groups):
             if isinstance(p_, list):
                 pp = p_
                 ng = name_group
