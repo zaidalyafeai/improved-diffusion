@@ -217,7 +217,7 @@ class TrainLoop:
         text_nparams = 0
         xattn_nparams = 0
         itot_nparams = 0
-        for p, name, name_group in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff']):
+        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff']):
             if isinstance(p, list):
                 nparams = sum(np.product(pp.shape) for pp in p)
             else:
