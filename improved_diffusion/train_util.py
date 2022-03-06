@@ -643,10 +643,10 @@ class TrainLoop:
             gn = 0.
             for p, n in zip(pp, ng):
                 if p.grad is None:
-                    print(f'None grad for {ng}')
+                    print(f'None grad for {n}')
                     continue
                 gn_sq = (p.grad.float() ** 2).sum().item()
-                print(f'have grad for {ng}: {gn_sq}')
+                print(f'have grad {gn_sq} for {n}')
                 # gn += np.sqrt(gn_sq)
                 gn += gn_sq
                 # nz = (p.grad == 0.).sum().item()
