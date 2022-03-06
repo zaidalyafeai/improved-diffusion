@@ -630,6 +630,16 @@ class TrainLoop:
                 sqsum += (p.grad ** 2).sum().item()
         logger.logkv_mean("grad_norm", np.sqrt(sqsum))
 
+        for n, p in self.model.named_parameters():
+            if p.grad is None:
+                print(f'None grad for {n}')
+                continue
+            gn_sq = (p.grad.float() ** 2).sum().item()
+            if gn_sq <= 0.0:
+                print(f'have zero grad {gn_sq} for {n}')
+            else:
+                print(f'have non-zero grad {gn_sq} for {n}')
+
         gn_xattn, gn_text, gn_itot = 0., 0., 0.
 
         print(("self.master_params", len(self.master_params)))
