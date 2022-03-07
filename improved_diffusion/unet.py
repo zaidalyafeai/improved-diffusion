@@ -167,10 +167,9 @@ class Downsample(nn.Module):
 
 
 class BreadAdapterIn(nn.Module):
-    def __init__(self, in_channels, model_channels, res, dims=2, use_checkpoint=False):
+    def __init__(self, in_channels, model_channels, dims=2, use_checkpoint=False):
         super().__init__()
 
-        self.res = res
         self.use_checkpoint = use_checkpoint
 
         self.down = Downsample(in_channels, False, dims)
@@ -183,6 +182,28 @@ class BreadAdapterIn(nn.Module):
 
     def _forward(self, x):
         return self.transducer(self.down(x))
+
+
+class BreadAdapterOut(nn.Module):
+    def __init__(self, model_channels, out_channels, dims=2, use_checkpoint=False):
+        super().__init__()
+
+        self.use_checkpoint = use_checkpoint
+
+        self.up = Upsample(out_channels, False, dims)
+        self.transducer = nn.Sequential(
+            normalization(ch),
+            SiLU(use_checkpoint=use_checkpoint_lowcost),
+            zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
+        )
+
+    def forward(self, x):
+        return checkpoint(
+            self._forward, (x,), self.parameters(), self.use_checkpoint
+        )
+
+    def _forward(self, x):
+        return self.up(self.transducer(x))
 
 
 class ResBlock(TimestepBlock):
@@ -534,6 +555,7 @@ class UNetModel(nn.Module):
         weave_v2=False,
         use_checkpoint_lowcost=False,
         weave_use_ff_gain=False,
+        bread_adapter_at_ds=-1,
     ):
         super().__init__()
 
@@ -622,6 +644,11 @@ class UNetModel(nn.Module):
                 )
             ]
         )
+
+        self.using_bread_adapter = bread_adapter_at_ds >= 1
+        bread_adapter_in_added = False
+        bread_adapter_out_added = False
+
         input_block_chans = [model_channels]
         ch = model_channels
         ds = 1
@@ -731,6 +758,12 @@ class UNetModel(nn.Module):
                 ds *= 2
                 vprint(f"up   | ds {ds // 2} -> {ds}")
 
+                if (bread_adapter_at_ds == ds) and (not bread_adapter_in_added):
+                    vprint(f"adding bread_adapter_in at {ds}")
+                    self.bread_adapter_in = BreadAdapterIn(in_channels=self.in_channels, model_channels=ch)
+                    bread_adapter_in_added = True
+                    self.input_blocks[-1].bread_adapter_in_pt = True
+
         vprint(f"input_block_chans: {input_block_chans}")
 
         self.middle_block = TimestepEmbedSequential(
@@ -838,6 +871,12 @@ class UNetModel(nn.Module):
                         layers.append(caa)
                 vprint(f"down | {level} of {len(channel_mult)} | ch {ch} | ds {ds}")
                 if level and i == num_res_blocks:
+                    if (bread_adapter_at_ds == ds) and (not bread_adapter_out_added):
+                        vprint(f"adding bread_adapter_out_added at {ds}")
+                        self.bread_adapter_out = BreadAdapterOut(out_channels=out_channels, model_channels=ch)
+                        bread_adapter_out_added = True
+                        layers[-1].bread_adapter_out_pt = True
+
                     layers.append(
                         ResBlock(
                             ch,
@@ -942,15 +981,25 @@ class UNetModel(nn.Module):
         h = h.type(self.inner_dtype)
         if self.channels_last_mem:
             h = h.to(memory_format=th.channels_last)
+        if self.using_bread_adapter:
+            h_bread_in = self.bread_adapter_in(h)
+            h_bread_out = None
         for module in self.input_blocks:
             h, txt = module((h, txt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
+            if getattr(module, 'bread_adapter_in_pt', False):
+                h = h + h_bread_in
             hs.append(h)
         h, txt = self.middle_block((h, txt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
         for module in self.output_blocks:
             cat_in = th.cat([h, hs.pop()], dim=1)
             h, txt = module((cat_in, txt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
+            if getattr(module, 'bread_adapter_out_pt', False):
+                h_bread_out = self.bread_adapter_out(h)
         h = h.type(x.dtype)
         h = self.out(h)
+
+        if self.using_bread_adapter:
+            h = h + h_bread_out
 
         if self.rgb_adapter:
             h = self.output_to_rgb(h)
