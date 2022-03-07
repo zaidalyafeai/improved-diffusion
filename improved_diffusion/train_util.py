@@ -353,7 +353,7 @@ class TrainLoop:
                                 if hasattr(self.model, 'bread_adapter_in'):
                                     # remap input transducer
                                     v = sd[k]
-                                    newk = 'bread_adapter_in.' + '.'.join(segs[2:])
+                                    newk = 'bread_adapter_in.transducer.' + '.'.join(segs[3:])
                                     print(f'{v.shape} {k} -> {newk}')
                                     newsd[newk] = v
                                 else:
@@ -370,7 +370,7 @@ class TrainLoop:
                             if hasattr(self.model, 'bread_adapter_out'):
                                 # remap input transducer
                                 v = sd[k]
-                                newk = 'bread_adapter_out.' + '.'.join(k.split('.')[1:])
+                                newk = 'bread_adapter_out.transducer.' + '.'.join(k.split('.')[2:])
                                 print(f'{v.shape} {k} -> {newk}')
                                 newsd[newk] = v
                             else:
