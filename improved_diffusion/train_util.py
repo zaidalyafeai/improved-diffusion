@@ -166,7 +166,7 @@ class TrainLoop:
             else:
                 is_bread = False
 
-                if n.startswith('out.'):
+                if n.startswith('out.') or n.startswith('bread'):
                     is_bread = True
                 elif 'input_blocks' in n:
                     num = int(n.split('.')[1])
@@ -350,16 +350,32 @@ class TrainLoop:
                             segs = k.split('.')
                             num = int(segs[1])
                             if num == 0:
-                                # skip input transducer
-                                continue
-                            v = sd[k]
-                            segs[1] = str(num + self.state_dict_sandwich)
-                            newk = '.'.join(segs)
-                            print(f'{v.shape} {k} -> {newk}')
-                            newsd[newk] = v
+                                if hasattr(self.model, 'bread_adapter_in'):
+                                    # remap input transducer
+                                    v = sd[k]
+                                    newk = 'bread_adapter_in.' + '.'.join(segs[2:])
+                                    print(f'{v.shape} {k} -> {newk}')
+                                    newsd[newk] = v
+                                else:
+                                    # skip input transducer
+                                    print(f"skipping {k}")
+                                    continue
+                            else:
+                                v = sd[k]
+                                segs[1] = str(num + self.state_dict_sandwich)
+                                newk = '.'.join(segs)
+                                print(f'{v.shape} {k} -> {newk}')
+                                newsd[newk] = v
                         elif k.startswith("out."):
-                            # skip output transducer
-                            print(f"skipping {k}")
+                            if hasattr(self.model, 'bread_adapter_out'):
+                                # remap input transducer
+                                v = sd[k]
+                                newk = 'bread_adapter_out.' + '.'.join(k.split('.')[1:])
+                                print(f'{v.shape} {k} -> {newk}')
+                                newsd[newk] = v
+                            else:
+                                # skip output transducer
+                                print(f"skipping {k}")
                         else:
                             newk = k
                             for prefix in self.state_dict_sandwich_manual_remaps:
