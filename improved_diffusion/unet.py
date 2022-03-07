@@ -190,6 +190,7 @@ class BreadAdapterOut(nn.Module):
 
         self.use_checkpoint = use_checkpoint
 
+        self.down = Downsample(model_channels, False, dims)
         self.up = Upsample(out_channels, False, dims)
         self.transducer = nn.Sequential(
             normalization(model_channels),
@@ -203,7 +204,7 @@ class BreadAdapterOut(nn.Module):
         )
 
     def _forward(self, x):
-        return self.up(self.transducer(x))
+        return self.up(self.transducer(self.down(x)))
 
 
 class ResBlock(TimestepBlock):
@@ -890,7 +891,7 @@ class UNetModel(nn.Module):
                     vprint(f"down | ds {ds * 2} -> {ds}")
                 self.output_blocks.append(TimestepEmbedSequential(*layers))
                 if (bread_adapter_at_ds == (ds*2)) and (not bread_adapter_out_added):
-                    vprint(f"adding bread_adapter_out_added at {ds}")
+                    vprint(f"adding bread_adapter_out at {ds}")
                     self.bread_adapter_out = BreadAdapterOut(out_channels=out_channels, model_channels=ch)
                     bread_adapter_out_added = True
                     self.output_blocks[-1].bread_adapter_out_pt = True
