@@ -889,7 +889,7 @@ class UNetModel(nn.Module):
                     ds //= 2
                     vprint(f"down | ds {ds * 2} -> {ds}")
                 self.output_blocks.append(TimestepEmbedSequential(*layers))
-                if (bread_adapter_at_ds == ds) and (not bread_adapter_out_added):
+                if (bread_adapter_at_ds == (ds*2)) and (not bread_adapter_out_added):
                     vprint(f"adding bread_adapter_out_added at {ds}")
                     self.bread_adapter_out = BreadAdapterOut(out_channels=out_channels, model_channels=ch)
                     bread_adapter_out_added = True
