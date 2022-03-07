@@ -166,6 +166,25 @@ class Downsample(nn.Module):
         return self.op(x)
 
 
+class BreadAdapterIn(nn.Module):
+    def __init__(self, in_channels, model_channels, res, dims=2, use_checkpoint=False):
+        super().__init__()
+
+        self.res = res
+        self.use_checkpoint = use_checkpoint
+
+        self.down = Downsample(in_channels, False, dims)
+        self.transducer = conv_nd(dims, in_channels, model_channels, 3, padding=1)
+
+    def forward(self, x):
+        return checkpoint(
+            self._forward, (x,), self.parameters(), self.use_checkpoint
+        )
+
+    def _forward(self, x):
+        return self.transducer(self.down(x))
+
+
 class ResBlock(TimestepBlock):
     """
     A residual block that can optionally change the number of channels.
