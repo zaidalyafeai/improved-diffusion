@@ -69,6 +69,7 @@ class TrainLoop:
         arithmetic_avg_extra_shift=0,
         gain_ff_setup_step=False,
         only_optimize_bread=False,
+        param_sandwich=None
     ):
         self.model = model
         self.diffusion = diffusion
@@ -99,6 +100,8 @@ class TrainLoop:
                                                   for kv in state_dict_sandwich_manual_remaps.split(",")
                                                   if len(kv) > 0
                                                   }
+        if param_sandwich is None:
+            param_sandwich = state_dict_sandwich
         self.master_device = 'cpu' if master_on_cpu else None
         self.use_amp = use_amp
         self.use_profiler = use_profiler
@@ -170,10 +173,10 @@ class TrainLoop:
                     is_bread = True
                 elif 'input_blocks' in n:
                     num = int(n.split('.')[1])
-                    is_bread = num < state_dict_sandwich
+                    is_bread = num < param_sandwich
                 elif 'output_blocks' in n:
                     num = int(n.split('.')[1])
-                    is_bread = (len(model.output_blocks) - num - 1) < state_dict_sandwich
+                    is_bread = (len(model.output_blocks) - num - 1) < param_sandwich
 
                 if is_bread:
                     print(f"is_bread: {n}")
