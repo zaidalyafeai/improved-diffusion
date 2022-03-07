@@ -150,7 +150,8 @@ def main():
         arithmetic_avg_from_step=args.arithmetic_avg_from_step,
         arithmetic_avg_extra_shift=args.arithmetic_avg_extra_shift,
         gain_ff_setup_step=args.gain_ff_setup_step,
-        only_optimize_bread=args.only_optimize_bread
+        only_optimize_bread=args.only_optimize_bread,
+        param_sandwich=args.param_sandwich
     ).run_loop()
 
 
@@ -209,7 +210,8 @@ def create_argparser():
         flip_lr_prob_es=0.,
         px_scales_path="",
         save_first_batch=False,
-        only_optimize_bread=False
+        only_optimize_bread=False,
+        param_sandwich=0,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
