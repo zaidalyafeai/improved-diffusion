@@ -431,10 +431,6 @@ class TrainLoop:
             )
             ours = [v['params'] for v in self.opt.state_dict()['param_groups']]
             theirs = [v['params'] for v in state_dict['param_groups']]
-            print(f"len(ours) {len(ours)}")
-            print(f"len(theirs) {len(theirs)}")
-            for i, (o, t) in enumerate(zip(ours, theirs)):
-                print(f"\t{i:02d}: len(o) {len(o)} | len(t) {len(t)}")
 
             if not all(len(o) == len(t) for o, t in zip(ours, theirs)):
                 # loading manual mp opt in amp
