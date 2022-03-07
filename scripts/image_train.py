@@ -211,7 +211,7 @@ def create_argparser():
         px_scales_path="",
         save_first_batch=False,
         only_optimize_bread=False,
-        param_sandwich=0,
+        param_sandwich=-1,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

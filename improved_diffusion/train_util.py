@@ -69,7 +69,7 @@ class TrainLoop:
         arithmetic_avg_extra_shift=0,
         gain_ff_setup_step=False,
         only_optimize_bread=False,
-        param_sandwich=None
+        param_sandwich=-1
     ):
         self.model = model
         self.diffusion = diffusion
@@ -100,7 +100,7 @@ class TrainLoop:
                                                   for kv in state_dict_sandwich_manual_remaps.split(",")
                                                   if len(kv) > 0
                                                   }
-        if param_sandwich is None:
+        if param_sandwich < 0:
             param_sandwich = state_dict_sandwich
         self.master_device = 'cpu' if master_on_cpu else None
         self.use_amp = use_amp
