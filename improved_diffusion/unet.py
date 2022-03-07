@@ -193,7 +193,7 @@ class BreadAdapterOut(nn.Module):
         self.up = Upsample(out_channels, False, dims)
         self.transducer = nn.Sequential(
             normalization(model_channels),
-            SiLU(use_checkpoint=use_checkpoint_lowcost),
+            SiLU(),
             zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
         )
 
