@@ -16,7 +16,7 @@ from improved_diffusion.script_util import (
     create_model_and_diffusion,
     add_dict_to_argparser,
     args_to_dict,
-    load_config_to_args,
+    load_config_to_model,
 )
 
 
@@ -30,22 +30,29 @@ def main():
     have_config_path = config_path != ""
     using_config = have_config_path and os.path.exists(config_path)
 
-    if using_config:
-        args, _ = load_config_to_args(config_path, args)
-
-    tokenizer = None
-    tokenizer_config = dict(
-        max_seq_len=getattr(args, 'max_seq_len', None),
-        char_level=getattr(args, 'char_level', None),
-    )
-
-    if args.txt:
-        tokenizer = load_tokenizer(**tokenizer_config)
-
     logger.log("creating model and diffusion...")
-    model, diffusion = create_model_and_diffusion(
-        **args_to_dict(args, model_and_diffusion_defaults().keys())
-    )
+
+    if using_config:
+        model, diffusion_factory, tokenizer, _ = load_config_to_model(config_path, args)
+        diffusion = diffusion_factory()
+
+    else:
+        tokenizer = None
+        tokenizer_config = dict(
+            max_seq_len=getattr(args, 'max_seq_len', None),
+            char_level=getattr(args, 'char_level', None),
+        )
+
+        if args.txt:
+            tokenizer = load_tokenizer(**tokenizer_config)
+
+
+        model_diffusion_args = args_to_dict(args, model_and_diffusion_defaults().keys())
+        model_diffusion_args['tokenizer'] = tokenizer
+        model, diffusion = create_model_and_diffusion(
+            **model_diffusion_args
+        )
+
     model.load_state_dict(
         dist_util.load_state_dict(args.model_path, map_location="cpu")
     )
@@ -106,7 +113,10 @@ def run_bpd_evaluation(model, diffusion, data, num_samples, clip_denoised, token
 def create_argparser():
     defaults = dict(
         data_dir="", clip_denoised=True, num_samples=1000, batch_size=1, model_path="",
-        config_path=""
+        config_path="",
+        char_level=True,
+        max_seq_len=384,
+
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

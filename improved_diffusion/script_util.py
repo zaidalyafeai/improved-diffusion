@@ -650,7 +650,7 @@ def create_gaussian_diffusion(
         loss_type = gd.LossType.MSE
     if not timestep_respacing:
         timestep_respacing = [steps]
-    def diffusion_factory(timestep_respacing_):
+    def diffusion_factory(timestep_respacing_=timestep_respacing):
         return SpacedDiffusion(
             use_timesteps=space_timesteps(steps, timestep_respacing_),
             betas=betas,
@@ -671,7 +671,7 @@ def create_gaussian_diffusion(
         )
     if return_diffusion_factory:
         return diffusion_factory
-    return diffusion_factory(timestep_respacing_=timestep_respacing)
+    return diffusion_factory()
 
 
 def add_dict_to_argparser(parser, default_dict):
