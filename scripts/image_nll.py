@@ -97,10 +97,10 @@ def run_bpd_evaluation(model, diffusion, data, num_samples, clip_denoised, token
             term_list.append(terms.detach().cpu().numpy())
 
         total_bpd = minibatch_metrics["total_bpd"]
+        image_bpd.append(total_bpd.cpu().numpy())
         total_bpd = total_bpd.mean() / dist.get_world_size()
         dist.all_reduce(total_bpd)
         all_bpd.append(total_bpd.item())
-        image_bpd.append(total_bpd.cpu().numpy())
         num_complete += dist.get_world_size() * batch.shape[0]
 
         logger.log(f"done {num_complete} samples: bpd={np.mean(all_bpd)}")
@@ -112,7 +112,7 @@ def run_bpd_evaluation(model, diffusion, data, num_samples, clip_denoised, token
             np.savez(out_path, np.mean(np.stack(terms), axis=0))
 
         out_path = os.path.join(logger.get_dir(), f"total_bpd.npz")
-        logger.log(f"saving {name} terms to {out_path}")
+        logger.log(f"saving total_bpd to {out_path}")
         np.savez(out_path, np.stack(image_bpd))
 
     dist.barrier()
