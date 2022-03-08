@@ -16,6 +16,7 @@ from improved_diffusion.script_util import (
     create_model_and_diffusion,
     add_dict_to_argparser,
     args_to_dict,
+    load_config_to_args,
 )
 
 
