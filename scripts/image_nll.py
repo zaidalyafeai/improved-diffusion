@@ -33,7 +33,7 @@ def main():
     logger.log("creating model and diffusion...")
 
     if using_config:
-        model, diffusion_factory, tokenizer, _ = load_config_to_model(config_path, args)
+        model, diffusion_factory, tokenizer, _ = load_config_to_model(config_path)
         diffusion = diffusion_factory()
 
     else:
