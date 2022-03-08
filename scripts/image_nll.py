@@ -6,10 +6,11 @@ import argparse
 import os
 
 import numpy as np
+import torch as th
 import torch.distributed as dist
 
 from improved_diffusion import dist_util, logger
-from improved_diffusion.image_datasets import load_data
+from improved_diffusion.image_datasets import load_data, tokenize, load_tokenizer
 from improved_diffusion.script_util import (
     model_and_diffusion_defaults,
     create_model_and_diffusion,
@@ -23,6 +24,22 @@ def main():
 
     dist_util.setup_dist()
     logger.configure()
+
+    config_path = args.config_path
+    have_config_path = config_path != ""
+    using_config = have_config_path and os.path.exists(config_path)
+
+    if using_config:
+        args, _ = load_config_to_args(config_path, args)
+
+    tokenizer = None
+    tokenizer_config = dict(
+        max_seq_len=getattr(args, 'max_seq_len', None),
+        char_level=getattr(args, 'char_level', None),
+    )
+
+    if args.txt:
+        tokenizer = load_tokenizer(**tokenizer_config)
 
     logger.log("creating model and diffusion...")
     model, diffusion = create_model_and_diffusion(
@@ -40,20 +57,23 @@ def main():
         batch_size=args.batch_size,
         image_size=args.image_size,
         class_cond=args.class_cond,
+        txt=args.txt,
         deterministic=True,
     )
 
     logger.log("evaluating...")
-    run_bpd_evaluation(model, diffusion, data, args.num_samples, args.clip_denoised)
+    run_bpd_evaluation(model, diffusion, data, args.num_samples, args.clip_denoised, tokenizer=tokenizer)
 
 
-def run_bpd_evaluation(model, diffusion, data, num_samples, clip_denoised):
+def run_bpd_evaluation(model, diffusion, data, num_samples, clip_denoised, tokenizer=None):
     all_bpd = []
     all_metrics = {"vb": [], "mse": [], "xstart_mse": []}
     num_complete = 0
     while num_complete < num_samples:
         batch, model_kwargs = next(data)
         batch = batch.to(dist_util.dev())
+        if 'txt' in model_kwargs:
+            model_kwargs['txt'] = th.as_tensor(tokenize(tokenizer, model_kwargs['txt']), device=dist_util.dev())
         model_kwargs = {k: v.to(dist_util.dev()) for k, v in model_kwargs.items()}
         minibatch_metrics = diffusion.calc_bpd_loop(
             model, batch, clip_denoised=clip_denoised, model_kwargs=model_kwargs
@@ -84,7 +104,8 @@ def run_bpd_evaluation(model, diffusion, data, num_samples, clip_denoised):
 
 def create_argparser():
     defaults = dict(
-        data_dir="", clip_denoised=True, num_samples=1000, batch_size=1, model_path=""
+        data_dir="", clip_denoised=True, num_samples=1000, batch_size=1, model_path="",
+        config_path=""
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
