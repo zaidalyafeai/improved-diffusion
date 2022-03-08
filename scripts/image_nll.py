@@ -70,10 +70,12 @@ def main():
     )
 
     logger.log("evaluating...")
-    run_bpd_evaluation(model, diffusion, data, args.num_samples, args.clip_denoised, tokenizer=tokenizer)
+    run_bpd_evaluation(model, diffusion, data, args.num_samples, args.clip_denoised,
+                       tokenizer=tokenizer,
+                       progress=args.progress)
 
 
-def run_bpd_evaluation(model, diffusion, data, num_samples, clip_denoised, tokenizer=None):
+def run_bpd_evaluation(model, diffusion, data, num_samples, clip_denoised, tokenizer=None, progress=False):
     all_bpd = []
     all_metrics = {"vb": [], "mse": [], "xstart_mse": []}
     num_complete = 0
@@ -84,7 +86,8 @@ def run_bpd_evaluation(model, diffusion, data, num_samples, clip_denoised, token
             model_kwargs['txt'] = th.as_tensor(tokenize(tokenizer, model_kwargs['txt']), device=dist_util.dev())
         model_kwargs = {k: v.to(dist_util.dev()) for k, v in model_kwargs.items()}
         minibatch_metrics = diffusion.calc_bpd_loop(
-            model, batch, clip_denoised=clip_denoised, model_kwargs=model_kwargs
+            model, batch, clip_denoised=clip_denoised, model_kwargs=model_kwargs,
+            progress=progress
         )
 
         for key, term_list in all_metrics.items():
@@ -116,6 +119,7 @@ def create_argparser():
         config_path="",
         char_level=True,
         max_seq_len=384,
+        progress=False,
 
     )
     defaults.update(model_and_diffusion_defaults())

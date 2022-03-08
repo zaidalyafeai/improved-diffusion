@@ -1187,7 +1187,7 @@ class GaussianDiffusion:
         )
         return mean_flat(kl_prior) / np.log(2.0)
 
-    def calc_bpd_loop(self, model, x_start, clip_denoised=True, model_kwargs=None):
+    def calc_bpd_loop(self, model, x_start, clip_denoised=True, model_kwargs=None, progress=False):
         """
         Compute the entire variational lower-bound, measured in bits-per-dim,
         as well as other related quantities.
@@ -1211,7 +1211,15 @@ class GaussianDiffusion:
         vb = []
         xstart_mse = []
         mse = []
-        for t in list(range(self.num_timesteps))[::-1]:
+
+        indices = list(range(self.num_timesteps))[::-1]
+        if progress:
+            # Lazy import so that we don't depend on tqdm.
+            from tqdm.auto import tqdm
+
+            indices = tqdm(indices)
+
+        for t in indices:
             t_batch = th.tensor([t] * batch_size, device=device)
             noise = th.randn_like(x_start)
             x_t = self.q_sample(x_start=x_start, t=t_batch, noise=noise)
