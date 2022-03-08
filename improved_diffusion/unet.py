@@ -558,6 +558,7 @@ class UNetModel(nn.Module):
         use_checkpoint_lowcost=False,
         weave_use_ff_gain=False,
         bread_adapter_at_ds=-1,
+        bread_adapter_only=False,
     ):
         super().__init__()
 
@@ -650,6 +651,7 @@ class UNetModel(nn.Module):
         self.using_bread_adapter = bread_adapter_at_ds >= 1
         bread_adapter_in_added = False
         bread_adapter_out_added = False
+        self.bread_adapter_only = bread_adapter_only
 
         input_block_chans = [model_channels]
         ch = model_channels
@@ -996,7 +998,10 @@ class UNetModel(nn.Module):
         for module in self.input_blocks:
             h, txt = module((h, txt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
             if getattr(module, 'bread_adapter_in_pt', False):
-                h = h + h_bread_in
+                if self.bread_adapter_only:
+                    h = h_bread_in
+                else:
+                    h = h + h_bread_in
             hs.append(h)
         h, txt = self.middle_block((h, txt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
         skip_pop = False
@@ -1015,7 +1020,10 @@ class UNetModel(nn.Module):
         h = self.out(h)
 
         if self.using_bread_adapter:
-            h = h + h_bread_out
+            if self.bread_adapter_only:
+                h = h_bread_out
+            else:
+                h = h + h_bread_out
 
         if self.rgb_adapter:
             h = self.output_to_rgb(h)
