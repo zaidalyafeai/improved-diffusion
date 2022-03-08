@@ -113,7 +113,7 @@ def run_bpd_evaluation(model, diffusion, data, num_samples, clip_denoised, token
 
         out_path = os.path.join(logger.get_dir(), f"total_bpd.npz")
         logger.log(f"saving {name} terms to {out_path}")
-        np.savez(out_path, np.stack(image_bpd)))
+        np.savez(out_path, np.stack(image_bpd))
 
     dist.barrier()
     logger.log("evaluation complete")
