@@ -55,7 +55,8 @@ def main():
                                        # map_location="cpu",
                                        )
         sd = apply_state_dict_sandwich(model, sd, args.state_dict_sandwich)
-        model.load_state_dict(sd)
+        incompatible_keys = model.load_state_dict(sd, strict=False)
+        print(incompatible_keys)
     model.to(dist_util.dev())
     model.eval()
 
