@@ -144,14 +144,17 @@ class Downsample(nn.Module):
                  downsampling occurs in the inner-two dimensions.
     """
 
-    def __init__(self, channels, use_conv, dims=2, use_checkpoint_lowcost=False):
+    def __init__(self, channels, use_conv, dims=2, use_checkpoint_lowcost=False, use_nearest=False):
         super().__init__()
         self.channels = channels
         self.use_conv = use_conv
         self.dims = dims
         self.use_checkpoint = use_checkpoint_lowcost and not use_conv
+        self.use_nearest = use_nearest
         stride = 2 if dims != 3 else (1, 2, 2)
-        if use_conv:
+        if self.use_nearest:
+            self.op = None
+        elif use_conv:
             self.op = conv_nd(dims, channels, channels, 3, stride=stride, padding=1)
         else:
             self.op = avg_pool_nd(dims, kernel_size=stride, stride=stride)
@@ -163,16 +166,18 @@ class Downsample(nn.Module):
 
     def _forward(self, x):
         assert x.shape[1] == self.channels
+        if self.use_nearest:
+            return F.interpolate(x, scale_factor=0.5, mode="nearest")
         return self.op(x)
 
 
 class BreadAdapterIn(nn.Module):
-    def __init__(self, in_channels, model_channels, dims=2, use_checkpoint=False):
+    def __init__(self, in_channels, model_channels, use_nearest=False, dims=2, use_checkpoint=False):
         super().__init__()
 
         self.use_checkpoint = use_checkpoint
 
-        self.down = Downsample(in_channels, False, dims)
+        self.down = Downsample(in_channels, False, dims, use_nearest=use_nearest)
         self.transducer = conv_nd(dims, in_channels, model_channels, 3, padding=1)
 
     def forward(self, x):
@@ -559,6 +564,7 @@ class UNetModel(nn.Module):
         weave_use_ff_gain=False,
         bread_adapter_at_ds=-1,
         bread_adapter_only=False,
+        bread_adapter_nearest_in=False,
     ):
         super().__init__()
 
@@ -764,7 +770,8 @@ class UNetModel(nn.Module):
 
                 if (bread_adapter_at_ds == ds) and (not bread_adapter_in_added):
                     vprint(f"adding bread_adapter_in at {ds}")
-                    self.bread_adapter_in = BreadAdapterIn(in_channels=self.in_channels, model_channels=ch)
+                    self.bread_adapter_in = BreadAdapterIn(in_channels=self.in_channels, model_channels=ch,
+                                                           use_nearest=bread_adapter_nearest_in)
                     bread_adapter_in_added = True
                     self.input_blocks[-1].bread_adapter_in_pt = True
 

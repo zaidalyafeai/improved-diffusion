@@ -87,6 +87,7 @@ def model_and_diffusion_defaults():
         use_v_loss=False,
         use_snr_plus_one_loss=False,
         bread_adapter_at_ds=-1,
+        bread_adapter_nearest_in=False,
     )
 
 
@@ -160,6 +161,7 @@ def create_model_and_diffusion(
     use_v_loss=False,
     use_snr_plus_one_loss=False,
     bread_adapter_at_ds=-1,
+    bread_adapter_nearest_in=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     print(f"create_model_and_diffusion: use_checkpoint={use_checkpoint}")
@@ -220,6 +222,7 @@ def create_model_and_diffusion(
         use_checkpoint_lowcost=use_checkpoint_lowcost,
         weave_use_ff_gain=weave_use_ff_gain,
         bread_adapter_at_ds=bread_adapter_at_ds,
+        bread_adapter_nearest_in=bread_adapter_nearest_in,
         verbose=verbose,
     )
     diffusion = create_gaussian_diffusion(
@@ -405,6 +408,7 @@ def create_model(
         use_checkpoint_lowcost=use_checkpoint_lowcost,
         weave_use_ff_gain=weave_use_ff_gain,
         bread_adapter_at_ds=bread_adapter_at_ds,
+        bread_adapter_nearest_in=bread_adapter_nearest_in,
         verbose=verbose
     )
 
