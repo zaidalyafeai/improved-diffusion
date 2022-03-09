@@ -565,6 +565,7 @@ class UNetModel(nn.Module):
         bread_adapter_at_ds=-1,
         bread_adapter_only=False,
         bread_adapter_nearest_in=False,
+        bread_adapter_zero_conv_in=False,
     ):
         super().__init__()
 
@@ -646,10 +647,13 @@ class UNetModel(nn.Module):
         if rgb_adapter:
             self.rgb_to_input = DropinRGBAdapter(needs_var=False)
 
+        mapper = lambda x: x
+        if using_bread_adapter and bread_adapter_zero_conv_in:
+            mapper = zero_module
         self.input_blocks = nn.ModuleList(
             [
                 TimestepEmbedSequential(
-                    conv_nd(dims, in_channels, model_channels, 3, padding=1)
+                    mapper(conv_nd(dims, in_channels, model_channels, 3, padding=1))
                 )
             ]
         )
