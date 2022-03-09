@@ -653,7 +653,7 @@ class UNetModel(nn.Module):
         self.bread_adapter_only = bread_adapter_only
 
         mapper = lambda x: x
-        if using_bread_adapter and bread_adapter_zero_conv_in:
+        if self.using_bread_adapter and bread_adapter_zero_conv_in:
             mapper = zero_module
         self.input_blocks = nn.ModuleList(
             [
