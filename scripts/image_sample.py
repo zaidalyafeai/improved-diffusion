@@ -21,6 +21,7 @@ from improved_diffusion.script_util import (
     load_config_to_args
 )
 from improved_diffusion.image_datasets import load_tokenizer, tokenize
+from improved_diffusion.train_util import apply_state_dict_sandwich
 
 
 def main():
@@ -49,9 +50,12 @@ def main():
     if args.model_path == "":
         print('not loading a model')
     else:
-        model.load_state_dict(
-            dist_util.load_state_dict(args.model_path, map_location="cpu")
-        )
+        sd = dist_util.load_state_dict(args.model_path,
+                                       map_location=dist_util.dev(),
+                                       # map_location="cpu",
+                                       )
+        sd = apply_state_dict_sandwich(model, sd, args.state_dict_sandwich)
+        model.load_state_dict(sd)
     model.to(dist_util.dev())
     model.eval()
 
@@ -184,6 +188,7 @@ def create_argparser():
         clf_free_guidance=False,
         guidance_scale=0.,
         txt_drop_string='<mask><mask><mask><mask>',  # TODO: model attr
+        state_dict_sandwich=0,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

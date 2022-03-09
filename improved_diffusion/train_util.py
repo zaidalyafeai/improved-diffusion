@@ -345,51 +345,12 @@ class TrainLoop:
                 sd = dist_util.load_state_dict(
                     resume_checkpoint, map_location=dist_util.dev()
                 )
-                if self.state_dict_sandwich > 0:
-                    ks = list(sd.keys())
-                    newsd = {}
-                    for k in ks:
-                        if k.startswith("input_blocks."):
-                            segs = k.split('.')
-                            num = int(segs[1])
-                            if num == 0:
-                                if hasattr(self.model, 'bread_adapter_in'):
-                                    # remap input transducer
-                                    v = sd[k]
-                                    newk = 'bread_adapter_in.transducer.' + '.'.join(segs[3:])
-                                    print(f'{v.shape} {k} -> {newk}')
-                                    newsd[newk] = v
-                                else:
-                                    # skip input transducer
-                                    print(f"skipping {k}")
-                                    continue
-                            else:
-                                v = sd[k]
-                                segs[1] = str(num + self.state_dict_sandwich)
-                                newk = '.'.join(segs)
-                                print(f'{v.shape} {k} -> {newk}')
-                                newsd[newk] = v
-                        elif k.startswith("out."):
-                            if hasattr(self.model, 'bread_adapter_out'):
-                                # remap input transducer
-                                v = sd[k]
-                                newk = 'bread_adapter_out.transducer.' + '.'.join(k.split('.')[1:])
-                                print(f'{v.shape} {k} -> {newk}')
-                                newsd[newk] = v
-                            else:
-                                # skip output transducer
-                                print(f"skipping {k}")
-                        else:
-                            newk = k
-                            for prefix in self.state_dict_sandwich_manual_remaps:
-                                if k.startswith(prefix):
-                                    newprefix = self.state_dict_sandwich_manual_remaps[prefix]
-                                    _, _, suffix = k.partition(prefix)
-                                    newk = newprefix + suffix
-                                    print(f'{sd[k].shape} {k} -> {newk}')
-                            newsd[newk] = sd[k]
-                else:
-                    newsd = sd
+                newsd = apply_state_dict_sandwich(
+                    self.model,
+                    sd,
+                    self.state_dict_sandwich,
+                    self.state_dict_sandwich_manual_remaps,
+                )
 
                 incompatible_keys = self.model.load_state_dict(
                     newsd,
@@ -888,3 +849,56 @@ def log_loss_dict(diffusion, ts, losses):
         for sub_t, sub_loss in zip(ts.cpu().numpy(), values.detach().cpu().numpy()):
             quartile = int(4 * sub_t / diffusion.num_timesteps)
             logger.logkv_mean(f"{key}_q{quartile}", sub_loss)
+
+
+def apply_state_dict_sandwich(model, sd, state_dict_sandwich, state_dict_sandwich_manual_remaps=None):
+    if state_dict_sandwich <= 0:
+        return sd
+
+    if state_dict_sandwich_manual_remaps is None:
+        state_dict_sandwich_manual_remaps = {}
+
+    ks = list(sd.keys())
+    newsd = {}
+
+    for k in ks:
+        if k.startswith("input_blocks."):
+            segs = k.split('.')
+            num = int(segs[1])
+            if num == 0:
+                if hasattr(model, 'bread_adapter_in'):
+                    # remap input transducer
+                    v = sd[k]
+                    newk = 'bread_adapter_in.transducer.' + '.'.join(segs[3:])
+                    print(f'{v.shape} {k} -> {newk}')
+                    newsd[newk] = v
+                else:
+                    # skip input transducer
+                    print(f"skipping {k}")
+                    continue
+            else:
+                v = sd[k]
+                segs[1] = str(num + state_dict_sandwich)
+                newk = '.'.join(segs)
+                print(f'{v.shape} {k} -> {newk}')
+                newsd[newk] = v
+        elif k.startswith("out."):
+            if hasattr(model, 'bread_adapter_out'):
+                # remap input transducer
+                v = sd[k]
+                newk = 'bread_adapter_out.transducer.' + '.'.join(k.split('.')[1:])
+                print(f'{v.shape} {k} -> {newk}')
+                newsd[newk] = v
+            else:
+                # skip output transducer
+                print(f"skipping {k}")
+        else:
+            newk = k
+            for prefix in state_dict_sandwich_manual_remaps:
+                if k.startswith(prefix):
+                    newprefix = state_dict_sandwich_manual_remaps[prefix]
+                    _, _, suffix = k.partition(prefix)
+                    newk = newprefix + suffix
+                    print(f'{sd[k].shape} {k} -> {newk}')
+            newsd[newk] = sd[k]
+    return newsd
