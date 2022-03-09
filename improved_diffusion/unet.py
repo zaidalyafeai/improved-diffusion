@@ -647,6 +647,11 @@ class UNetModel(nn.Module):
         if rgb_adapter:
             self.rgb_to_input = DropinRGBAdapter(needs_var=False)
 
+        self.using_bread_adapter = bread_adapter_at_ds >= 1
+        bread_adapter_in_added = False
+        bread_adapter_out_added = False
+        self.bread_adapter_only = bread_adapter_only
+
         mapper = lambda x: x
         if using_bread_adapter and bread_adapter_zero_conv_in:
             mapper = zero_module
@@ -657,11 +662,6 @@ class UNetModel(nn.Module):
                 )
             ]
         )
-
-        self.using_bread_adapter = bread_adapter_at_ds >= 1
-        bread_adapter_in_added = False
-        bread_adapter_out_added = False
-        self.bread_adapter_only = bread_adapter_only
 
         input_block_chans = [model_channels]
         ch = model_channels
