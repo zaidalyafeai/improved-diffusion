@@ -107,11 +107,12 @@ class Upsample(nn.Module):
                  upsampling occurs in the inner-two dimensions.
     """
 
-    def __init__(self, channels, use_conv, dims=2, use_checkpoint_lowcost=False):
+    def __init__(self, channels, use_conv, dims=2, use_checkpoint_lowcost=False, mode='nearest'):
         super().__init__()
         self.channels = channels
         self.use_conv = use_conv
         self.dims = dims
+        self.mode = mode
         self.use_checkpoint = use_checkpoint_lowcost and not use_conv
         if use_conv:
             self.conv = conv_nd(dims, channels, channels, 3, padding=1)
@@ -125,10 +126,10 @@ class Upsample(nn.Module):
         assert x.shape[1] == self.channels
         if self.dims == 3:
             x = F.interpolate(
-                x, (x.shape[2], x.shape[3] * 2, x.shape[4] * 2), mode="nearest"
+                x, (x.shape[2], x.shape[3] * 2, x.shape[4] * 2), mode=self.mode
             )
         else:
-            x = F.interpolate(x, scale_factor=2, mode="nearest")
+            x = F.interpolate(x, scale_factor=2, mode=self.mode)
         if self.use_conv:
             x = self.conv(x)
         return x
