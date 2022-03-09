@@ -308,6 +308,7 @@ def create_model(
     use_checkpoint_lowcost=False,
     weave_use_ff_gain=False,
     bread_adapter_at_ds=-1,
+    bread_adapter_nearest_in=False,
     verbose=False,
 ):
     text_lr_mult = 1.
