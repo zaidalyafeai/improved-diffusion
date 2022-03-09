@@ -651,6 +651,7 @@ class UNetModel(nn.Module):
         bread_adapter_in_added = False
         bread_adapter_out_added = False
         self.bread_adapter_only = bread_adapter_only
+        print(f'unet self.bread_adapter_only: {self.bread_adapter_only}')
 
         mapper = lambda x: x
         if self.using_bread_adapter and bread_adapter_zero_conv_in:
