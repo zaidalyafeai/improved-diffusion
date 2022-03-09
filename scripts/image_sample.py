@@ -46,9 +46,12 @@ def main():
         **model_diffusion_args
         # verbose=False
     )
-    model.load_state_dict(
-        dist_util.load_state_dict(args.model_path, map_location="cpu")
-    )
+    if args.model_path == "":
+        print('not loading a model')
+    else:
+        model.load_state_dict(
+            dist_util.load_state_dict(args.model_path, map_location="cpu")
+        )
     model.to(dist_util.dev())
     model.eval()
 
