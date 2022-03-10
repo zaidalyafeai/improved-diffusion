@@ -175,7 +175,7 @@ def mean_flat(tensor):
     return tensor.mean(dim=list(range(1, len(tensor.shape))))
 
 
-def normalization(channels, use_checkpoint=False, base_channels=None):
+def normalization(channels, use_checkpoint=False, base_channels=-1):
     """
     Make a standard normalization layer.
 
@@ -183,7 +183,7 @@ def normalization(channels, use_checkpoint=False, base_channels=None):
     :return: an nn.Module for normalization.
     """
     cls, kwargs = GroupNorm32, {}
-    if base_channels is not None:
+    if base_channels > 0:
         cls, kwargs = GroupNormExtended, {"num_channels_base": base_channels}
     if channels % 72 == 0:
         # hack
@@ -191,7 +191,7 @@ def normalization(channels, use_checkpoint=False, base_channels=None):
     return cls(32, channels, use_checkpoint=use_checkpoint, **kwargs)
 
 
-def normalization_1group(channels, base_channels=None):
+def normalization_1group(channels, base_channels=-1):
     """
     Make a standard normalization layer.
 
