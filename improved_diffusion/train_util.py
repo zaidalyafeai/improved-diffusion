@@ -863,6 +863,7 @@ def apply_resize(model, sd):
             slices = tuple(slice(0, i) for i in sd[n].shape)
             with th.no_grad():
                 p.data.__setitem__(slices, sd[n])
+    return sd
 
 
 def apply_state_dict_sandwich(model, sd, state_dict_sandwich, state_dict_sandwich_manual_remaps=None):
