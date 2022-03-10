@@ -864,7 +864,7 @@ def log_loss_dict(diffusion, ts, losses):
 def apply_resize(model, sd, mult=1.):
     for n, p in model.named_parameters():
         if p.shape != sd[n].shape:
-            print(f"resize {n}\t{sd[n].shape} -> {p.shape}")
+            print(f"resize\t{n}\t\t{sd[n].shape} -> {p.shape}")
             slices = tuple(slice(0, i) for i in sd[n].shape)
             with th.no_grad():
                 buffer = p.data.clone()
@@ -881,9 +881,9 @@ def apply_resize(model, sd, mult=1.):
                     print(f'not scaling\t{n}')
                 else:
                     buffer.mul_(mult)
-                print(f"after scale {n}\t{repr(buffer[debug_slices])}")
+                print(f"after scale\t{n}\n{repr(buffer[debug_slices])}")
                 buffer.__setitem__(slices, sd[n])
-                print(f"after set {n}\t{repr(buffer[debug_slices])}")
+                print(f"after set\t{n}\n{repr(buffer[debug_slices])}")
                 sd[n] = buffer
     return sd
 
