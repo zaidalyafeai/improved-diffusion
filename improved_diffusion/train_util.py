@@ -861,7 +861,7 @@ def apply_resize(model, sd):
         if p.shape != sd[n].shape:
             print(f"resize {sd[n].shape} -> {p.shape}")
             slices = tuple(slice(0, i) for i in sd[n].shape)
-            with torch.no_grad():
+            with th.no_grad():
                 p.data.__setitem__(slices, sd[n])
 
 
