@@ -869,9 +869,11 @@ def apply_resize(model, sd, mult=1.):
             with th.no_grad():
                 buffer = p.data.clone()
 
-                mod = get_child_module_by_names(model, n.split('.'))
+                mod = get_child_module_by_names(model, n.split('.')[:-1])
+                if mod is None:
+                    raise ValueError(n)
                 # is_norm_w = n.endswith('ln.weight') or n.endswith('normalization.weight')
-                is_norm_w = n.endswith('weight') and (isinstance(mod, th.nn.GroupNorm) or isinstance(mod, th.nn.LayerNorm))
+                is_norm_w = n.endswith('.weight') and (isinstance(mod, th.nn.GroupNorm) or isinstance(mod, th.nn.LayerNorm))
 
                 if is_norm_w:
                     print(f'not scaling\t{n}')
