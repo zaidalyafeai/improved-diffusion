@@ -819,9 +819,10 @@ class UNetModel(nn.Module):
         self.output_blocks = nn.ModuleList([])
         for level, mult in list(enumerate(channel_mult))[::-1]:
             for i in range(num_res_blocks + 1):
+                this_ch = ch + input_block_chans.pop()
                 layers = [
                     ResBlock(
-                        ch + input_block_chans.pop(),
+                        this_ch,
                         time_embed_dim,
                         dropout,
                         out_channels=model_channels * mult,
@@ -829,7 +830,7 @@ class UNetModel(nn.Module):
                         use_checkpoint=use_checkpoint or use_checkpoint_up,
                         use_scale_shift_norm=use_scale_shift_norm,
                         use_checkpoint_lowcost=use_checkpoint_lowcost,
-                        base_channels=expand_timestep_base_dim * ch // model_channels,
+                        base_channels=expand_timestep_base_dim * this_ch // model_channels,
                     )
                 ]
                 ch = model_channels * mult
