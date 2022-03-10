@@ -862,7 +862,7 @@ def apply_resize(model, sd):
             print(f"resize {sd[n].shape} -> {p.shape}")
             slices = tuple(slice(0, i) for i in sd[n].shape)
             with th.no_grad():
-                buffer = p.data.copy()
+                buffer = p.data.clone()
                 buffer.__setitem__(slices, sd[n])
                 sd[n] = buffer
                 # p.data.__setitem__(slices, sd[n])
