@@ -69,7 +69,8 @@ class TrainLoop:
         arithmetic_avg_extra_shift=0,
         gain_ff_setup_step=False,
         only_optimize_bread=False,
-        param_sandwich=-1
+        param_sandwich=-1,
+        resize_mult=1.,
     ):
         self.model = model
         self.diffusion = diffusion
@@ -119,6 +120,8 @@ class TrainLoop:
             else [float(x) for x in arithmetic_avg_extra_shift.split(",") if len(x) > 0]
         )
         self.only_optimize_bread = only_optimize_bread
+        self.resize_mult = resize_mult
+
         print(f"TrainLoop self.master_device: {self.master_device}, use_amp={use_amp}, autosave={self.autosave}")
         print(f"TrainLoop self.arithmetic_avg_from_step: {self.arithmetic_avg_from_step}, self.arithmetic_avg_extra_shift={self.arithmetic_avg_extra_shift}")
 
@@ -355,6 +358,7 @@ class TrainLoop:
                 newsd = apply_resize(
                     self.model,
                     sd,
+                    resize_mult=self.resize_mult
                 )
 
                 incompatible_keys = self.model.load_state_dict(
@@ -856,13 +860,17 @@ def log_loss_dict(diffusion, ts, losses):
             logger.logkv_mean(f"{key}_q{quartile}", sub_loss)
 
 
-def apply_resize(model, sd):
+def apply_resize(model, sd, mult=1.):
     for n, p in model.named_parameters():
         if p.shape != sd[n].shape:
-            print(f"resize {sd[n].shape} -> {p.shape}")
+            print(f"resize\t{sd[n].shape} -> {p.shape}")
             slices = tuple(slice(0, i) for i in sd[n].shape)
             with th.no_grad():
                 buffer = p.data.clone()
+                if n.endswith('ln.weight') or n.endswith('normalization.weight'):
+                    print(f'not scaling\t{n}')
+                else:
+                    buffer.mul_(mult)
                 buffer.__setitem__(slices, sd[n])
                 sd[n] = buffer
                 # p.data.__setitem__(slices, sd[n])
