@@ -90,6 +90,7 @@ def model_and_diffusion_defaults():
         bread_adapter_nearest_in=False,
         bread_adapter_zero_conv_in=False,
         bread_adapter_only=False,
+        expand_timestep_base_dim=-1,
     )
 
 
@@ -166,6 +167,7 @@ def create_model_and_diffusion(
     bread_adapter_nearest_in=False,
     bread_adapter_zero_conv_in=False,
     bread_adapter_only=False,
+    expand_timestep_base_dim=-1,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     print(f"create_model_and_diffusion: use_checkpoint={use_checkpoint}")
@@ -229,6 +231,7 @@ def create_model_and_diffusion(
         bread_adapter_nearest_in=bread_adapter_nearest_in,
         bread_adapter_zero_conv_in=bread_adapter_zero_conv_in,
         bread_adapter_only=bread_adapter_only,
+        expand_timestep_base_dim=expand_timestep_base_dim,
         verbose=verbose,
     )
     diffusion = create_gaussian_diffusion(
@@ -317,6 +320,7 @@ def create_model(
     bread_adapter_nearest_in=False,
     bread_adapter_zero_conv_in=False,
     bread_adapter_only=False,
+    expand_timestep_base_dim=-1,
     verbose=False,
 ):
     text_lr_mult = 1.
@@ -420,6 +424,7 @@ def create_model(
         bread_adapter_nearest_in=bread_adapter_nearest_in,
         bread_adapter_zero_conv_in=bread_adapter_zero_conv_in,
         bread_adapter_only=bread_adapter_only,
+        expand_timestep_base_dim=expand_timestep_base_dim,
         verbose=verbose
     )
 
