@@ -684,7 +684,7 @@ class UNetModel(nn.Module):
                         use_checkpoint=use_checkpoint or use_checkpoint_down,
                         use_scale_shift_norm=use_scale_shift_norm,
                         use_checkpoint_lowcost=use_checkpoint_lowcost,
-                        base_channels=expand_timestep_base_dim,
+                        base_channels=expand_timestep_base_dim * ch // model_channels,
                     )
                 ]
                 ch = mult * model_channels
@@ -696,7 +696,7 @@ class UNetModel(nn.Module):
                         AttentionBlock(
                             ch, use_checkpoint=use_checkpoint or use_checkpoint_down, num_heads=num_heads_here,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
-                            base_channels=expand_timestep_base_dim,
+                            base_channels=expand_timestep_base_dim * ch // model_channels,
                         )
                     )
                 if self.txt and ds in self.txt_resolutions and (not txt_output_layers_only):
@@ -769,7 +769,7 @@ class UNetModel(nn.Module):
                             use_scale_shift_norm=use_scale_shift_norm,
                             down=True,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
-                            base_channels=expand_timestep_base_dim,
+                            base_channels=expand_timestep_base_dim * ch // model_channels,
                         )
                         if resblock_updown
                         else Downsample(
@@ -799,11 +799,11 @@ class UNetModel(nn.Module):
                 use_checkpoint=use_checkpoint or use_checkpoint_middle,
                 use_scale_shift_norm=use_scale_shift_norm,
                 use_checkpoint_lowcost=use_checkpoint_lowcost,
-                base_channels=expand_timestep_base_dim,
+                base_channels=expand_timestep_base_dim * ch // model_channels,
             ),
             AttentionBlock(ch, use_checkpoint=use_checkpoint or use_checkpoint_middle, num_heads=num_heads,
                            use_checkpoint_lowcost=use_checkpoint_lowcost,
-                           base_channels=expand_timestep_base_dim,),
+                           base_channels=expand_timestep_base_dim * ch // model_channels,),
             ResBlock(
                 ch,
                 time_embed_dim,
@@ -812,7 +812,7 @@ class UNetModel(nn.Module):
                 use_checkpoint=use_checkpoint or use_checkpoint_middle,
                 use_scale_shift_norm=use_scale_shift_norm,
                 use_checkpoint_lowcost=use_checkpoint_lowcost,
-                base_channels=expand_timestep_base_dim,
+                base_channels=expand_timestep_base_dim * ch // model_channels,
             ),
         )
 
@@ -829,7 +829,7 @@ class UNetModel(nn.Module):
                         use_checkpoint=use_checkpoint or use_checkpoint_up,
                         use_scale_shift_norm=use_scale_shift_norm,
                         use_checkpoint_lowcost=use_checkpoint_lowcost,
-                        base_channels=expand_timestep_base_dim,
+                        base_channels=expand_timestep_base_dim * ch // model_channels,
                     )
                 ]
                 ch = model_channels * mult
@@ -843,7 +843,7 @@ class UNetModel(nn.Module):
                             use_checkpoint=use_checkpoint or use_checkpoint_up,
                             num_heads=num_heads_here,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
-                            base_channels=expand_timestep_base_dim,
+                            base_channels=expand_timestep_base_dim * ch // model_channels,
                         )
                     )
                 if self.txt and ds in self.txt_resolutions:
@@ -919,7 +919,7 @@ class UNetModel(nn.Module):
                             use_scale_shift_norm=use_scale_shift_norm,
                             up=True,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
-                            base_channels=expand_timestep_base_dim,
+                            base_channels=expand_timestep_base_dim * ch // model_channels,
                         )
                         if resblock_updown
                         else Upsample(ch, conv_resample, dims=dims)
