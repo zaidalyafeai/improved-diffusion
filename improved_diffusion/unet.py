@@ -282,7 +282,7 @@ class ResBlock(TimestepBlock):
             ),
         )
         self.out_layers = nn.Sequential(
-            normalization(self.out_channels, base_channels=base_channels),
+            normalization(self.out_channels, base_channels=base_channels * self.out_channels // channels),
             SiLU(use_checkpoint=use_checkpoint_lowcost),
             nn.Dropout(p=dropout) if dropout > 0 else nn.Identity(),
             zero_module(
