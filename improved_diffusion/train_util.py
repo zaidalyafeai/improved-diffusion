@@ -358,7 +358,7 @@ class TrainLoop:
                 newsd = apply_resize(
                     self.model,
                     sd,
-                    resize_mult=self.resize_mult
+                    mult=self.resize_mult
                 )
 
                 incompatible_keys = self.model.load_state_dict(
