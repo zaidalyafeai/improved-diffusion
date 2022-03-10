@@ -861,7 +861,7 @@ def log_loss_dict(diffusion, ts, losses):
             logger.logkv_mean(f"{key}_q{quartile}", sub_loss)
 
 
-def apply_resize(model, sd, mult=1., debug=True):
+def apply_resize(model, sd, mult=1., debug=False):
     for n, p in model.named_parameters():
         if p.shape != sd[n].shape:
             print(f"resize\t{n}\t\t{sd[n].shape} -> {p.shape}")
