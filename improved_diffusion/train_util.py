@@ -875,11 +875,15 @@ def apply_resize(model, sd, mult=1.):
                 # is_norm_w = n.endswith('ln.weight') or n.endswith('normalization.weight')
                 is_norm_w = n.endswith('.weight') and (isinstance(mod, th.nn.GroupNorm) or isinstance(mod, th.nn.LayerNorm))
 
+                debug_slices = tuple(slice(0, 3) for i in sd[n].shape)
+                print(f"before {n}\t{repr(buffer[debug_slices])}")
                 if is_norm_w:
                     print(f'not scaling\t{n}')
                 else:
                     buffer.mul_(mult)
+                print(f"after scale {n}\t{repr(buffer[debug_slices])}")
                 buffer.__setitem__(slices, sd[n])
+                print(f"after set {n}\t{repr(buffer[debug_slices])}")
                 sd[n] = buffer
     return sd
 
