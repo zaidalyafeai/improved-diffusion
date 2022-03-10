@@ -244,6 +244,7 @@ class ResBlock(TimestepBlock):
         up=False,
         down=False,
         use_checkpoint_lowcost=False,
+        base_channels=None,
     ):
         super().__init__()
         self.channels = channels
@@ -257,7 +258,7 @@ class ResBlock(TimestepBlock):
             use_checkpoint_lowcost = False
 
         self.in_layers = nn.Sequential(
-            normalization(channels),
+            normalization(channels, base_channels=base_channels),
             SiLU(use_checkpoint=use_checkpoint_lowcost),
             conv_nd(dims, channels, self.out_channels, 3, padding=1),
         )
@@ -281,7 +282,7 @@ class ResBlock(TimestepBlock):
             ),
         )
         self.out_layers = nn.Sequential(
-            normalization(self.out_channels),
+            normalization(self.out_channels, base_channels=base_channels),
             SiLU(use_checkpoint=use_checkpoint_lowcost),
             nn.Dropout(p=dropout) if dropout > 0 else nn.Identity(),
             zero_module(
@@ -340,14 +341,14 @@ class AttentionBlock(nn.Module):
     https://github.com/hojonathanho/diffusion/blob/1e0dceb3b3495bbe19116a5e1b3596cd0706c543/diffusion_tf/models/unet.py#L66.
     """
 
-    def __init__(self, channels, num_heads=1, use_checkpoint=False, use_checkpoint_lowcost=False):
+    def __init__(self, channels, num_heads=1, use_checkpoint=False, use_checkpoint_lowcost=False, base_channels=None):
         super().__init__()
         self.channels = channels
         self.num_heads = num_heads
         self.use_checkpoint = use_checkpoint
         use_checkpoint_lowcost = use_checkpoint_lowcost and not use_checkpoint
 
-        self.norm = normalization(channels)
+        self.norm = normalization(channels, base_channels=base_channels)
         self.qkv = conv_nd(1, channels, channels * 3, 1)
         self.attention = QKVAttention()
         self.proj_out = zero_module(conv_nd(1, channels, channels, 1))
@@ -683,6 +684,7 @@ class UNetModel(nn.Module):
                         use_checkpoint=use_checkpoint or use_checkpoint_down,
                         use_scale_shift_norm=use_scale_shift_norm,
                         use_checkpoint_lowcost=use_checkpoint_lowcost,
+                        base_channels=expand_timestep_base_dim,
                     )
                 ]
                 ch = mult * model_channels
@@ -693,7 +695,8 @@ class UNetModel(nn.Module):
                     layers.append(
                         AttentionBlock(
                             ch, use_checkpoint=use_checkpoint or use_checkpoint_down, num_heads=num_heads_here,
-                            use_checkpoint_lowcost=use_checkpoint_lowcost
+                            use_checkpoint_lowcost=use_checkpoint_lowcost,
+                            base_channels=expand_timestep_base_dim,
                         )
                     )
                 if self.txt and ds in self.txt_resolutions and (not txt_output_layers_only):
@@ -766,6 +769,7 @@ class UNetModel(nn.Module):
                             use_scale_shift_norm=use_scale_shift_norm,
                             down=True,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
+                            base_channels=expand_timestep_base_dim,
                         )
                         if resblock_updown
                         else Downsample(
@@ -795,9 +799,11 @@ class UNetModel(nn.Module):
                 use_checkpoint=use_checkpoint or use_checkpoint_middle,
                 use_scale_shift_norm=use_scale_shift_norm,
                 use_checkpoint_lowcost=use_checkpoint_lowcost,
+                base_channels=expand_timestep_base_dim,
             ),
             AttentionBlock(ch, use_checkpoint=use_checkpoint or use_checkpoint_middle, num_heads=num_heads,
-                           use_checkpoint_lowcost=use_checkpoint_lowcost),
+                           use_checkpoint_lowcost=use_checkpoint_lowcost,
+                           base_channels=expand_timestep_base_dim,),
             ResBlock(
                 ch,
                 time_embed_dim,
@@ -806,6 +812,7 @@ class UNetModel(nn.Module):
                 use_checkpoint=use_checkpoint or use_checkpoint_middle,
                 use_scale_shift_norm=use_scale_shift_norm,
                 use_checkpoint_lowcost=use_checkpoint_lowcost,
+                base_channels=expand_timestep_base_dim,
             ),
         )
 
@@ -822,6 +829,7 @@ class UNetModel(nn.Module):
                         use_checkpoint=use_checkpoint or use_checkpoint_up,
                         use_scale_shift_norm=use_scale_shift_norm,
                         use_checkpoint_lowcost=use_checkpoint_lowcost,
+                        base_channels=expand_timestep_base_dim,
                     )
                 ]
                 ch = model_channels * mult
@@ -834,7 +842,8 @@ class UNetModel(nn.Module):
                             ch,
                             use_checkpoint=use_checkpoint or use_checkpoint_up,
                             num_heads=num_heads_here,
-                            use_checkpoint_lowcost=use_checkpoint_lowcost
+                            use_checkpoint_lowcost=use_checkpoint_lowcost,
+                            base_channels=expand_timestep_base_dim,
                         )
                     )
                 if self.txt and ds in self.txt_resolutions:
@@ -910,6 +919,7 @@ class UNetModel(nn.Module):
                             use_scale_shift_norm=use_scale_shift_norm,
                             up=True,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
+                            base_channels=expand_timestep_base_dim,
                         )
                         if resblock_updown
                         else Upsample(ch, conv_resample, dims=dims)
@@ -924,7 +934,7 @@ class UNetModel(nn.Module):
                 #     self.output_blocks[-1].bread_adapter_out_pt = True
 
         self.out = nn.Sequential(
-            normalization(ch),
+            normalization(ch, base_channels=self.expand_timestep_base_dim),
             SiLU(use_checkpoint=use_checkpoint_lowcost),
             zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
         )

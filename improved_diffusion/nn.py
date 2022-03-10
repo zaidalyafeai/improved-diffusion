@@ -6,7 +6,7 @@ import math
 
 import torch as th
 import torch.nn as nn
-
+import torch.nn.functional as F
 
 # # PyTorch 1.7 has SiLU, but we support PyTorch 1.5.
 # class SiLU(nn.Module):
@@ -175,27 +175,61 @@ def mean_flat(tensor):
     return tensor.mean(dim=list(range(1, len(tensor.shape))))
 
 
-def normalization(channels, use_checkpoint=False):
+def normalization(channels, use_checkpoint=False, base_channels=None):
     """
     Make a standard normalization layer.
 
     :param channels: number of input channels.
     :return: an nn.Module for normalization.
     """
+    cls, kwargs = GroupNorm32, {}
+    if base_channels is not None:
+        cls, kwargs = GroupNormExtended, {"num_channels_base": base_channels}
     if channels % 72 == 0:
         # hack
-        return GroupNorm32(24, channels, use_checkpoint=use_checkpoint)
-    return GroupNorm32(32, channels, use_checkpoint=use_checkpoint)
+        return cls(24, channels, use_checkpoint=use_checkpoint, **kwargs)
+    return cls(32, channels, use_checkpoint=use_checkpoint, **kwargs)
 
 
-def normalization_1group(channels):
+def normalization_1group(channels, base_channels=None):
     """
     Make a standard normalization layer.
 
     :param channels: number of input channels.
     :return: an nn.Module for normalization.
     """
-    return GroupNorm32(1, channels)
+    return GroupNorm32(1, channels, base_channels=base_channels)
+
+
+class GroupNormExtended(GroupNorm32):
+    def __init__(self, num_groups, num_channels, num_channels_base, eps=1e-5, use_checkpoint=False):
+        super.__init__()
+
+        self.num_channels_base = num_channels_base
+        self.num_channels_xtra = num_channels - num_channels_base
+
+        self.num_groups_base = num_groups
+        self.num_groups_xtra = max(1, min(num_groups, self.num_channels_xtra//4))
+        print(f"base {self.num_groups_base}, xtra {self.num_groups_xtra}")
+
+        self.weight = nn.Parameter(th.empty(self.num_channels_base))
+        self.bias = nn.Parameter(th.empty(self.num_channels_base))
+
+        self.weight_xtra = nn.Parameter(th.empty(self.num_channels_xtra))
+        self.bias_xtra = nn.Parameter(th.empty(self.num_channels_xtra))
+
+        self.eps = eps
+        self.use_checkpoint = use_checkpoint
+
+    def _forward(self, x):
+        dtype = x.type()
+        x = x.float()
+
+        base, xtra = th.split(x, [self.num_channels_base, self.num_channels_xtra], dim=-1)
+        base_out = F.group_norm(base, self.num_groups_base, self.weight, self.bias, self.eps)
+        xtra_out = F.group_norm(xtra, self.num_groups_xtra, self.weight_xtra, self.bias_xtra, self.eps)
+
+        return th.cat([base_out, xtra_out], dim=-1).type(dtype)
 
 
 def timestep_embedding(timesteps, dim, max_period=10000):
