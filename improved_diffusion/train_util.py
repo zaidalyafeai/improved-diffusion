@@ -861,7 +861,7 @@ def log_loss_dict(diffusion, ts, losses):
             logger.logkv_mean(f"{key}_q{quartile}", sub_loss)
 
 
-def apply_resize(model, sd, mult=1.):
+def apply_resize(model, sd, mult=1., debug=True):
     for n, p in model.named_parameters():
         if p.shape != sd[n].shape:
             print(f"resize\t{n}\t\t{sd[n].shape} -> {p.shape}")
@@ -875,15 +875,18 @@ def apply_resize(model, sd, mult=1.):
                 # is_norm_w = n.endswith('ln.weight') or n.endswith('normalization.weight')
                 is_norm_w = n.endswith('.weight') and (isinstance(mod, th.nn.GroupNorm) or isinstance(mod, th.nn.LayerNorm))
 
-                # debug_slices = tuple(slice(max(0, i-2), min(j, i+2)) for i, j in zip(sd[n].shape, buffer.shape))
-                # print(f"before {n}\t{repr(buffer[debug_slices].squeeze())}")
+                if debug:
+                    debug_slices = tuple(slice(max(0, i-2), min(j, i+2)) for i, j in zip(sd[n].shape, buffer.shape))
+                    print(f"before {n}\t{repr(buffer[debug_slices].squeeze())}")
                 if is_norm_w:
                     print(f'not scaling\t{n}')
                 else:
                     buffer.mul_(mult)
-                # print(f"after scale\t{n}\n{repr(buffer[debug_slices].squeeze())}")
+                if debug:
+                    print(f"after scale\t{n}\n{repr(buffer[debug_slices].squeeze())}")
                 buffer.__setitem__(slices, sd[n])
-                # print(f"after set\t{n}\n{repr(buffer[debug_slices].squeeze())}")
+                if debug:
+                    print(f"after set\t{n}\n{repr(buffer[debug_slices].squeeze())}")
                 sd[n] = buffer
     return sd
 
