@@ -219,6 +219,34 @@ def timestep_embedding(timesteps, dim, max_period=10000):
     return embedding
 
 
+def expanded_timestep_embedding(timesteps, dim, base_dim, max_period=10000):
+    base_half = base_dim // 2
+
+    base_logfreqs = -math.log(max_period) * th.arange(start=0, end=base_half, dtype=th.float32) / base_half
+
+    step = base_dim//(dim-base_dim)
+    left = base_logfreqs[step//2::step]
+    right = base_logfreqs[step//2+1::step]
+
+    xtra_logfreqs = (right + left)/2
+
+    base_freqs = th.exp(base_logfreqs).to(device=timesteps.device)
+    xtra_freqs = th.exp(xtra_logfreqs).to(device=timesteps.device)
+
+    freqs = th.cat([base_freqs, xtra_freqs])
+
+    base_args = timesteps[:, None].float() * base_freqs[None]
+    xtra_args = timesteps[:, None].float() * xtra_freqs[None]
+    embedding = th.cat(
+        [th.cos(base_args), th.sin(base_args),
+         th.cos(xtra_args), th.sin(xtra_args)],
+        dim=-1
+    )
+    if dim % 2:
+        embedding = th.cat([embedding, th.zeros_like(embedding[:, :1])], dim=-1)
+    return embedding
+
+
 def checkpoint(func, inputs, params, flag, final_nograd=0):
     """
     Evaluate a function without caching intermediate activations, allowing for

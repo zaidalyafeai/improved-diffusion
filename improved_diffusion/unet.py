@@ -20,6 +20,7 @@ from .nn import (
     normalization,
     timestep_embedding,
     checkpoint,
+    expanded_timestep_embedding
 )
 
 from .text_nn import TextEncoder, CrossAttention, WeaveAttention
@@ -567,6 +568,7 @@ class UNetModel(nn.Module):
         bread_adapter_only=False,
         bread_adapter_nearest_in=False,
         bread_adapter_zero_conv_in=False,
+        expand_timestep_base_dim=-1,
     ):
         super().__init__()
 
@@ -613,6 +615,7 @@ class UNetModel(nn.Module):
         self.colorize = colorize
         self.channels_last_mem = channels_last_mem
         self.up_interp_mode = up_interp_mode
+        self.expand_timestep_base_dim = expand_timestep_base_dim
 
         if self.txt:
             self.text_encoder = TextEncoder(
@@ -932,6 +935,11 @@ class UNetModel(nn.Module):
         if rgb_adapter:
             self.output_to_rgb = DropinRGBAdapter(needs_var=out_channels>3)
 
+    def timestep_embedding(self, timesteps):
+        if self.expand_timestep_base_dim > 0:
+            return expanded_timestep_embedding(timesteps, self.model_channels, self.expand_timestep_base_dim)
+        return timestep_embedding(timesteps, self.model_channels)
+
     def convert_to_fp16(self):
         """
         Convert the torso of the model to float16.
@@ -984,7 +992,7 @@ class UNetModel(nn.Module):
         ), "must specify txt if and only if the model is text-conditional"
 
         hs = []
-        emb = self.time_embed(timestep_embedding(timesteps, self.model_channels))
+        emb = self.time_embed(self.timestep_embedding(timesteps))
 
         if self.num_classes is not None:
             assert y.shape == (x.shape[0],)
@@ -1059,7 +1067,7 @@ class UNetModel(nn.Module):
                  - 'up': a list of hidden state tensors from upsampling.
         """
         hs = []
-        emb = self.time_embed(timestep_embedding(timesteps, self.model_channels))
+        emb = self.time_embed(self.timestep_embedding(timesteps))
         if self.num_classes is not None:
             assert y.shape == (x.shape[0],)
             emb = emb + self.label_emb(y)
