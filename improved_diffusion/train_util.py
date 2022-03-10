@@ -352,6 +352,11 @@ class TrainLoop:
                     self.state_dict_sandwich_manual_remaps,
                 )
 
+                newsd = apply_resize(
+                    self.model,
+                    sd,
+                )
+
                 incompatible_keys = self.model.load_state_dict(
                     newsd,
                     strict = (not self.model.txt)
@@ -849,6 +854,15 @@ def log_loss_dict(diffusion, ts, losses):
         for sub_t, sub_loss in zip(ts.cpu().numpy(), values.detach().cpu().numpy()):
             quartile = int(4 * sub_t / diffusion.num_timesteps)
             logger.logkv_mean(f"{key}_q{quartile}", sub_loss)
+
+
+def apply_resize(model, sd):
+    for n, p in model.named_parameters():
+        if p.shape != sd[n].shape:
+            print(f"resize {sd[n].shape} -> {p.shape}")
+            slices = tuple(slice(0, i) for i in sd[n].shape)
+            with torch.no_grad():
+                p.data.__setitem__(slices, sd[n])
 
 
 def apply_state_dict_sandwich(model, sd, state_dict_sandwich, state_dict_sandwich_manual_remaps=None):
