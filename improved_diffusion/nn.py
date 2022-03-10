@@ -203,7 +203,7 @@ def normalization_1group(channels, base_channels=None):
 
 class GroupNormExtended(GroupNorm32):
     def __init__(self, num_groups, num_channels, num_channels_base, eps=1e-5, use_checkpoint=False):
-        super.__init__()
+        super.__init__(num_groups, num_channels_base, eps=eps, affine=True)
 
         self.num_channels_base = num_channels_base
         self.num_channels_xtra = num_channels - num_channels_base
@@ -211,9 +211,6 @@ class GroupNormExtended(GroupNorm32):
         self.num_groups_base = num_groups
         self.num_groups_xtra = max(1, min(num_groups, self.num_channels_xtra//4))
         print(f"base {self.num_groups_base}, xtra {self.num_groups_xtra}")
-
-        self.weight = nn.Parameter(th.empty(self.num_channels_base))
-        self.bias = nn.Parameter(th.empty(self.num_channels_base))
 
         self.weight_xtra = nn.Parameter(th.empty(self.num_channels_xtra))
         self.bias_xtra = nn.Parameter(th.empty(self.num_channels_xtra))
