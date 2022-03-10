@@ -11,6 +11,7 @@ import torch as th
 import torch.distributed as dist
 from torch.nn.parallel.distributed import DistributedDataParallel as DDP
 from torch.optim import AdamW
+from transformer_utils.util.module_utils import get_child_module_by_names
 
 from . import dist_util, logger
 from .fp16_util import (
@@ -867,13 +868,17 @@ def apply_resize(model, sd, mult=1.):
             slices = tuple(slice(0, i) for i in sd[n].shape)
             with th.no_grad():
                 buffer = p.data.clone()
-                if n.endswith('ln.weight') or n.endswith('normalization.weight'):
+
+                mod = get_child_module_by_names(model, n.split('.'))
+                # is_norm_w = n.endswith('ln.weight') or n.endswith('normalization.weight')
+                is_norm_w = n.endswith('weight') and (isinstance(mod, th.nn.GroupNorm) or isinstance(mod, th.nn.LayerNorm))
+
+                if is_norm_w:
                     print(f'not scaling\t{n}')
                 else:
                     buffer.mul_(mult)
                 buffer.__setitem__(slices, sd[n])
                 sd[n] = buffer
-                # p.data.__setitem__(slices, sd[n])
     return sd
 
 
