@@ -230,10 +230,13 @@ class GroupNormExtended(GroupNorm32):
 
         self.num_groups_base = num_groups
         self.num_groups_xtra = max(1, min(num_groups, self.num_channels_xtra//4))
-        print(f"base {self.num_groups_base}, xtra {self.num_groups_xtra}")
+        # print(f"base {self.num_groups_base}, xtra {self.num_groups_xtra}")
 
         self.weight_xtra = nn.Parameter(th.empty(self.num_channels_xtra))
         self.bias_xtra = nn.Parameter(th.empty(self.num_channels_xtra))
+
+        nn.init.ones_(self.weight_xtra)
+        nn.init.zeros_(self.bias_xtra)
 
     def _forward(self, x):
         dtype = x.type()
