@@ -625,6 +625,12 @@ class TrainLoop:
 
         gn_xattn, gn_text, gn_itot = 0., 0., 0.
 
+        name_to_norm = {}
+        for n, p in self.model.named_parameters():
+            name_to_norm[n] = p.grad.float().norm().item()
+        for n in sorted(name_to_norm.keys(), key=lambda n_: name_to_norm[n_]):
+            print(f"{name}: {gn:.4e}")
+
         for p_, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff']):
             if isinstance(p_, list):
                 pp = p_
