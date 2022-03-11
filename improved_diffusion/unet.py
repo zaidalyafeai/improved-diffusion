@@ -257,8 +257,15 @@ class ResBlock(TimestepBlock):
         if use_checkpoint:
             use_checkpoint_lowcost = False
 
+        if base_channels > 0:
+            self.base_channels = base_channels
+            self.base_out_channels = self.base_channels * self.out_channels // channels
+        else:
+            self.base_channels = base_channels
+            self.base_out_channels = base_channels
+
         self.in_layers = nn.Sequential(
-            normalization(channels, base_channels=base_channels),
+            normalization(channels, base_channels=self.base_channels),
             SiLU(use_checkpoint=use_checkpoint_lowcost),
             conv_nd(dims, channels, self.out_channels, 3, padding=1),
         )
@@ -282,7 +289,7 @@ class ResBlock(TimestepBlock):
             ),
         )
         self.out_layers = nn.Sequential(
-            normalization(self.out_channels, base_channels=base_channels * self.out_channels // channels),
+            normalization(self.out_channels, base_channels=self.base_out_channels),
             SiLU(use_checkpoint=use_checkpoint_lowcost),
             nn.Dropout(p=dropout) if dropout > 0 else nn.Identity(),
             zero_module(
@@ -324,7 +331,18 @@ class ResBlock(TimestepBlock):
             emb_out = emb_out[..., None]
         if self.use_scale_shift_norm:
             out_norm, out_rest = self.out_layers[0], self.out_layers[1:]
-            scale, shift = th.chunk(emb_out, 2, dim=1)
+            if self.base_channels > 0:
+                base, xtra = th.split(
+                    emb_out,
+                    [2 * self.base_out_channels, 2 * self.out_channels - 2 * self.base_out_channels],
+                    dim=1
+                )
+                base_scale, base_shift = th.chunk(base, 2, dim=1)
+                xtra_scale, xtra_shift = th.chunk(xtra, 2, dim=1)
+                scale = th.cat([base_scale, xtra_scale], dim=1)
+                shift = th.cat([base_shift, xtra_shift], dim=1)
+            else:
+                scale, shift = th.chunk(emb_out, 2, dim=1)
             h = out_norm(h) * (1 + scale) + shift
             h = out_rest(h)
         else:

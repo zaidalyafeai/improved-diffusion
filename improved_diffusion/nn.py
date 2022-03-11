@@ -85,6 +85,10 @@ class AdaGN(nn.Module):
         else:
             self.normalization = nn.GroupNorm(num_groups, out_channels)
 
+        self.base_channels = base_channels
+        self.out_channels = out_channels
+        self.base_out_channels = base_channels * out_channels // emb_channels
+
     def forward(self, h, emb, side_emb=None):
         emb_out = self.emb_layers(emb).type(h.dtype)
 
@@ -94,7 +98,18 @@ class AdaGN(nn.Module):
         if side_emb is not None:
             emb_out = emb_out + side_emb.type(emb_out.dtype)
 
-        scale, shift = th.chunk(emb_out, 2, dim=1)
+        if self.base_channels > 0:
+            base, xtra = th.split(
+                emb_out,
+                [2 * self.base_out_channels, 2 * self.out_channels - 2 * self.base_out_channels],
+                dim=1
+            )
+            base_scale, base_shift = th.chunk(base, 2, dim=1)
+            xtra_scale, xtra_shift = th.chunk(xtra, 2, dim=1)
+            scale = th.cat([base_scale, xtra_scale], dim=1)
+            shift = th.cat([base_shift, xtra_shift], dim=1)
+        else:
+            scale, shift = th.chunk(emb_out, 2, dim=1)
         h = self.normalization(h) * (1 + scale) + shift
         return h
 
