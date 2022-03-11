@@ -1074,6 +1074,7 @@ class UNetModel(nn.Module):
 
                     popped = hs.pop()
                     ch = popped.shape[1]
+                    mult = ch // self.model_channels
                     popped_base, popped_xtra = th.split(
                         popped,
                         [mult * self.expand_timestep_base_dim, ch - mult * self.expand_timestep_base_dim],
