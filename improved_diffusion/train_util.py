@@ -629,7 +629,7 @@ class TrainLoop:
         name_to_nparam = {}
         for n, p in self.model.named_parameters():
             name_to_norm[n] = p.grad.float().norm().item()
-            name_to_nparam[n] = np.product(p.shape)
+            name_to_nparam[n] = int(np.product(p.shape))
         for n in sorted(name_to_norm.keys(), key=lambda n_: name_to_norm[n_]):
             print(f"{name_to_norm[n]:.4e}\t | {name_to_nparam[n]:08d}\t | {n}")
 
