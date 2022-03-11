@@ -651,7 +651,7 @@ class TrainLoop:
             vals = sorted(vals)
             top = [np.sqrt(x) for x in vals[-3:]]
             bottom = [np.sqrt(x) for x in vals[:3]]
-            print(f"grad_norm_{name}: {gn:.3f} for {len(p)} params\n\ttop {top}\n\tbottom {bottom}")
+            print(f"grad_norm_{name}: {gn:.3f} for {len(pp)} params\n\ttop {top}\n\tbottom {bottom}")
             logger.logkv_mean(f"grad_norm_{name}", gn)
             # logger.logkv_mean(f"nz_{name}", nz)
 
