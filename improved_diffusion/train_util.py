@@ -631,29 +631,26 @@ class TrainLoop:
             else:
                 pp = [p_]
 
-            vals = []
+            # vals = []
             gn = 0.
             for p in pp:
                 if p.grad is None:
                     continue
                 gn_sq = (p.grad.float() ** 2).sum().item()
-                # gn += np.sqrt(gn_sq)
                 gn += gn_sq
-                # nz = (p.grad == 0.).sum().item()
                 if name in self.text_mods:
                     gn_text += gn_sq
                 elif name in self.xattn_mods:
                     gn_xattn += gn_sq
                 elif name in self.itot_mods:
                     gn_itot += gn_sq
-                vals.append(gn_sq)
+                # vals.append(gn_sq)
             gn = np.sqrt(gn)
-            vals = sorted(vals)
-            top = [np.sqrt(x) for x in vals[-3:]]
-            bottom = [np.sqrt(x) for x in vals[:3]]
-            print(f"grad_norm_{name}: {gn:.3f} for {len(pp)} params\n\ttop {top}\n\tbottom {bottom}")
+            # vals = sorted(vals)
+            # top = [np.sqrt(x) for x in vals[-3:]]
+            # bottom = [np.sqrt(x) for x in vals[:3]]
+            # print(f"grad_norm_{name}: {gn:.3f} for {len(pp)} params\n\ttop {top}\n\tbottom {bottom}")
             logger.logkv_mean(f"grad_norm_{name}", gn)
-            # logger.logkv_mean(f"nz_{name}", nz)
 
         gn_text = np.sqrt(gn_text)
         logger.logkv_mean(f"grad_norm_text", gn_text)
