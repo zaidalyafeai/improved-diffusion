@@ -625,13 +625,13 @@ class TrainLoop:
 
         gn_xattn, gn_text, gn_itot = 0., 0., 0.
 
-        name_to_norm = {}
-        name_to_nparam = {}
-        for n, p in self.model.named_parameters():
-            name_to_norm[n] = p.grad.float().norm().item()
-            name_to_nparam[n] = int(np.product(p.shape))
-        for n in sorted(name_to_norm.keys(), key=lambda n_: name_to_norm[n_]):
-            print(f"{name_to_norm[n]:.4e}\t | {name_to_nparam[n]:08d}\t | {n}")
+        # name_to_norm = {}
+        # name_to_nparam = {}
+        # for n, p in self.model.named_parameters():
+        #     name_to_norm[n] = p.grad.float().norm().item()
+        #     name_to_nparam[n] = int(np.product(p.shape))
+        # for n in sorted(name_to_norm.keys(), key=lambda n_: name_to_norm[n_]):
+        #     print(f"{name_to_norm[n]:.4e}\t | {name_to_nparam[n]:08d}\t | {n}")
 
         for p_, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff']):
             if isinstance(p_, list):
