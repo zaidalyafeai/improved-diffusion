@@ -232,8 +232,14 @@ class GroupNormExtended(GroupNorm32):
         self.num_channels_xtra = num_channels - num_channels_base
 
         self.num_groups_base = num_groups
-        self.num_groups_xtra = max(1, min(num_groups, self.num_channels_xtra//4))
-        # print(f"base {self.num_groups_base}, xtra {self.num_groups_xtra}")
+        # self.num_groups_xtra = max(1, min(num_groups, self.num_channels_xtra//4))
+
+        for channels_per_group_xtra in range(num_channels // num_groups, num_channels_xtra):
+            if num_channels_xtra % channels_per_group_xtra == 0:
+                self.num_groups_xtra = num_channels_xtra // channels_per_group_xtra
+                break
+
+        print(f"base {self.num_groups_base}, xtra {self.num_groups_xtra}")
 
         self.weight_xtra = nn.Parameter(th.empty(self.num_channels_xtra))
         self.bias_xtra = nn.Parameter(th.empty(self.num_channels_xtra))
