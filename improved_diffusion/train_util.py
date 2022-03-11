@@ -631,6 +631,7 @@ class TrainLoop:
             else:
                 pp = [p_]
 
+            vals = []
             gn = 0.
             for p in pp:
                 if p.grad is None:
@@ -645,7 +646,13 @@ class TrainLoop:
                     gn_xattn += gn_sq
                 elif name in self.itot_mods:
                     gn_itot += gn_sq
-            logger.logkv_mean(f"grad_norm_{name}", np.sqrt(gn))
+                vals.append(gn_sq)
+            gn = np.sqrt(gn)
+            vals = sorted(vals)
+            top = [np.sqrt(x) for x in vals[-3:]]
+            bottom = [np.sqrt(x) for x in vals[:3]]
+            print(f"grad_norm_{name}: {gn:.3f} for {len(p)} params\n\ttop {top}\n\tbottom {bottom}")
+            logger.logkv_mean(f"grad_norm_{name}", gn)
             # logger.logkv_mean(f"nz_{name}", nz)
 
         gn_text = np.sqrt(gn_text)
