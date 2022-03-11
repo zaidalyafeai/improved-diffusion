@@ -607,7 +607,6 @@ class TrainLoop:
                              verbose=verbose)
 
     def _log_grad_norm(self):
-        return None  # testing
         sqsum = 0.0
         sqsum_text_encoder = 0.0
         has_text_encoder = False
