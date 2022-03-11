@@ -205,7 +205,10 @@ def normalization(channels, use_checkpoint=False, base_channels=-1):
     cls, kwargs = GroupNorm32, {}
     if base_channels > 0:
         cls, kwargs = GroupNormExtended, {"num_channels_base": base_channels}
-    if channels % 72 == 0:
+    hack72 = channels % 72 == 0
+    if base_channels > 0:
+        hack72 = base_channels % 72 == 0
+    if hack72:
         # hack
         return cls(24, channels, use_checkpoint=use_checkpoint, **kwargs)
     return cls(32, channels, use_checkpoint=use_checkpoint, **kwargs)
