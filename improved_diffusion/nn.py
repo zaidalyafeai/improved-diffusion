@@ -235,7 +235,7 @@ class GroupNormExtended(GroupNorm32):
         # self.num_groups_xtra = max(1, min(num_groups, self.num_channels_xtra//4))
 
         print((num_channels // num_groups, self.num_channels_xtra))
-        for channels_per_group_xtra in range(num_channels // num_groups, self.num_channels_xtra):
+        for channels_per_group_xtra in range(*sorted(num_channels // num_groups, self.num_channels_xtra)):
             ratio, mod = self.num_channels_xtra / channels_per_group_xtra, self.num_channels_xtra % channels_per_group_xtra
             print(f"channels_per_group_xtra {channels_per_group_xtra:02d}: {ratio:.2f}, {mod}")
             if self.num_channels_xtra % channels_per_group_xtra == 0:
