@@ -252,6 +252,7 @@ class CrossAttention(nn.Module):
         layerscale_init=1e-5,
         qkv_dim=None,
         use_checkpoint=False,
+        image_base_channels=-1,
     ):
         super().__init__()
         print(
@@ -297,13 +298,14 @@ class CrossAttention(nn.Module):
                 num_groups=1,
                 nonlin_in=True,  # TODO: does this matter?
                 do_norm=not self.no_prenorm,
+                base_channels=image_base_channels
             )
         elif self.no_prenorm:
             self.tgt_ln = nn.Identity()
         elif avoid_groupnorm:
             self.tgt_ln = torch.nn.LayerNorm(self.dim)
         else:
-            self.tgt_ln = normalization_1group(self.dim)
+            self.tgt_ln = normalization_1group(self.dim, base_channels=image_base_channels)
 
         self.gain_scale = gain_scale
         if self.use_layerscale:
@@ -436,6 +438,7 @@ class ImageToTextCrossAttention(nn.Module):
         qkv_dim=None,
         use_checkpoint=False,
         use_ff_gain=False,
+        image_base_channels=-1,
     ):
         super().__init__()
         if qkv_dim is None:
@@ -464,6 +467,7 @@ class ImageToTextCrossAttention(nn.Module):
             num_groups=1,
             nonlin_in=True,  # TODO: does this matter?
             do_norm=True,
+            base_channels=image_base_channels
         )
 
         self.gain_scale = gain_scale
@@ -602,6 +606,7 @@ class WeaveAttention(nn.Module):
         weave_v2=False,
         use_checkpoint=False,
         use_ff_gain=False,
+        image_base_channels=-1,
         **text_to_image_kwargs,
     ):
         super().__init__()
@@ -619,7 +624,8 @@ class WeaveAttention(nn.Module):
             use_rezero=use_rezero,
             use_layerscale=use_layerscale,
             layerscale_init=layerscale_init,
-            use_checkpoint=use_checkpoint
+            use_checkpoint=use_checkpoint,
+            image_base_channels=image_base_channels,
         )
 
         text_to_image_kwargs.update(
