@@ -1063,7 +1063,26 @@ class UNetModel(nn.Module):
                 cat_in = h
                 skip_pop = False
             else:
-                cat_in = th.cat([h, hs.pop()], dim=1)
+                if self.expand_timestep_base_dim > 0:
+                    ch = h.shape[1]
+                    mult = ch // self.model_channels
+                    h_base, h_xtra = th.split(
+                        h,
+                        [mult * self.expand_timestep_base_dim, ch - mult * self.expand_timestep_base_dim],
+                        dim=1
+                    )
+
+                    popped = hs.pop()
+                    ch = popped.shape[1]
+                    popped_base, popped_xtra = th.split(
+                        popped,
+                        [mult * self.expand_timestep_base_dim, ch - mult * self.expand_timestep_base_dim],
+                        dim=1
+                    )
+
+                    cat_in = th.cat([h_base, popped_base, h_xtra, popped_xtra], dim=1)
+                else:
+                    cat_in = th.cat([h, hs.pop()], dim=1)
             h, txt = module((cat_in, txt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
             if getattr(module, 'bread_adapter_out_pt', False):
                 h_bread_out = self.bread_adapter_out(h)
