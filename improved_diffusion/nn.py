@@ -73,14 +73,21 @@ def groupnorm_silu(x, ng, w, b):
     return F.silu(F.group_norm(x.float(), ng, w, b).type(x.dtype))
 
 
+@th.jit.script
+def groupnorm_silu_32(x, w, b):
+    return F.silu(F.group_norm(x.float(), 32, w, b).type(x.dtype))
+
+
+@th.jit.script
+def groupnorm_silu_24(x, w, b):
+    return F.silu(F.group_norm(x.float(), 24, w, b).type(x.dtype))
+
 
 class GroupNorm32(nn.GroupNorm):
     def __init__(self, *args, use_checkpoint=False, fused=False):
         super().__init__(*args)
         self.use_checkpoint = use_checkpoint
         self.fused = fused
-        if fused:
-            self._num_groups = th.as_tensor(self.num_groups)
 
     def forward(self, x):
         return checkpoint(
@@ -89,7 +96,12 @@ class GroupNorm32(nn.GroupNorm):
 
     def _forward(self, x):
         if self.fused:
-            return groupnorm_silu(x, self._num_groups, self.weight, self.bias)
+            if self.num_groups == 32:
+                return groupnorm_silu_32(x, self._num_groups, self.weight, self.bias)
+            elif self.num_groups == 24:
+                return groupnorm_silu_24(x, self._num_groups, self.weight, self.bias)
+            else:
+                raise ValueError(self.num_groups)
         return super().forward(x.float()).type(x.dtype)
 
 
@@ -282,9 +294,6 @@ class GroupNormExtended(GroupNorm32):
         nn.init.zeros_(self.bias_xtra)
 
         self.fused = fused
-        if fused:
-            self._num_groups_base = th.as_tensor(self.num_groups_base)
-            self._num_groups_xtra = th.as_tensor(self.num_groups_xtra)
 
     def _forward(self, x):
         if self.fused:
@@ -294,9 +303,21 @@ class GroupNormExtended(GroupNorm32):
             #     self._num_groups_xtra, self._num_channels_xtra, self.weight_xtra, self.bias_xtra,
             # )
             base, xtra = th.split(x, [self.num_channels_base, self.num_channels_xtra], dim=1)
-            base_out = groupnorm_silu(base, self._num_groups_base, self.weight, self.bias)
-            xtra_out = groupnorm_silu(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
-            return th.cat([base_out, xtra_out], dim=1)
+            if self.num_groups_base == 32:
+                base_out = groupnorm_silu_32(base, self._num_groups_base, self.weight, self.bias)
+            elif self.num_groups_base == 24:
+                base_out = groupnorm_silu_24(base, self._num_groups_base, self.weight, self.bias)
+            else:
+                raise ValueError(self.num_groups_base)
+            if self.num_groups_xtra == 32:
+                xtra_out = groupnorm_silu_32(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
+            elif self.num_groups_xtra == 24:
+                xtra_out = groupnorm_silu_24(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
+            else:
+                raise ValueError(self.num_groups_xtra)
+            # base_out = groupnorm_silu(base, self._num_groups_base, self.weight, self.bias)
+            # xtra_out = groupnorm_silu(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
+            # return th.cat([base_out, xtra_out], dim=1)
         else:
             dtype = x.type()
             x = x.float()
