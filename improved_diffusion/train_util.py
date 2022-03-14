@@ -73,6 +73,7 @@ class TrainLoop:
         only_optimize_bread=False,
         param_sandwich=-1,
         resize_mult=1.,
+        perf_no_ddl=False,
     ):
         self.model = model
         self.diffusion = diffusion
@@ -322,7 +323,7 @@ class TrainLoop:
         if gain_ff_setup_step:
             self.opt.add_param_group({"params": ff_gain_params, "lr": self.gain_lr, "weight_decay": 0.})
 
-        if th.cuda.is_available():
+        if th.cuda.is_available() and not perf_no_ddl:
             self.use_ddp = True
             self.ddp_model = DDP(
                 self.model,

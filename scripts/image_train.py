@@ -153,7 +153,8 @@ def main():
         only_optimize_bread=args.only_optimize_bread,
         param_sandwich=args.param_sandwich,
         resize_mult=args.resize_mult,
-        use_bf16=args.use_bf16
+        use_bf16=args.use_bf16,
+        perf_no_ddl=args.perf_no_ddl,
     ).run_loop()
 
 
@@ -216,6 +217,7 @@ def create_argparser():
         only_optimize_bread=False,
         param_sandwich=-1,
         resize_mult=1.,
+        perf_no_ddl=False,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
