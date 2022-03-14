@@ -651,7 +651,7 @@ class UNetModel(nn.Module):
                 rotary_pos_emb=txt_rotary,
                 ff_glu=txt_ff_glu,
                 ff_mult=txt_ff_mult,
-                use_checkpoint=use_checkpoint
+                use_checkpoint=use_checkpoint,
                 silu_impl=silu_impl
             )
 
