@@ -296,7 +296,7 @@ class GroupNormExtended(GroupNorm32):
             base, xtra = th.split(x, [self.num_channels_base, self.num_channels_xtra], dim=1)
             base_out = groupnorm_silu(base, self._num_groups_base, self.weight, self.bias)
             xtra_out = groupnorm_silu(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
-            return th.cat([base_out, xtra_out], dim=1).type(dtype)
+            return th.cat([base_out, xtra_out], dim=1)
         else:
             dtype = x.type()
             x = x.float()
