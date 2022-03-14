@@ -246,16 +246,16 @@ def normalization_1group(channels, base_channels=-1):
     return GroupNorm32(1, channels, base_channels=base_channels)
 
 
-@th.jit.script
-def groupnorm_extended_silu(x, sizes, ng, w, b, ng_xtra, w_xtra, b_xtra):
-    dtype = x.type()
-    x = x.float()
-
-    base, xtra = th.split(x, sizes[nch, nch_xtra], dim=1)
-    base_out = F.silu(F.group_norm(base, ng, w, b))
-    xtra_out = F.silu(F.group_norm(xtra, ng_xtra, w_xtra, b_xtra))
-
-    return th.cat([base_out, xtra_out], dim=1).type(dtype)
+# @th.jit.script
+# def groupnorm_extended_silu(x, sizes, ng, nch, w, b, ng_xtra, nch_xtra, w_xtra, b_xtra):
+#     dtype = x.type()
+#     x = x.float()
+#
+#     base, xtra = th.split(x, sizes[nch, nch_xtra], dim=1)
+#     base_out = F.silu(F.group_norm(base, ng, w, b))
+#     xtra_out = F.silu(F.group_norm(xtra, ng_xtra, w_xtra, b_xtra))
+#
+#     return th.cat([base_out, xtra_out], dim=1).type(dtype)
 
 
 class GroupNormExtended(GroupNorm32):
