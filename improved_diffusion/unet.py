@@ -754,6 +754,7 @@ class UNetModel(nn.Module):
                         rezero_keeps_prenorm=cross_attn_rezero_keeps_prenorm,
                         use_layerscale=cross_attn_use_layerscale,
                         image_base_channels=expand_timestep_base_dim * ch // model_channels,
+                        silu_impl=silu_impl,
                     )
                     if weave_attn:
                         caa_args['image_dim'] = caa_args.pop('dim')
@@ -907,6 +908,7 @@ class UNetModel(nn.Module):
                         rezero_keeps_prenorm=cross_attn_rezero_keeps_prenorm,
                         use_layerscale=cross_attn_use_layerscale,
                         image_base_channels=expand_timestep_base_dim * ch // model_channels,
+                        silu_impl=silu_impl,
                     )
                     if weave_attn:
                         caa_args['image_dim'] = caa_args.pop('dim')

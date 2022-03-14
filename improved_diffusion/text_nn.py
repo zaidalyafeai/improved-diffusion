@@ -254,6 +254,7 @@ class CrossAttention(nn.Module):
         qkv_dim=None,
         use_checkpoint=False,
         image_base_channels=-1,
+        silu_impl="torch",
     ):
         super().__init__()
         print(
@@ -299,7 +300,8 @@ class CrossAttention(nn.Module):
                 num_groups=1,
                 nonlin_in=True,  # TODO: does this matter?
                 do_norm=not self.no_prenorm,
-                base_channels=image_base_channels
+                base_channels=image_base_channels,
+                silu_impl=silu_impl
             )
         elif self.no_prenorm:
             self.tgt_ln = nn.Identity()
@@ -440,6 +442,7 @@ class ImageToTextCrossAttention(nn.Module):
         use_checkpoint=False,
         use_ff_gain=False,
         image_base_channels=-1,
+        silu_impl="torch"
     ):
         super().__init__()
         if qkv_dim is None:
@@ -468,7 +471,8 @@ class ImageToTextCrossAttention(nn.Module):
             num_groups=1,
             nonlin_in=True,  # TODO: does this matter?
             do_norm=True,
-            base_channels=image_base_channels
+            base_channels=image_base_channels,
+            silu_impl=silu_impl
         )
 
         self.gain_scale = gain_scale
@@ -608,6 +612,7 @@ class WeaveAttention(nn.Module):
         use_checkpoint=False,
         use_ff_gain=False,
         image_base_channels=-1,
+        silu_impl="torch",
         **text_to_image_kwargs,
     ):
         super().__init__()
@@ -627,6 +632,7 @@ class WeaveAttention(nn.Module):
             layerscale_init=layerscale_init,
             use_checkpoint=use_checkpoint,
             image_base_channels=image_base_channels,
+            silu_impl=silu_impl,
         )
 
         text_to_image_kwargs.update(
