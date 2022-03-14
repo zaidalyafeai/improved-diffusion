@@ -55,7 +55,9 @@ class SiLUImplEfficientNet(nn.Module):
 
 
 def silu(impl="torch", use_checkpoint=False):
-    if impl == "openai":
+    if impl == "fused":
+        return nn.Identity()
+    elif impl == "openai":
         return SiLUImplOpenAI(use_checkpoint=use_checkpoint)
     elif impl == "torch":
         return SiLUImplTorch(use_checkpoint=use_checkpoint)
@@ -65,15 +67,20 @@ def silu(impl="torch", use_checkpoint=False):
         raise ValueError(impl)
 
 
-# SiLU = MemoryEfficientSwish
 
-# SiLU = nn.SiLU
+@th.jit.script
+def groupnorm_silu(x, ng, w, b):
+    return F.silu(F.group_norm(x, ng, w, b))
+
 
 
 class GroupNorm32(nn.GroupNorm):
-    def __init__(self, *args, use_checkpoint=False):
+    def __init__(self, *args, use_checkpoint=False, fused=False):
         super().__init__(*args)
         self.use_checkpoint = use_checkpoint
+        self.fused = fused
+        if fused:
+            self._num_groups = th.as_tensor(self.num_groups)
 
     def forward(self, x):
         return checkpoint(
@@ -81,6 +88,8 @@ class GroupNorm32(nn.GroupNorm):
         )
 
     def _forward(self, x):
+        if self.fused:
+            return groupnorm_silu(x, self._num_groups, self.weight, self.bias)
         return super().forward(x.float()).type(x.dtype)
 
 
@@ -88,7 +97,7 @@ class AdaGN(nn.Module):
     def __init__(self, emb_channels, out_channels, num_groups, nonlin_in=True, do_norm=True, base_channels=-1, silu_impl="torch"):
         super().__init__()
         self.emb_layers = nn.Sequential(
-            silu(impl=silu_impl) if nonlin_in else nn.Identity(),
+            silu(impl="torch" if silu_impl == "fused" else silu_impl) if nonlin_in else nn.Identity(),
             nn.Linear(emb_channels, 2 * out_channels)
         )
         if not do_norm:
@@ -208,7 +217,7 @@ def mean_flat(tensor):
     return tensor.mean(dim=list(range(1, len(tensor.shape))))
 
 
-def normalization(channels, use_checkpoint=False, base_channels=-1):
+def normalization(channels, use_checkpoint=False, base_channels=-1, fused=False):
     """
     Make a standard normalization layer.
 
@@ -223,8 +232,8 @@ def normalization(channels, use_checkpoint=False, base_channels=-1):
         hack72 = base_channels % 72 == 0
     if hack72:
         # hack
-        return cls(24, channels, use_checkpoint=use_checkpoint, **kwargs)
-    return cls(32, channels, use_checkpoint=use_checkpoint, **kwargs)
+        return cls(24, channels, use_checkpoint=use_checkpoint, fused=fused, **kwargs)
+    return cls(32, channels, use_checkpoint=use_checkpoint, fused=fused, **kwargs)
 
 
 def normalization_1group(channels, base_channels=-1):

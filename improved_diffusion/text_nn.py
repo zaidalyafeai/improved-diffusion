@@ -112,7 +112,7 @@ class TextEncoder(nn.Module):
 
         self.time_embed_scale = inner_dim ** -0.5
         self.time_embed = nn.Sequential(
-            silu(impl=silu_impl),
+            silu(impl="torch" if silu_impl == "fused" else silu_impl),
             nn.Linear(inner_dim, inner_dim),
         )
 
