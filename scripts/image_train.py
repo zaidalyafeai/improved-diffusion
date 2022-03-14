@@ -111,7 +111,8 @@ def main():
         use_random_safebox_for_empty_string=args.use_random_safebox_for_empty_string,
         flip_lr_prob_es=args.flip_lr_prob_es,
         px_scales_path=args.px_scales_path,
-        perf_pin_memory=args.perf_pin_memory
+        pin_memory=args.perf_pin_memory,
+        prefetch_factor=args.perf_prefetch_factor,
     )
 
     if args.save_first_batch:
@@ -220,6 +221,7 @@ def create_argparser():
         resize_mult=1.,
         perf_no_ddl=False,
         perf_pin_memory=False,
+        perf_prefetch_factor=2,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

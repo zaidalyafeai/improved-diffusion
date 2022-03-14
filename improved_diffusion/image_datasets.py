@@ -49,7 +49,8 @@ def load_data(
     flip_lr_prob_es=0.,
     px_scales_path="",
     return_dataset=False,
-    perf_pin_memory=False,
+    pin_memory=False,
+    prefetch_factor=2,
     debug=False,
 ):
     """
@@ -184,17 +185,20 @@ def load_data(
     )
     if return_dataset:
         return dataset
-    return _dataloader_gen(dataset, batch_size=batch_size, deterministic=deterministic, pin_memory=perf_pin_memory)
+    return _dataloader_gen(dataset, batch_size=batch_size, deterministic=deterministic, pin_memory=pin_memory,
+                           prefetch_factor=prefetch_factor)
 
 
-def _dataloader_gen(dataset, batch_size, deterministic, pin_memory):
+def _dataloader_gen(dataset, batch_size, deterministic, pin_memory, prefetch_factor):
     if deterministic:
         loader = DataLoader(
-            dataset, batch_size=batch_size, shuffle=False, num_workers=1, drop_last=True, pin_memory=pin_memory
+            dataset, batch_size=batch_size, shuffle=False, num_workers=1, drop_last=True, pin_memory=pin_memory,
+            prefetch_factor=prefetch_factor
         )
     else:
         loader = DataLoader(
-            dataset, batch_size=batch_size, shuffle=True, num_workers=1, drop_last=True, pin_memory=pin_memory
+            dataset, batch_size=batch_size, shuffle=True, num_workers=1, drop_last=True, pin_memory=pin_memory,
+            prefetch_factor=prefetch_factor
         )
     while True:
         yield from loader
