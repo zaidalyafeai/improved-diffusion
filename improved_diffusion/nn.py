@@ -83,6 +83,21 @@ def groupnorm_silu_24(x, w, b):
     return F.silu(F.group_norm(x.float(), 24, w, b).type(x.dtype))
 
 
+@th.jit.script
+def groupnorm_silu_8(x, w, b):
+    return F.silu(F.group_norm(x.float(), 8, w, b).type(x.dtype))
+
+
+@th.jit.script
+def groupnorm_silu_6(x, w, b):
+    return F.silu(F.group_norm(x.float(), 6, w, b).type(x.dtype))
+
+
+@th.jit.script
+def groupnorm_silu_1(x, w, b):
+    return F.silu(F.group_norm(x.float(), 1, w, b).type(x.dtype))
+
+
 class GroupNorm32(nn.GroupNorm):
     def __init__(self, *args, use_checkpoint=False, fused=False):
         super().__init__(*args)
@@ -309,10 +324,17 @@ class GroupNormExtended(GroupNorm32):
                 base_out = groupnorm_silu_24(base, self._num_groups_base, self.weight, self.bias)
             else:
                 raise ValueError(self.num_groups_base)
+
             if self.num_groups_xtra == 32:
                 xtra_out = groupnorm_silu_32(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
             elif self.num_groups_xtra == 24:
                 xtra_out = groupnorm_silu_24(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
+            elif self.num_groups_xtra == 8:
+                xtra_out = groupnorm_silu_8(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
+            elif self.num_groups_xtra == 6:
+                xtra_out = groupnorm_silu_6(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
+            elif self.num_groups_xtra == 1:
+                xtra_out = groupnorm_silu_1(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
             else:
                 raise ValueError(self.num_groups_xtra)
             # base_out = groupnorm_silu(base, self._num_groups_base, self.weight, self.bias)
