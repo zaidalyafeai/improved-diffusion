@@ -246,6 +246,18 @@ def normalization_1group(channels, base_channels=-1):
     return GroupNorm32(1, channels, base_channels=base_channels)
 
 
+@th.jit.script
+def groupnorm_extended_silu(x, ng, nch, w, b, ng_xtra, nch_xtra, w_xtra, b_xtra):
+    dtype = x.type()
+    x = x.float()
+
+    base, xtra = th.split(x, [nch, nch_xtra], dim=1)
+    base_out = F.silu(F.group_norm(base, ng, w, b))
+    xtra_out = F.silu(F.group_norm(xtra, ng_xtra, w_xtra, b_xtra))
+
+    return th.cat([base_out, xtra_out], dim=1).type(dtype)
+
+
 class GroupNormExtended(GroupNorm32):
     def __init__(self, num_groups, num_channels, num_channels_base, use_checkpoint=False, fused=False):
         super().__init__(num_groups, num_channels_base, use_checkpoint=use_checkpoint)
@@ -272,22 +284,29 @@ class GroupNormExtended(GroupNorm32):
         self.fused = fused
         if fused:
             self._num_groups_base = th.as_tensor(self.num_groups_base)
+            self._num_channels_base = th.as_tensor(self.num_channels_base)
             self._num_groups_xtra = th.as_tensor(self.num_groups_xtra)
+            self._num_channels_xtra = th.as_tensor(self.num_channels_xtra)
 
     def _forward(self, x):
-        dtype = x.type()
-        x = x.float()
-
-        base, xtra = th.split(x, [self.num_channels_base, self.num_channels_xtra], dim=1)
-
         if self.fused:
-            base_out = groupnorm_silu(base, self._num_groups_base, self.weight, self.bias)
-            xtra_out = groupnorm_silu(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
+            return groupnorm_extended_silu(
+                x,
+                self._num_groups_base, self._num_channels_base, self.weight, self.bias,
+                self._num_groups_xtra, self._num_channels_xtra, self.weight_xtra, self.bias_xtra,
+            )
+            # base_out = groupnorm_silu(base, self._num_groups_base, self.weight, self.bias)
+            # xtra_out = groupnorm_silu(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
         else:
+            dtype = x.type()
+            x = x.float()
+
+            base, xtra = th.split(x, [self.num_channels_base, self.num_channels_xtra], dim=1)
+
             base_out = F.group_norm(base, self.num_groups_base, self.weight, self.bias, self.eps)
             xtra_out = F.group_norm(xtra, self.num_groups_xtra, self.weight_xtra, self.bias_xtra, self.eps)
 
-        return th.cat([base_out, xtra_out], dim=1).type(dtype)
+            return th.cat([base_out, xtra_out], dim=1).type(dtype)
 
 
 def timestep_embedding(timesteps, dim, max_period=10000):
