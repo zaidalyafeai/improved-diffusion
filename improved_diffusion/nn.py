@@ -287,7 +287,7 @@ class GroupNormExtended(GroupNorm32):
             self._num_groups_xtra = th.as_tensor(self.num_groups_xtra)
 
     def _forward(self, x):
-        if self.fused:
+        if False:#self.fused:
             # return groupnorm_extended_silu(
             #     x,
             #     self._num_groups_base, self._num_channels_base, self.weight, self.bias,
@@ -306,7 +306,10 @@ class GroupNormExtended(GroupNorm32):
             base_out = F.group_norm(base, self.num_groups_base, self.weight, self.bias, self.eps)
             xtra_out = F.group_norm(xtra, self.num_groups_xtra, self.weight_xtra, self.bias_xtra, self.eps)
 
-            return th.cat([base_out, xtra_out], dim=1).type(dtype)
+            out = th.cat([base_out, xtra_out], dim=1).type(dtype)
+            if self.fused:
+                out = F.silu(out)
+            return out
 
 
 def timestep_embedding(timesteps, dim, max_period=10000):
