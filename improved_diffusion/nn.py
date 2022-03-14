@@ -247,11 +247,11 @@ def normalization_1group(channels, base_channels=-1):
 
 
 @th.jit.script
-def groupnorm_extended_silu(x, ng, nch, w, b, ng_xtra, nch_xtra, w_xtra, b_xtra):
+def groupnorm_extended_silu(x, sizes, ng, w, b, ng_xtra, w_xtra, b_xtra):
     dtype = x.type()
     x = x.float()
 
-    base, xtra = th.split(x, [nch, nch_xtra], dim=1)
+    base, xtra = th.split(x, sizes[nch, nch_xtra], dim=1)
     base_out = F.silu(F.group_norm(base, ng, w, b))
     xtra_out = F.silu(F.group_norm(xtra, ng_xtra, w_xtra, b_xtra))
 
@@ -284,19 +284,19 @@ class GroupNormExtended(GroupNorm32):
         self.fused = fused
         if fused:
             self._num_groups_base = th.as_tensor(self.num_groups_base)
-            self._num_channels_base = th.as_tensor(self.num_channels_base)
             self._num_groups_xtra = th.as_tensor(self.num_groups_xtra)
-            self._num_channels_xtra = th.as_tensor(self.num_channels_xtra)
 
     def _forward(self, x):
         if self.fused:
-            return groupnorm_extended_silu(
-                x,
-                self._num_groups_base, self._num_channels_base, self.weight, self.bias,
-                self._num_groups_xtra, self._num_channels_xtra, self.weight_xtra, self.bias_xtra,
-            )
-            # base_out = groupnorm_silu(base, self._num_groups_base, self.weight, self.bias)
-            # xtra_out = groupnorm_silu(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
+            # return groupnorm_extended_silu(
+            #     x,
+            #     self._num_groups_base, self._num_channels_base, self.weight, self.bias,
+            #     self._num_groups_xtra, self._num_channels_xtra, self.weight_xtra, self.bias_xtra,
+            # )
+            base, xtra = th.split(x, [self.num_channels_base, self.num_channels_xtra], dim=1)
+            base_out = groupnorm_silu(base, self._num_groups_base, self.weight, self.bias)
+            xtra_out = groupnorm_silu(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
+            return th.cat([base_out, xtra_out], dim=1).type(dtype)
         else:
             dtype = x.type()
             x = x.float()
