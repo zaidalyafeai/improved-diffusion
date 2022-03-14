@@ -70,7 +70,7 @@ def silu(impl="torch", use_checkpoint=False):
 
 @th.jit.script
 def groupnorm_silu(x, ng, w, b):
-    return F.silu(F.group_norm(x.float(), ng, w, b)).type(x.dtype)
+    return F.silu(F.group_norm(x.float(), ng, w, b).type(x.dtype))
 
 
 
