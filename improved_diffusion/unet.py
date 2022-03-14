@@ -201,7 +201,7 @@ class BreadAdapterOut(nn.Module):
         self.up = Upsample(out_channels, False, dims)
         self.transducer = nn.Sequential(
             normalization(model_channels),
-            SiLU(impl=silu_impl),
+            silu(impl=silu_impl),
             zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
         )
 
@@ -267,7 +267,7 @@ class ResBlock(TimestepBlock):
 
         self.in_layers = nn.Sequential(
             normalization(channels, base_channels=self.base_channels),
-            SiLU(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
+            silu(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
             conv_nd(dims, channels, self.out_channels, 3, padding=1),
         )
 
@@ -283,7 +283,7 @@ class ResBlock(TimestepBlock):
             self.h_upd = self.x_upd = nn.Identity()
 
         self.emb_layers = nn.Sequential(
-            SiLU(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
+            silu(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
             linear(
                 emb_channels,
                 2 * self.out_channels if use_scale_shift_norm else self.out_channels,
@@ -291,7 +291,7 @@ class ResBlock(TimestepBlock):
         )
         self.out_layers = nn.Sequential(
             normalization(self.out_channels, base_channels=self.base_out_channels),
-            SiLU(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
+            silu(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
             nn.Dropout(p=dropout) if dropout > 0 else nn.Identity(),
             zero_module(
                 conv_nd(dims, self.out_channels, self.out_channels, 3, padding=1)
