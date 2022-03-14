@@ -660,7 +660,7 @@ class UNetModel(nn.Module):
         time_embed_dim = model_channels * 4
         self.time_embed = nn.Sequential(
             linear(model_channels, time_embed_dim),
-            SiLU(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
+            silu(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
             linear(time_embed_dim, time_embed_dim),
         )
 
@@ -965,7 +965,7 @@ class UNetModel(nn.Module):
 
         self.out = nn.Sequential(
             normalization(ch, base_channels=self.expand_timestep_base_dim),
-            SiLU(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
+            silu(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
             zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
         )
 
