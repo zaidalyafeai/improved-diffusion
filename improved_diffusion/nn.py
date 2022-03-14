@@ -287,7 +287,7 @@ class GroupNormExtended(GroupNorm32):
             self._num_groups_xtra = th.as_tensor(self.num_groups_xtra)
 
     def _forward(self, x):
-        if False:#self.fused:
+        if self.fused:
             # return groupnorm_extended_silu(
             #     x,
             #     self._num_groups_base, self._num_channels_base, self.weight, self.bias,
