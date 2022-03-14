@@ -8,7 +8,7 @@ from einops import rearrange
 from x_transformers import TransformerWrapper, Encoder, XTransformer
 from x_transformers.x_transformers import AbsolutePositionalEmbedding, Attention, FeedForward, Rezero
 
-from .nn import normalization_1group, timestep_embedding, SiLU, AdaGN, checkpoint
+from .nn import normalization_1group, timestep_embedding, silu, AdaGN, checkpoint
 
 
 def make_grad_mult_hook(mult, debug=False):
@@ -67,6 +67,7 @@ class TextEncoder(nn.Module):
         tokenizer=None,
         rel_pos_bias=False,
         use_checkpoint=False,
+        silu_impl="torch",
     ):
         super().__init__()
 
@@ -111,7 +112,7 @@ class TextEncoder(nn.Module):
 
         self.time_embed_scale = inner_dim ** -0.5
         self.time_embed = nn.Sequential(
-            SiLU(),
+            silu(impl=silu_impl),
             nn.Linear(inner_dim, inner_dim),
         )
 

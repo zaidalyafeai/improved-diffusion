@@ -652,6 +652,7 @@ class UNetModel(nn.Module):
                 ff_glu=txt_ff_glu,
                 ff_mult=txt_ff_mult,
                 use_checkpoint=use_checkpoint
+                silu_impl=silu_impl
             )
 
         self.tgt_pos_embs = nn.ModuleDict({})
