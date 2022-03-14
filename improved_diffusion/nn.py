@@ -282,7 +282,7 @@ class GroupNormExtended(GroupNorm32):
 
         if self.fused:
             base_out = groupnorm_silu(base, self._num_groups_base, self.weight, self.bias)
-            xtra_out = groupnorm_silu(base, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
+            xtra_out = groupnorm_silu(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
         else:
             base_out = F.group_norm(base, self.num_groups_base, self.weight, self.bias, self.eps)
             xtra_out = F.group_norm(xtra, self.num_groups_xtra, self.weight_xtra, self.bias_xtra, self.eps)
