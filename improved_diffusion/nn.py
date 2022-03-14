@@ -281,8 +281,8 @@ class GroupNormExtended(GroupNorm32):
         base, xtra = th.split(x, [self.num_channels_base, self.num_channels_xtra], dim=1)
 
         if self.fused:
-            base_out = groupnorm_silu(base, self.num_groups_base, self.weight, self.bias)
-            xtra_out = groupnorm_silu(base, self.num_groups_base, self.weight, self.bias)
+            base_out = groupnorm_silu(base, self._num_groups_base, self.weight, self.bias)
+            xtra_out = groupnorm_silu(base, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
         else:
             base_out = F.group_norm(base, self.num_groups_base, self.weight, self.bias, self.eps)
             xtra_out = F.group_norm(xtra, self.num_groups_xtra, self.weight_xtra, self.bias_xtra, self.eps)
