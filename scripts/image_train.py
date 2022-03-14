@@ -110,7 +110,8 @@ def main():
         safebox_path=args.safebox_path,
         use_random_safebox_for_empty_string=args.use_random_safebox_for_empty_string,
         flip_lr_prob_es=args.flip_lr_prob_es,
-        px_scales_path=args.px_scales_path
+        px_scales_path=args.px_scales_path,
+        perf_pin_memory=args.perf_pin_memory
     )
 
     if args.save_first_batch:
@@ -218,6 +219,7 @@ def create_argparser():
         param_sandwich=-1,
         resize_mult=1.,
         perf_no_ddl=False,
+        perf_pin_memory=False,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
