@@ -8,21 +8,22 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 
-# # PyTorch 1.7 has SiLU, but we support PyTorch 1.5.
-# class SiLU(nn.Module):
-#     def __init__(self, use_checkpoint=False):
-#         super().__init__()
-#         self.use_checkpoint = use_checkpoint
-#
-#     def forward(self, x):
-#         return checkpoint(
-#             self._forward, (x,), self.parameters(), self.use_checkpoint
-#         )
-#
-#     def _forward(self, x):
-#         return x * th.sigmoid(x)
 
-class SiLU(nn.SiLU):
+# PyTorch 1.7 has SiLU, but we support PyTorch 1.5.
+class SiLUImplOpenAI(nn.Module):
+    def __init__(self, use_checkpoint=False):
+        super().__init__()
+        self.use_checkpoint = use_checkpoint
+
+    def forward(self, x):
+        return checkpoint(
+            self._forward, (x,), self.parameters(), self.use_checkpoint
+        )
+
+    def _forward(self, x):
+        return x * th.sigmoid(x)
+
+class SiLUImplTorch(nn.SiLU):
     def __init__(self, use_checkpoint=False):
         super().__init__()
         self.use_checkpoint = use_checkpoint
@@ -32,26 +33,38 @@ class SiLU(nn.SiLU):
             super().forward, (x,), self.parameters(), self.use_checkpoint
         )
 
-# # from https://github.com/lukemelas/EfficientNet-PyTorch/blob/7e8b0d312162f335785fb5dcfa1df29a75a1783a/efficientnet_pytorch/utils.py
-# # A memory-efficient implementation of Swish function
-# class SwishImplementation(th.autograd.Function):
-#     @staticmethod
-#     def forward(ctx, i):
-#         result = i * th.sigmoid(i)
-#         ctx.save_for_backward(i)
-#         return result
-#
-#     @staticmethod
-#     def backward(ctx, grad_output):
-#         i = ctx.saved_tensors[0]
-#         sigmoid_i = th.sigmoid(i)
-#         return grad_output * (sigmoid_i * (1 + i * (1 - sigmoid_i)))
-#
-#
-# class MemoryEfficientSwish(nn.Module):
-#     def forward(self, x):
-#         return SwishImplementation.apply(x)
-#
+# from https://github.com/lukemelas/EfficientNet-PyTorch/blob/7e8b0d312162f335785fb5dcfa1df29a75a1783a/efficientnet_pytorch/utils.py
+# A memory-efficient implementation of Swish function
+class SwishImplementation(th.autograd.Function):
+    @staticmethod
+    def forward(ctx, i):
+        result = i * th.sigmoid(i)
+        ctx.save_for_backward(i)
+        return result
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        i = ctx.saved_tensors[0]
+        sigmoid_i = th.sigmoid(i)
+        return grad_output * (sigmoid_i * (1 + i * (1 - sigmoid_i)))
+
+
+class SiLUImplEfficientNet(nn.Module):
+    def forward(self, x):
+        return SwishImplementation.apply(x)
+
+
+def silu(impl="torch", use_checkpoint=False):
+    if impl == "openai":
+        return SiLUImplOpenAI(use_checkpoint=use_checkpoint)
+    elif impl == "torch":
+        return SiLUImplTorch(use_checkpoint=use_checkpoint)
+    elif impl == "efficientnet":
+        return SiLUImplEfficientNet()
+    else:
+        raise ValueError(impl)
+
+
 # SiLU = MemoryEfficientSwish
 
 # SiLU = nn.SiLU

@@ -12,7 +12,7 @@ from x_transformers.x_transformers import Rezero
 
 from .fp16_util import convert_module_to_f16, convert_module_to_f32
 from .nn import (
-    SiLU,
+    silu,
     conv_nd,
     linear,
     avg_pool_nd,
@@ -192,7 +192,7 @@ class BreadAdapterIn(nn.Module):
 
 
 class BreadAdapterOut(nn.Module):
-    def __init__(self, model_channels, out_channels, dims=2, use_checkpoint=False):
+    def __init__(self, model_channels, out_channels, dims=2, use_checkpoint=False, silu_impl="torch"):
         super().__init__()
 
         self.use_checkpoint = use_checkpoint
@@ -201,7 +201,7 @@ class BreadAdapterOut(nn.Module):
         self.up = Upsample(out_channels, False, dims)
         self.transducer = nn.Sequential(
             normalization(model_channels),
-            SiLU(),
+            SiLU(impl=silu_impl),
             zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
         )
 
@@ -245,6 +245,7 @@ class ResBlock(TimestepBlock):
         down=False,
         use_checkpoint_lowcost=False,
         base_channels=None,
+        silu_impl="torch"
     ):
         super().__init__()
         self.channels = channels
@@ -266,7 +267,7 @@ class ResBlock(TimestepBlock):
 
         self.in_layers = nn.Sequential(
             normalization(channels, base_channels=self.base_channels),
-            SiLU(use_checkpoint=use_checkpoint_lowcost),
+            SiLU(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
             conv_nd(dims, channels, self.out_channels, 3, padding=1),
         )
 
@@ -282,7 +283,7 @@ class ResBlock(TimestepBlock):
             self.h_upd = self.x_upd = nn.Identity()
 
         self.emb_layers = nn.Sequential(
-            SiLU(use_checkpoint=use_checkpoint_lowcost),
+            SiLU(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
             linear(
                 emb_channels,
                 2 * self.out_channels if use_scale_shift_norm else self.out_channels,
@@ -290,7 +291,7 @@ class ResBlock(TimestepBlock):
         )
         self.out_layers = nn.Sequential(
             normalization(self.out_channels, base_channels=self.base_out_channels),
-            SiLU(use_checkpoint=use_checkpoint_lowcost),
+            SiLU(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
             nn.Dropout(p=dropout) if dropout > 0 else nn.Identity(),
             zero_module(
                 conv_nd(dims, self.out_channels, self.out_channels, 3, padding=1)
@@ -588,6 +589,7 @@ class UNetModel(nn.Module):
         bread_adapter_nearest_in=False,
         bread_adapter_zero_conv_in=False,
         expand_timestep_base_dim=-1,
+        silu_impl="torch",
     ):
         super().__init__()
 
@@ -657,7 +659,7 @@ class UNetModel(nn.Module):
         time_embed_dim = model_channels * 4
         self.time_embed = nn.Sequential(
             linear(model_channels, time_embed_dim),
-            SiLU(use_checkpoint=use_checkpoint_lowcost),
+            SiLU(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
             linear(time_embed_dim, time_embed_dim),
         )
 
@@ -703,6 +705,7 @@ class UNetModel(nn.Module):
                         use_scale_shift_norm=use_scale_shift_norm,
                         use_checkpoint_lowcost=use_checkpoint_lowcost,
                         base_channels=expand_timestep_base_dim * ch // model_channels,
+                        silu_impl=silu_impl,
                     )
                 ]
                 ch = mult * model_channels
@@ -789,6 +792,7 @@ class UNetModel(nn.Module):
                             down=True,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
                             base_channels=expand_timestep_base_dim * ch // model_channels,
+                            silu_impl=silu_impl,
                         )
                         if resblock_updown
                         else Downsample(
@@ -819,6 +823,7 @@ class UNetModel(nn.Module):
                 use_scale_shift_norm=use_scale_shift_norm,
                 use_checkpoint_lowcost=use_checkpoint_lowcost,
                 base_channels=expand_timestep_base_dim * ch // model_channels,
+                silu_impl=silu_impl,
             ),
             AttentionBlock(ch, use_checkpoint=use_checkpoint or use_checkpoint_middle, num_heads=num_heads,
                            use_checkpoint_lowcost=use_checkpoint_lowcost,
@@ -832,6 +837,7 @@ class UNetModel(nn.Module):
                 use_scale_shift_norm=use_scale_shift_norm,
                 use_checkpoint_lowcost=use_checkpoint_lowcost,
                 base_channels=expand_timestep_base_dim * ch // model_channels,
+                silu_impl=silu_impl,
             ),
         )
 
@@ -850,6 +856,7 @@ class UNetModel(nn.Module):
                         use_scale_shift_norm=use_scale_shift_norm,
                         use_checkpoint_lowcost=use_checkpoint_lowcost,
                         base_channels=expand_timestep_base_dim * this_ch // model_channels,
+                        silu_impl=silu_impl,
                     )
                 ]
                 ch = model_channels * mult
@@ -923,7 +930,7 @@ class UNetModel(nn.Module):
                 if level and i == num_res_blocks:
                     if (bread_adapter_at_ds == ds) and (not bread_adapter_out_added):
                         vprint(f"adding bread_adapter_out at {ds}")
-                        self.bread_adapter_out = BreadAdapterOut(out_channels=out_channels, model_channels=ch)
+                        self.bread_adapter_out = BreadAdapterOut(silu_impl=silu_impl, out_channels=out_channels, model_channels=ch)
                         bread_adapter_out_added = True
                         self.output_blocks.append(TimestepEmbedSequential(*layers))
                         layers = []
@@ -941,6 +948,7 @@ class UNetModel(nn.Module):
                             up=True,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
                             base_channels=expand_timestep_base_dim * ch // model_channels,
+                            silu_impl=silu_impl,
                         )
                         if resblock_updown
                         else Upsample(ch, conv_resample, dims=dims)
@@ -956,7 +964,7 @@ class UNetModel(nn.Module):
 
         self.out = nn.Sequential(
             normalization(ch, base_channels=self.expand_timestep_base_dim),
-            SiLU(use_checkpoint=use_checkpoint_lowcost),
+            SiLU(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
             zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
         )
 
