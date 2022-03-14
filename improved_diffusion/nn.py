@@ -319,22 +319,22 @@ class GroupNormExtended(GroupNorm32):
             # )
             base, xtra = th.split(x, [self.num_channels_base, self.num_channels_xtra], dim=1)
             if self.num_groups_base == 32:
-                base_out = groupnorm_silu_32(base, self._num_groups_base, self.weight, self.bias)
+                base_out = groupnorm_silu_32(base, self.weight, self.bias)
             elif self.num_groups_base == 24:
-                base_out = groupnorm_silu_24(base, self._num_groups_base, self.weight, self.bias)
+                base_out = groupnorm_silu_24(base, self.weight, self.bias)
             else:
                 raise ValueError(self.num_groups_base)
 
             if self.num_groups_xtra == 32:
-                xtra_out = groupnorm_silu_32(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
+                xtra_out = groupnorm_silu_32(xtra, self.weight_xtra, self.bias_xtra)
             elif self.num_groups_xtra == 24:
-                xtra_out = groupnorm_silu_24(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
+                xtra_out = groupnorm_silu_24(xtra, self.weight_xtra, self.bias_xtra)
             elif self.num_groups_xtra == 8:
-                xtra_out = groupnorm_silu_8(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
+                xtra_out = groupnorm_silu_8(xtra, self.weight_xtra, self.bias_xtra)
             elif self.num_groups_xtra == 6:
-                xtra_out = groupnorm_silu_6(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
+                xtra_out = groupnorm_silu_6(xtra, self.weight_xtra, self.bias_xtra)
             elif self.num_groups_xtra == 1:
-                xtra_out = groupnorm_silu_1(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
+                xtra_out = groupnorm_silu_1(xtra, self.weight_xtra, self.bias_xtra)
             else:
                 raise ValueError(self.num_groups_xtra)
             # base_out = groupnorm_silu(base, self._num_groups_base, self.weight, self.bias)
