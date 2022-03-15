@@ -263,6 +263,7 @@ class ResBlock(TimestepBlock):
             use_checkpoint_lowcost = False
 
         self.fused = silu_impl=="fused"
+        print(f"ResBlock: self.fused={self.fused}")
 
         if base_channels > 0:
             self.base_channels = base_channels

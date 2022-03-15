@@ -103,6 +103,7 @@ class GroupNorm32(nn.GroupNorm):
         super().__init__(*args)
         self.use_checkpoint = use_checkpoint
         self.fused = fused
+        print(f"GroupNorm32: fused={fused}")
 
     def forward(self, x):
         return checkpoint(
@@ -347,6 +348,8 @@ def normalization_1group(channels, base_channels=-1):
 class GroupNormExtended(GroupNorm32):
     def __init__(self, num_groups, num_channels, num_channels_base, use_checkpoint=False, fused=False):
         super().__init__(num_groups, num_channels_base, use_checkpoint=use_checkpoint)
+
+        print(f"GroupNormExtended: fused={fused}")
 
         self.num_channels_base = num_channels_base
         self.num_channels_xtra = num_channels - num_channels_base
