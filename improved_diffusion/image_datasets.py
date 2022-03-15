@@ -12,6 +12,8 @@ from .crop import RandomResizedProtectedCropLazy
 import tokenizers
 from tqdm.auto import trange
 
+import imagesize
+
 
 def make_char_level_tokenizer():
     tokenizer = tokenizers.Tokenizer(tokenizers.models.BPE(unk_token="<unk>"))
@@ -51,6 +53,7 @@ def load_data(
     return_dataset=False,
     pin_memory=False,
     prefetch_factor=2,
+    min_imagesize=0,
     debug=False,
 ):
     """
@@ -84,7 +87,7 @@ def load_data(
         with open(px_scales_path, 'r') as f:
             px_scales = json.load(f)
 
-    all_files, image_file_to_text_file, file_sizes, image_file_to_safebox, image_file_to_px_scales = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize, safeboxes=safeboxes, px_scales=px_scales)
+    all_files, image_file_to_text_file, file_sizes, image_file_to_safebox, image_file_to_px_scales = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize, min_imagesize=min_imagesize, safeboxes=safeboxes, px_scales=px_scales)
     print(f"found {len(all_files)} images, {len(image_file_to_text_file)} texts")
     all_files = all_files[offset:]
 
@@ -218,7 +221,8 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
                        flip_lr_prob_es=0.,
                        px_scales_path="",
                        pin_memory=False,
-                       prefetch_factor=False,
+                       prefetch_factor=2,
+                       min_imagesize=0,
                        ):
     data = load_data(
         data_dir=data_dir,
@@ -245,6 +249,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         px_scales_path=px_scales_path,
         pin_memory=pin_memory,
         prefetch_factor=prefetch_factor,
+        min_imagesize=min_imagesize,
     )
 
     blurrer = T.RandomApply(transforms=[T.GaussianBlur(blur_width, sigma=(blur_sigma_min, blur_sigma_max))], p=blur_prob)
@@ -259,7 +264,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         yield large_batch, model_kwargs
 
 
-def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, safeboxes=None, px_scales=None):
+def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_imagesize=0, safeboxes=None, px_scales=None):
     results = []
     image_file_to_text_file = {}
     file_sizes = {}
@@ -279,6 +284,10 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, safeboxes
                 if filesize < min_filesize:
                     continue
                 file_sizes[full_path] = filesize
+            if min_imagesize > 0:
+                wh = imagesize.get(full_path)
+                if min(w, h) < min_imagesize:
+                    continue
             results.append(full_path)
             if txt:
                 prefix, _, ext = full_path.rpartition(".")
@@ -296,7 +305,7 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, safeboxes
                     # raise ValueError(path_txt)
         elif bf.isdir(full_path):
             next_results, next_map, next_file_sizes, next_image_file_to_safebox, next_image_file_to_px_scales = _list_image_files_recursively(
-                full_path, txt=txt, min_filesize=min_filesize, safeboxes=safeboxes, px_scales=px_scales
+                full_path, txt=txt, min_filesize=min_filesize, min_imagesize=min_imagesize, safeboxes=safeboxes, px_scales=px_scales
             )
             results.extend(next_results)
             image_file_to_text_file.update(next_map)
