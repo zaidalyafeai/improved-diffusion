@@ -286,7 +286,7 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_image
                 file_sizes[full_path] = filesize
             if min_imagesize > 0:
                 wh = imagesize.get(full_path)
-                if min(w, h) < min_imagesize:
+                if min(wh) < min_imagesize:
                     continue
             results.append(full_path)
             if txt:
