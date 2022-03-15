@@ -199,7 +199,7 @@ class GaussianDiffusion:
 
         self.tensorized_for = None
 
-    def is_tensorized(device):
+    def is_tensorized(self, device):
         return self.tensorized_for == device
 
     def tensorize(self, device):
