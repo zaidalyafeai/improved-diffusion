@@ -262,6 +262,8 @@ class ResBlock(TimestepBlock):
         if use_checkpoint:
             use_checkpoint_lowcost = False
 
+        self.fused = silu_impl=="fused"
+
         if base_channels > 0:
             self.base_channels = base_channels
             self.base_out_channels = self.base_channels * self.out_channels // channels
@@ -270,7 +272,7 @@ class ResBlock(TimestepBlock):
             self.base_out_channels = base_channels
 
         self.in_layers = nn.Sequential(
-            normalization(channels, base_channels=self.base_channels, fused=silu_impl=="fused"),
+            normalization(channels, base_channels=self.base_channels, fused=self.fused),
             silu(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
             conv_nd(dims, channels, self.out_channels, 3, padding=1),
         )
@@ -287,7 +289,7 @@ class ResBlock(TimestepBlock):
             self.h_upd = self.x_upd = nn.Identity()
 
         self.emb_layers = nn.Sequential(
-            silu(impl="torch" if silu_impl == "fused" else silu_impl, use_checkpoint=use_checkpoint_lowcost),
+            silu(impl="torch" if self.fused else silu_impl, use_checkpoint=use_checkpoint_lowcost),
             linear(
                 emb_channels,
                 2 * self.out_channels if use_scale_shift_norm else self.out_channels,
@@ -297,7 +299,7 @@ class ResBlock(TimestepBlock):
         # if silu_impl == "fused" and use_scale_shift_norm:
         #     out_silu_impl = "torch"
         self.out_layers = nn.Sequential(
-            normalization(self.out_channels, base_channels=self.base_out_channels, fused=out_silu_impl=="fused"),
+            normalization(self.out_channels, base_channels=self.base_out_channels, fused=self.fused),
             silu(impl=out_silu_impl, use_checkpoint=use_checkpoint_lowcost),
             nn.Dropout(p=dropout) if dropout > 0 else nn.Identity(),
             zero_module(
@@ -339,40 +341,49 @@ class ResBlock(TimestepBlock):
             emb_out = emb_out[..., None]
         if self.use_scale_shift_norm:
             out_norm, out_rest = self.out_layers[0], self.out_layers[1:]
-            if self.base_channels > 0:
-                base, xtra = th.split(
-                    emb_out,
-                    [2 * self.base_out_channels, 2 * self.out_channels - 2 * self.base_out_channels],
-                    dim=1
-                )
-                # base_scale, base_shift = th.chunk(base, 2, dim=1)
-                # xtra_scale, xtra_shift = th.chunk(xtra, 2, dim=1)
-                # scale = th.cat([base_scale, xtra_scale], dim=1)
-                # shift = th.cat([base_shift, xtra_shift], dim=1)
-                # h = out_norm(h) * (1 + scale) + shift
-                # h = out_rest(h)
-                base_h, xtra_h = th.split(h, [out_norm.num_channels_base, out_norm.num_channels_xtra], dim=1)
-                if out_norm.num_groups_xtra == 8:
-                    fn = adagn_silu_extended_32_8
-                elif out_norm.num_groups_xtra == 6:
-                    fn = adagn_silu_extended_32_6
-                elif out_norm.num_groups_xtra == 1:
-                    fn = adagn_silu_extended_32_1
+            if self.fused:
+                if self.base_channels > 0:
+                    # AdaGN: fused, extended
+                    base, xtra = th.split(
+                        emb_out,
+                        [2 * self.base_out_channels, 2 * self.out_channels - 2 * self.base_out_channels],
+                        dim=1
+                    )
+                    base_h, xtra_h = th.split(h, [out_norm.num_channels_base, out_norm.num_channels_xtra], dim=1)
+                    if out_norm.num_groups_xtra == 8:
+                        fn = adagn_silu_extended_32_8
+                    elif out_norm.num_groups_xtra == 6:
+                        fn = adagn_silu_extended_32_6
+                    elif out_norm.num_groups_xtra == 1:
+                        fn = adagn_silu_extended_32_1
+                    else:
+                        raise ValueError(out_norm.num_groups_xtra)
+                    h = fn(
+                        base_h, xtra_h,
+                        base, xtra,
+                        out_norm.weight, out_norm.bias,
+                        out_norm.weight_xtra, out_norm.bias_xtra,
+                    )
                 else:
-                    raise ValueError(out_norm.num_groups_xtra)
-                h = fn(
-                    base_h, xtra_h,
-                    base, xtra,
-                    out_norm.weight, out_norm.bias,
-                    out_norm.weight_xtra, out_norm.bias_xtra,
-                )
-            elif False:
-                scale, shift = th.chunk(emb_out, 2, dim=1)
-                h = out_norm(h) * (1 + scale) + shift
+                    # AdaGN: fused, not extended
+                    h = adagn_silu(h, emb_out, out_norm.weight, out_norm.bias)
             else:
-                h = adagn_silu(h, emb_out, out_norm.weight, out_norm.bias)
+                if self.base_channels > 0:
+                    # AdaGN: not fused, extended
+                    base_scale, base_shift = th.chunk(base, 2, dim=1)
+                    xtra_scale, xtra_shift = th.chunk(xtra, 2, dim=1)
+                    scale = th.cat([base_scale, xtra_scale], dim=1)
+                    shift = th.cat([base_shift, xtra_shift], dim=1)
+                    h = out_norm(h) * (1 + scale) + shift
+                    h = out_rest(h)
+                else:
+                    # AdaGN: not fused, not extended
+                    scale, shift = th.chunk(emb_out, 2, dim=1)
+                    h = out_norm(h) * (1 + scale) + shift
+            # AdaGN: any
             h = out_rest(h)
         else:
+            # not AdaGN
             h = h + emb_out
             h = self.out_layers(h)
         return self.skip_connection(x) + h
