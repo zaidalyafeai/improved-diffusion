@@ -351,7 +351,7 @@ class ResBlock(TimestepBlock):
                 # shift = th.cat([base_shift, xtra_shift], dim=1)
                 # h = out_norm(h) * (1 + scale) + shift
                 # h = out_rest(h)
-                base_h, xtra_h = th.split(x, [out_norm.num_channels_base, out_norm.num_channels_xtra], dim=1)
+                base_h, xtra_h = th.split(h, [out_norm.num_channels_base, out_norm.num_channels_xtra], dim=1)
                 if out_norm.num_groups_xtra == 8:
                     fn = adagn_silu_extended_32_8
                 elif out_norm.num_groups_xtra == 6:
