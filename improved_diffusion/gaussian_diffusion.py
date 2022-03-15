@@ -158,6 +158,8 @@ class GaussianDiffusion:
         assert len(betas.shape) == 1, "betas must be 1-D"
         assert (betas > 0).all() and (betas <= 1).all()
 
+        self.log_betas = np.log(self.betas)
+
         self.num_timesteps = int(betas.shape[0])
 
         alphas = 1.0 - betas
@@ -323,7 +325,7 @@ class GaussianDiffusion:
                 min_log = self._extract_into_tensor(
                     self.posterior_log_variance_clipped, t, x.shape
                 )
-                max_log = self._extract_into_tensor(np.log(self.betas), t, x.shape)
+                max_log = self._extract_into_tensor(self.log_betas, t, x.shape)
                 # The model_var_values is [-1, 1] for [min_var, max_var].
                 frac = (model_var_values + 1) / 2
                 model_log_variance = frac * max_log + (1 - frac) * min_log
