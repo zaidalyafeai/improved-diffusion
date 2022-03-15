@@ -114,9 +114,21 @@ class _WrappedModel:
         self.rescale_timesteps = rescale_timesteps
         self.original_num_steps = original_num_steps
 
+        self.tensorized_for = None
+
+    def is_tensorized(device, dtype):
+        return self.tensorized_for == (device, dtype)
+
+    def tensorize(self, device, dtype):
+        self.timestep_map = th.tensor(self.timestep_map, device=device, dtype=dtype)
+        self.tensorized_for = (device, dtype)
+
     def __call__(self, x, ts, **kwargs):
-        map_tensor = th.tensor(self.timestep_map, device=ts.device, dtype=ts.dtype)
-        new_ts = map_tensor[ts]
+        if not self.is_tensorized(ts.device, ts.dtype):
+            self.tensorize(ts.device, ts.dtype)
+        new_ts = self.timestep_map[ts]
+        # map_tensor = th.tensor(self.timestep_map, device=ts.device, dtype=ts.dtype)
+        # new_ts = map_tensor[ts]
         if self.rescale_timesteps:
             new_ts = new_ts.float() * (1000.0 / self.original_num_steps)
         return self.model(x, new_ts, **kwargs)
