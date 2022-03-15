@@ -103,7 +103,6 @@ class GroupNorm32(nn.GroupNorm):
         super().__init__(*args)
         self.use_checkpoint = use_checkpoint
         self.fused = fused
-        print(f"GroupNorm32: fused={fused}")
 
     def forward(self, x):
         return checkpoint(
@@ -349,8 +348,6 @@ class GroupNormExtended(GroupNorm32):
     def __init__(self, num_groups, num_channels, num_channels_base, use_checkpoint=False, fused=False):
         super().__init__(num_groups, num_channels_base, use_checkpoint=use_checkpoint)
 
-        print(f"GroupNormExtended: fused={fused}")
-
         self.num_channels_base = num_channels_base
         self.num_channels_xtra = num_channels - num_channels_base
 
@@ -374,6 +371,7 @@ class GroupNormExtended(GroupNorm32):
 
     def _forward(self, x):
         if self.fused:
+            print(f"GroupNormExtended: _forward fused")
             # return groupnorm_extended_silu(
             #     x,
             #     self._num_groups_base, self._num_channels_base, self.weight, self.bias,
@@ -403,6 +401,7 @@ class GroupNormExtended(GroupNorm32):
             # xtra_out = groupnorm_silu(xtra, self._num_groups_xtra, self.weight_xtra, self.bias_xtra)
             return th.cat([base_out, xtra_out], dim=1)
         else:
+            print(f"GroupNormExtended: _forward not fused")
             dtype = x.type()
             x = x.float()
 
