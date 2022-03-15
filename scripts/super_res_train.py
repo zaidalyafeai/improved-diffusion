@@ -101,7 +101,9 @@ def main():
         safebox_path=args.safebox_path,
         use_random_safebox_for_empty_string=args.use_random_safebox_for_empty_string,
         flip_lr_prob_es=args.flip_lr_prob_es,
-        px_scales_path=args.px_scales_path
+        px_scales_path=args.px_scales_path,
+        pin_memory=args.perf_pin_memory,
+        prefetch_factor=args.perf_prefetch_factor,
     )
 
     logger.log("training...")
@@ -134,7 +136,8 @@ def main():
         autosave=args.autosave,
         arithmetic_avg_from_step=args.arithmetic_avg_from_step,
         arithmetic_avg_extra_shift=args.arithmetic_avg_extra_shift,
-        gain_ff_setup_step=args.gain_ff_setup_step
+        gain_ff_setup_step=args.gain_ff_setup_step,
+        perf_no_ddl=args.perf_no_ddl,
     ).run_loop()
 
 
@@ -187,7 +190,10 @@ def create_argparser():
         safebox_path="",
         use_random_safebox_for_empty_string=False,
         flip_lr_prob_es=0.,
-        px_scales_path=""
+        px_scales_path="",
+        perf_no_ddl=False,
+        perf_pin_memory=False,
+        perf_prefetch_factor=2,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
