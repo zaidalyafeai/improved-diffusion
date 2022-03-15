@@ -370,6 +370,11 @@ class ResBlock(TimestepBlock):
             else:
                 if self.base_channels > 0:
                     # AdaGN: not fused, extended
+                    base, xtra = th.split(
+                        emb_out,
+                        [2 * self.base_out_channels, 2 * self.out_channels - 2 * self.base_out_channels],
+                        dim=1
+                    )
                     base_scale, base_shift = th.chunk(base, 2, dim=1)
                     xtra_scale, xtra_shift = th.chunk(xtra, 2, dim=1)
                     scale = th.cat([base_scale, xtra_scale], dim=1)
