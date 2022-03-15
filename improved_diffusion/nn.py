@@ -166,7 +166,7 @@ class AdaGN(nn.Module):
 @th.jit.script
 def adagn(h, emb_out, w, b):
     scale, shift = th.chunk(emb_out, 2, dim=1)
-    h = F.group_norm(h.float(), 32, w, b).type(h.type) * (1 + scale) + shift
+    h = F.group_norm(h.float(), 32, w, b).type(h.dtype) * (1 + scale) + shift
     return h
 
 
