@@ -116,7 +116,7 @@ class _WrappedModel:
 
         self.tensorized_for = None
 
-    def is_tensorized(device, dtype):
+    def is_tensorized(self, device, dtype):
         return self.tensorized_for == (device, dtype)
 
     def tensorize(self, device, dtype):
