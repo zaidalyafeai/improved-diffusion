@@ -195,6 +195,16 @@ class GaussianDiffusion:
 
         self.schedule_fn = schedule_fn
 
+        self.is_tensorized = False
+
+    def tensorize(self, device):
+        arrays = {name: getattr(self, name) for name in vars(self) if isinstance(getattr(self, name), np.ndarray)}
+
+        for name, arr in arrays.items():
+            setattr(self, name, th.from_numpy(arr).to(device=device, dtype=th.float()))
+
+        self.is_tensorized = True
+
     def q_mean_variance(self, x_start, t):
         """
         Get the distribution q(x_t | x_0).
@@ -1263,7 +1273,11 @@ def _extract_into_tensor(arr, timesteps, broadcast_shape):
                             dimension equal to the length of timesteps.
     :return: a tensor of shape [batch_size, 1, ...] where the shape has K dims.
     """
-    res = th.from_numpy(arr).to(device=timesteps.device)[timesteps].float()
+    if self.is_tensorized:
+        res = arr[timesteps]
+    else:
+        res = th.from_numpy(arr).to(device=timesteps.device)[timesteps].float()
+        self.tensorize(timesteps.device)
     while len(res.shape) < len(broadcast_shape):
         res = res[..., None]
     return res.expand(broadcast_shape)
