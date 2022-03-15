@@ -377,7 +377,6 @@ class ResBlock(TimestepBlock):
                     scale = th.cat([base_scale, xtra_scale], dim=1)
                     shift = th.cat([base_shift, xtra_shift], dim=1)
                     h = out_norm(h) * (1 + scale) + shift
-                    h = out_rest(h)
                 else:
                     # AdaGN: not fused, not extended
                     scale, shift = th.chunk(emb_out, 2, dim=1)
