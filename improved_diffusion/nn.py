@@ -178,12 +178,47 @@ def adagn_silu(h, emb_out, w, b):
 
 
 @th.jit.script
-def adagn_silu_2emb(h, emb_out, emb_out2, w, b):
+def adagn_silu_extended_32_8(h, h2, emb_out, emb_out2, w, b, w2, b2):
+    h = F.group_norm(h.float(), 32, w, b).type(h.dtype)
+    h2 = F.group_norm(h2.float(), 8, w, b).type(h.dtype)
+
+    h = th.cat([h, h2], dim=1)
+
     scale, shift = th.chunk(emb_out, 2, dim=1)
     scale2, shift2 = th.chunk(emb_out2, 2, dim=1)
     scale = th.cat([scale, scale2], dim=1)
     shift = th.cat([shift, shift2], dim=1)
-    h = F.group_norm(h.float(), 32, w, b).type(h.dtype) * (1 + scale) + shift
+    h = h * (1 + scale) + shift
+    return F.silu(h)
+
+
+@th.jit.script
+def adagn_silu_extended_32_6(h, h2, emb_out, emb_out2, w, b, w2, b2):
+    h = F.group_norm(h.float(), 32, w, b).type(h.dtype)
+    h2 = F.group_norm(h2.float(), 6, w, b).type(h.dtype)
+
+    h = th.cat([h, h2], dim=1)
+
+    scale, shift = th.chunk(emb_out, 2, dim=1)
+    scale2, shift2 = th.chunk(emb_out2, 2, dim=1)
+    scale = th.cat([scale, scale2], dim=1)
+    shift = th.cat([shift, shift2], dim=1)
+    h = h * (1 + scale) + shift
+    return F.silu(h)
+
+
+@th.jit.script
+def adagn_silu_extended_32_1(h, h2, emb_out, emb_out2, w, b, w2, b2):
+    h = F.group_norm(h.float(), 32, w, b).type(h.dtype)
+    h2 = F.group_norm(h2.float(), 1, w, b).type(h.dtype)
+
+    h = th.cat([h, h2], dim=1)
+
+    scale, shift = th.chunk(emb_out, 2, dim=1)
+    scale2, shift2 = th.chunk(emb_out2, 2, dim=1)
+    scale = th.cat([scale, scale2], dim=1)
+    shift = th.cat([shift, shift2], dim=1)
+    h = h * (1 + scale) + shift
     return F.silu(h)
 
 
