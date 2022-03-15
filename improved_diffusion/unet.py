@@ -14,6 +14,7 @@ from .fp16_util import convert_module_to_f16, convert_module_to_f32
 from .nn import (
     silu,
     adagn_silu,
+    adagn_silu_2emb,
     conv_nd,
     linear,
     avg_pool_nd,
@@ -342,12 +343,13 @@ class ResBlock(TimestepBlock):
                     [2 * self.base_out_channels, 2 * self.out_channels - 2 * self.base_out_channels],
                     dim=1
                 )
-                base_scale, base_shift = th.chunk(base, 2, dim=1)
-                xtra_scale, xtra_shift = th.chunk(xtra, 2, dim=1)
-                scale = th.cat([base_scale, xtra_scale], dim=1)
-                shift = th.cat([base_shift, xtra_shift], dim=1)
-                h = out_norm(h) * (1 + scale) + shift
-                h = out_rest(h)
+                # base_scale, base_shift = th.chunk(base, 2, dim=1)
+                # xtra_scale, xtra_shift = th.chunk(xtra, 2, dim=1)
+                # scale = th.cat([base_scale, xtra_scale], dim=1)
+                # shift = th.cat([base_shift, xtra_shift], dim=1)
+                # h = out_norm(h) * (1 + scale) + shift
+                # h = out_rest(h)
+                h = adagn_silu_2emb(h, base, xtra, out_norm.weight, out_norm.bias)
             elif False:
                 scale, shift = th.chunk(emb_out, 2, dim=1)
                 h = out_norm(h) * (1 + scale) + shift
