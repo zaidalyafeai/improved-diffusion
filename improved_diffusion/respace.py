@@ -117,7 +117,13 @@ class _WrappedModel:
         self.tensorized_for = None
 
     def is_tensorized(self, device, dtype):
-        return self.tensorized_for == (device, dtype)
+        out = self.tensorized_for == (device, dtype)
+        if out:
+            print(f"YES | {(device, dtype)}")
+        else:
+            print(f"NO  | have {self.tensorized_for} want {(device, dtype)}")
+        return out
+        # return self.tensorized_for == (device, dtype)
 
     def tensorize(self, device, dtype):
         self.timestep_map = th.tensor(self.timestep_map, device=device, dtype=dtype)
