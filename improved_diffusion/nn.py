@@ -170,6 +170,13 @@ def adagn(h, emb_out, w, b):
     return h
 
 
+@th.jit.script
+def adagn_silu(h, emb_out, w, b):
+    scale, shift = th.chunk(emb_out, 2, dim=1)
+    h = F.group_norm(h.float(), 32, w, b).type(h.dtype) * (1 + scale) + shift
+    return F.silu(h)
+
+
 def conv_nd(dims, *args, **kwargs):
     """
     Create a 1D, 2D, or 3D convolution module.

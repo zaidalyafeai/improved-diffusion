@@ -13,7 +13,7 @@ from x_transformers.x_transformers import Rezero
 from .fp16_util import convert_module_to_f16, convert_module_to_f32
 from .nn import (
     silu,
-    adagn,
+    adagn_silu,
     conv_nd,
     linear,
     avg_pool_nd,
@@ -291,8 +291,8 @@ class ResBlock(TimestepBlock):
             ),
         )
         out_silu_impl = silu_impl
-        if silu_impl == "fused" and use_scale_shift_norm:
-            out_silu_impl = "torch"
+        # if silu_impl == "fused" and use_scale_shift_norm:
+        #     out_silu_impl = "torch"
         self.out_layers = nn.Sequential(
             normalization(self.out_channels, base_channels=self.base_out_channels, fused=out_silu_impl=="fused"),
             silu(impl=out_silu_impl, use_checkpoint=use_checkpoint_lowcost),
@@ -348,11 +348,11 @@ class ResBlock(TimestepBlock):
                 shift = th.cat([base_shift, xtra_shift], dim=1)
                 h = out_norm(h) * (1 + scale) + shift
                 h = out_rest(h)
-            elif True:
+            elif False:
                 scale, shift = th.chunk(emb_out, 2, dim=1)
                 h = out_norm(h) * (1 + scale) + shift
             else:
-                h = adagn(h, emb_out, out_norm.weight, out_norm.bias)
+                h = adagn_silu(h, emb_out, out_norm.weight, out_norm.bias)
             h = out_rest(h)
         else:
             h = h + emb_out
