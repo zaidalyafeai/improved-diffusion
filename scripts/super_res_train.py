@@ -104,6 +104,7 @@ def main():
         px_scales_path=args.px_scales_path,
         pin_memory=args.perf_pin_memory,
         prefetch_factor=args.perf_prefetch_factor,
+        min_imagesize=args.min_imagesize,
     )
 
     logger.log("training...")

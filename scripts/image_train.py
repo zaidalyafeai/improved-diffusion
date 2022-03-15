@@ -113,6 +113,7 @@ def main():
         px_scales_path=args.px_scales_path,
         pin_memory=args.perf_pin_memory,
         prefetch_factor=args.perf_prefetch_factor,
+        min_imagesize=args.min_imagesize,
     )
 
     if args.save_first_batch:
@@ -222,6 +223,7 @@ def create_argparser():
         perf_no_ddl=False,
         perf_pin_memory=False,
         perf_prefetch_factor=2,
+        min_imagesize=0,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
