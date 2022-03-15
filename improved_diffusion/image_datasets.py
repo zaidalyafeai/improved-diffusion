@@ -316,7 +316,7 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_image
             file_sizes.update(next_file_sizes)
             image_file_to_safebox.update(next_image_file_to_safebox)
             image_file_to_px_scales.update(next_image_file_to_px_scales)
-    print(f"_list_image_files_recursively: n_excluded_imagesize={n_excluded_imagesize}")
+    print(f"_list_image_files_recursively: data_dir={data_dir}, n_excluded_imagesize={n_excluded_imagesize}")
     image_file_to_safebox = {k: v for k, v in image_file_to_safebox.items() if v is not None}
     image_file_to_px_scales = {k: v for k, v in image_file_to_px_scales.items() if v is not None}
     return results, image_file_to_text_file, file_sizes, image_file_to_safebox, image_file_to_px_scales
