@@ -361,7 +361,7 @@ class TrainLoop:
 
                 newsd = apply_resize(
                     self.model,
-                    sd,
+                    newsd,
                     mult=self.resize_mult
                 )
 
