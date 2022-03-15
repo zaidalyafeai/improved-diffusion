@@ -180,7 +180,7 @@ def adagn_silu(h, emb_out, w, b):
 @th.jit.script
 def adagn_silu_extended_32_8(h, h2, emb_out, emb_out2, w, b, w2, b2):
     h = F.group_norm(h.float(), 32, w, b).type(h.dtype)
-    h2 = F.group_norm(h2.float(), 8, w, b).type(h.dtype)
+    h2 = F.group_norm(h2.float(), 8, w2, b2).type(h.dtype)
 
     h = th.cat([h, h2], dim=1)
 
@@ -195,7 +195,7 @@ def adagn_silu_extended_32_8(h, h2, emb_out, emb_out2, w, b, w2, b2):
 @th.jit.script
 def adagn_silu_extended_32_6(h, h2, emb_out, emb_out2, w, b, w2, b2):
     h = F.group_norm(h.float(), 32, w, b).type(h.dtype)
-    h2 = F.group_norm(h2.float(), 6, w, b).type(h.dtype)
+    h2 = F.group_norm(h2.float(), 6, w2, b2).type(h.dtype)
 
     h = th.cat([h, h2], dim=1)
 
@@ -210,7 +210,7 @@ def adagn_silu_extended_32_6(h, h2, emb_out, emb_out2, w, b, w2, b2):
 @th.jit.script
 def adagn_silu_extended_32_1(h, h2, emb_out, emb_out2, w, b, w2, b2):
     h = F.group_norm(h.float(), 32, w, b).type(h.dtype)
-    h2 = F.group_norm(h2.float(), 1, w, b).type(h.dtype)
+    h2 = F.group_norm(h2.float(), 1, w2, b2).type(h.dtype)
 
     h = th.cat([h, h2], dim=1)
 
