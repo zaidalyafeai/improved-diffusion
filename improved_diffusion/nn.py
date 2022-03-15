@@ -324,7 +324,7 @@ class GroupNormExtended(GroupNorm32):
                 self.num_groups_xtra = self.num_channels_xtra // channels_per_group_xtra
                 break
 
-        print(f"base ch {self.num_channels_base} gr {self.num_groups_base}, xtra ch {self.num_channels_xtra} gr {self.num_groups_xtra}")
+        # print(f"base ch {self.num_channels_base} gr {self.num_groups_base}, xtra ch {self.num_channels_xtra} gr {self.num_groups_xtra}")
 
         self.weight_xtra = nn.Parameter(th.empty(self.num_channels_xtra))
         self.bias_xtra = nn.Parameter(th.empty(self.num_channels_xtra))
