@@ -287,7 +287,9 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_image
                 file_sizes[full_path] = filesize
             if min_imagesize > 0:
                 wh = imagesize.get(full_path)
-                if min(wh) < min_imagesize:
+                pxs = px_scales.get(safebox_key, (1, 1))
+                edge = min(wh[0]/max(1, pxs[0]), wh[1]/max(pxs[1], 1))
+                if edge < min_imagesize:
                     n_excluded_imagesize += 1
                     continue
             results.append(full_path)
