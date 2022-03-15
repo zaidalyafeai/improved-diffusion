@@ -112,9 +112,9 @@ class GroupNorm32(nn.GroupNorm):
     def _forward(self, x):
         if self.fused:
             if self.num_groups == 32:
-                return groupnorm_silu_32(x, self._num_groups, self.weight, self.bias)
+                return groupnorm_silu_32(x, self.weight, self.bias)
             elif self.num_groups == 24:
-                return groupnorm_silu_24(x, self._num_groups, self.weight, self.bias)
+                return groupnorm_silu_24(x, self.weight, self.bias)
             else:
                 raise ValueError(self.num_groups)
         return super().forward(x.float()).type(x.dtype)
