@@ -104,7 +104,6 @@ def main():
         px_scales_path=args.px_scales_path,
         pin_memory=args.perf_pin_memory,
         prefetch_factor=args.perf_prefetch_factor,
-        param_sandwich=args.param_sandwich,
     )
 
     logger.log("training...")
@@ -139,6 +138,7 @@ def main():
         arithmetic_avg_extra_shift=args.arithmetic_avg_extra_shift,
         gain_ff_setup_step=args.gain_ff_setup_step,
         perf_no_ddl=args.perf_no_ddl,
+        param_sandwich=args.param_sandwich,
     ).run_loop()
 
 
@@ -196,6 +196,7 @@ def create_argparser():
         perf_pin_memory=False,
         perf_prefetch_factor=2,
         param_sandwich=0,
+        min_imagesize=0,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
