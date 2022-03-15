@@ -348,7 +348,7 @@ class ResBlock(TimestepBlock):
                 shift = th.cat([base_shift, xtra_shift], dim=1)
                 h = out_norm(h) * (1 + scale) + shift
                 h = out_rest(h)
-            elif False:
+            elif True:
                 scale, shift = th.chunk(emb_out, 2, dim=1)
                 h = out_norm(h) * (1 + scale) + shift
             else:
