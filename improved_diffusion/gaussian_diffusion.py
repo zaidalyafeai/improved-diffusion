@@ -214,10 +214,10 @@ class GaussianDiffusion:
         :return: A tuple (mean, variance, log_variance), all of x_start's shape.
         """
         mean = (
-            _extract_into_tensor(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start
+            self._extract_into_tensor(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start
         )
-        variance = _extract_into_tensor(1.0 - self.alphas_cumprod, t, x_start.shape)
-        log_variance = _extract_into_tensor(
+        variance = self._extract_into_tensor(1.0 - self.alphas_cumprod, t, x_start.shape)
+        log_variance = self._extract_into_tensor(
             self.log_one_minus_alphas_cumprod, t, x_start.shape
         )
         return mean, variance, log_variance
@@ -237,8 +237,8 @@ class GaussianDiffusion:
             noise = th.randn_like(x_start)
         assert noise.shape == x_start.shape
         return (
-            _extract_into_tensor(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start
-            + _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape)
+            self._extract_into_tensor(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start
+            + self._extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape)
             * noise
         )
 
@@ -251,11 +251,11 @@ class GaussianDiffusion:
         """
         assert x_start.shape == x_t.shape
         posterior_mean = (
-            _extract_into_tensor(self.posterior_mean_coef1, t, x_t.shape) * x_start
-            + _extract_into_tensor(self.posterior_mean_coef2, t, x_t.shape) * x_t
+            self._extract_into_tensor(self.posterior_mean_coef1, t, x_t.shape) * x_start
+            + self._extract_into_tensor(self.posterior_mean_coef2, t, x_t.shape) * x_t
         )
-        posterior_variance = _extract_into_tensor(self.posterior_variance, t, x_t.shape)
-        posterior_log_variance_clipped = _extract_into_tensor(
+        posterior_variance = self._extract_into_tensor(self.posterior_variance, t, x_t.shape)
+        posterior_log_variance_clipped = self._extract_into_tensor(
             self.posterior_log_variance_clipped, t, x_t.shape
         )
         assert (
@@ -320,10 +320,10 @@ class GaussianDiffusion:
                 model_log_variance = model_var_values
                 model_variance = th.exp(model_log_variance)
             else:
-                min_log = _extract_into_tensor(
+                min_log = self._extract_into_tensor(
                     self.posterior_log_variance_clipped, t, x.shape
                 )
-                max_log = _extract_into_tensor(np.log(self.betas), t, x.shape)
+                max_log = self._extract_into_tensor(np.log(self.betas), t, x.shape)
                 # The model_var_values is [-1, 1] for [min_var, max_var].
                 frac = (model_var_values + 1) / 2
                 model_log_variance = frac * max_log + (1 - frac) * min_log
@@ -341,8 +341,8 @@ class GaussianDiffusion:
                     self.posterior_log_variance_clipped,
                 ),
             }[self.model_var_type]
-            model_variance = _extract_into_tensor(model_variance, t, x.shape)
-            model_log_variance = _extract_into_tensor(model_log_variance, t, x.shape)
+            model_variance = self._extract_into_tensor(model_variance, t, x.shape)
+            model_log_variance = self._extract_into_tensor(model_log_variance, t, x.shape)
 
         def process_xstart(x):
             if denoised_fn is not None:
@@ -393,15 +393,15 @@ class GaussianDiffusion:
     def _predict_xstart_from_eps(self, x_t, t, eps):
         assert x_t.shape == eps.shape
         return (
-            _extract_into_tensor(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t
-            - _extract_into_tensor(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape) * eps
+            self._extract_into_tensor(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t
+            - self._extract_into_tensor(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape) * eps
         )
 
     def _predict_xstart_from_xprev(self, x_t, t, xprev):
         assert x_t.shape == xprev.shape
         return (  # (xprev - coef2*x_t) / coef1
-            _extract_into_tensor(1.0 / self.posterior_mean_coef1, t, x_t.shape) * xprev
-            - _extract_into_tensor(
+            self._extract_into_tensor(1.0 / self.posterior_mean_coef1, t, x_t.shape) * xprev
+            - self._extract_into_tensor(
                 self.posterior_mean_coef2 / self.posterior_mean_coef1, t, x_t.shape
             )
             * x_t
@@ -409,9 +409,9 @@ class GaussianDiffusion:
 
     def _predict_eps_from_xstart(self, x_t, t, pred_xstart):
         return (
-            _extract_into_tensor(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t
+            self._extract_into_tensor(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t
             - pred_xstart
-        ) / _extract_into_tensor(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape)
+        ) / self._extract_into_tensor(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape)
 
     def _scale_timesteps(self, t):
         if self.rescale_timesteps:
@@ -567,8 +567,8 @@ class GaussianDiffusion:
         # Usually our model outputs epsilon, but we re-derive it
         # in case we used x_start or x_prev prediction.
         eps = self._predict_eps_from_xstart(x, t, out["pred_xstart"])
-        alpha_bar = _extract_into_tensor(self.alphas_cumprod, t, x.shape)
-        alpha_bar_prev = _extract_into_tensor(self.alphas_cumprod_prev, t, x.shape)
+        alpha_bar = self._extract_into_tensor(self.alphas_cumprod, t, x.shape)
+        alpha_bar_prev = self._extract_into_tensor(self.alphas_cumprod_prev, t, x.shape)
         sigma = (
             eta
             * th.sqrt((1 - alpha_bar_prev) / (1 - alpha_bar))
@@ -611,10 +611,10 @@ class GaussianDiffusion:
         # Usually our model outputs epsilon, but we re-derive it
         # in case we used x_start or x_prev prediction.
         eps = (
-            _extract_into_tensor(self.sqrt_recip_alphas_cumprod, t, x.shape) * x
+            self._extract_into_tensor(self.sqrt_recip_alphas_cumprod, t, x.shape) * x
             - out["pred_xstart"]
-        ) / _extract_into_tensor(self.sqrt_recipm1_alphas_cumprod, t, x.shape)
-        alpha_bar_next = _extract_into_tensor(self.alphas_cumprod_next, t, x.shape)
+        ) / self._extract_into_tensor(self.sqrt_recipm1_alphas_cumprod, t, x.shape)
+        alpha_bar_next = self._extract_into_tensor(self.alphas_cumprod_next, t, x.shape)
 
         # Equation 12. reversed
         mean_pred = (
@@ -656,8 +656,8 @@ class GaussianDiffusion:
             if clip_denoised:
                 xstart = xstart.clamp(-1, 1)
 
-            alpha_bar_t1 = _extract_into_tensor(self.alphas_cumprod, t1_, x.shape)
-            alpha_bar_t2 = _extract_into_tensor(self.alphas_cumprod, t2_, x.shape)
+            alpha_bar_t1 = self._extract_into_tensor(self.alphas_cumprod, t1_, x.shape)
+            alpha_bar_t2 = self._extract_into_tensor(self.alphas_cumprod, t2_, x.shape)
 
             frac = (model_var_values + 1) / 2
             if use_model_var:
@@ -726,8 +726,8 @@ class GaussianDiffusion:
             if clip_denoised:
                 xstart = xstart.clamp(-1, 1)
 
-            alpha_bar_t1 = _extract_into_tensor(self.alphas_cumprod, t1_, x.shape)
-            alpha_bar_t2 = _extract_into_tensor(self.alphas_cumprod, t2_, x.shape)
+            alpha_bar_t1 = self._extract_into_tensor(self.alphas_cumprod, t1_, x.shape)
+            alpha_bar_t2 = self._extract_into_tensor(self.alphas_cumprod, t2_, x.shape)
 
             sigma = (
                 eta_
@@ -1138,7 +1138,7 @@ class GaussianDiffusion:
                     terms["vb"] *= self.num_timesteps / 1000.0
 
             if self.loss_type == LossType.RESCALED_MSE_SNR_PLUS_ONE:
-                snr = _extract_into_tensor(self.alphas_cumprod, t, model_output.shape) / _extract_into_tensor(self.one_minus_alphas_cumprod, t, model_output.shape)
+                snr = self._extract_into_tensor(self.alphas_cumprod, t, model_output.shape) / self._extract_into_tensor(self.one_minus_alphas_cumprod, t, model_output.shape)
                 target = noise
                 mse_base = (target - model_output) ** 2
                 ratio = ((snr + 1.) / snr)
@@ -1150,8 +1150,8 @@ class GaussianDiffusion:
             elif self.loss_type == LossType.RESCALED_MSE_V:
                 # don't this this is correct...
                 pred_xstart = self._predict_xstart_from_eps(x_t=x_t, t=t, eps=model_output)
-                v_alpha = _extract_into_tensor(self.sqrt_alphas_cumprod, t, pred_xstart.shape)
-                v_sigma = _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, pred_xstart.shape)
+                v_alpha = self._extract_into_tensor(self.sqrt_alphas_cumprod, t, pred_xstart.shape)
+                v_sigma = self._extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, pred_xstart.shape)
                 v = v_alpha * model_output - v_sigma * pred_xstart
                 target = v_alpha * noise - v_sigma * x_start
                 terms["mse"] = mean_flat((target - v) ** 2)
@@ -1262,22 +1262,21 @@ class GaussianDiffusion:
             "mse": mse,
         }
 
+    def _extract_into_tensor(self, arr, timesteps, broadcast_shape):
+        """
+        Extract values from a 1-D numpy array for a batch of indices.
 
-def _extract_into_tensor(arr, timesteps, broadcast_shape):
-    """
-    Extract values from a 1-D numpy array for a batch of indices.
-
-    :param arr: the 1-D numpy array.
-    :param timesteps: a tensor of indices into the array to extract.
-    :param broadcast_shape: a larger shape of K dimensions with the batch
-                            dimension equal to the length of timesteps.
-    :return: a tensor of shape [batch_size, 1, ...] where the shape has K dims.
-    """
-    if self.is_tensorized:
-        res = arr[timesteps]
-    else:
-        res = th.from_numpy(arr).to(device=timesteps.device)[timesteps].float()
-        self.tensorize(timesteps.device)
-    while len(res.shape) < len(broadcast_shape):
-        res = res[..., None]
-    return res.expand(broadcast_shape)
+        :param arr: the 1-D numpy array.
+        :param timesteps: a tensor of indices into the array to extract.
+        :param broadcast_shape: a larger shape of K dimensions with the batch
+                                dimension equal to the length of timesteps.
+        :return: a tensor of shape [batch_size, 1, ...] where the shape has K dims.
+        """
+        if self.is_tensorized:
+            res = arr[timesteps]
+        else:
+            res = th.from_numpy(arr).to(device=timesteps.device)[timesteps].float()
+            self.tensorize(timesteps.device)
+        while len(res.shape) < len(broadcast_shape):
+            res = res[..., None]
+        return res.expand(broadcast_shape)
