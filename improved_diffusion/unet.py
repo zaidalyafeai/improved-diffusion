@@ -289,9 +289,12 @@ class ResBlock(TimestepBlock):
                 2 * self.out_channels if use_scale_shift_norm else self.out_channels,
             ),
         )
+        out_silu_impl = silu_impl
+        if silu_impl == "fused" and use_scale_shift_norm:
+            out_silu_impl = "torch"
         self.out_layers = nn.Sequential(
-            normalization(self.out_channels, base_channels=self.base_out_channels, fused=silu_impl=="fused"),
-            silu(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
+            normalization(self.out_channels, base_channels=self.base_out_channels, fused=out_silu_impl=="fused"),
+            silu(impl=out_silu_impl, use_checkpoint=use_checkpoint_lowcost),
             nn.Dropout(p=dropout) if dropout > 0 else nn.Identity(),
             zero_module(
                 conv_nd(dims, self.out_channels, self.out_channels, 3, padding=1)
