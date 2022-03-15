@@ -746,7 +746,10 @@ def load_config_to_args(config_path, args):
     return args, is_super_res
 
 
-def load_config_to_model(config_path):
+def load_config_to_model(config_path, overrides=None):
+    if overrides is None:
+        overrides = {}
+
     with open(config_path, 'r') as f:
         conf = json.load(f)
 
@@ -769,6 +772,9 @@ def load_config_to_model(config_path):
         model_diffusion_args['tokenizer'] = tokenizer
 
     creator = sr_create_model_and_diffusion if is_super_res else create_model_and_diffusion
+
+    model_diffusion_args.update(overrides)
+
     model, diffusion_factory = creator(**model_diffusion_args)
 
     return model, diffusion_factory, tokenizer, is_super_res
