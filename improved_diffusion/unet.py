@@ -13,6 +13,7 @@ from x_transformers.x_transformers import Rezero
 from .fp16_util import convert_module_to_f16, convert_module_to_f32
 from .nn import (
     silu,
+    adagn,
     conv_nd,
     linear,
     avg_pool_nd,
@@ -345,9 +346,13 @@ class ResBlock(TimestepBlock):
                 xtra_scale, xtra_shift = th.chunk(xtra, 2, dim=1)
                 scale = th.cat([base_scale, xtra_scale], dim=1)
                 shift = th.cat([base_shift, xtra_shift], dim=1)
-            else:
+                h = out_norm(h) * (1 + scale) + shift
+                h = out_rest(h)
+            elif False:
                 scale, shift = th.chunk(emb_out, 2, dim=1)
-            h = out_norm(h) * (1 + scale) + shift
+                h = out_norm(h) * (1 + scale) + shift
+            else:
+                h = adagn(h, emb_out, out_norm.weight, out_norm.bias)
             h = out_rest(h)
         else:
             h = h + emb_out

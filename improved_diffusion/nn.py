@@ -163,6 +163,13 @@ class AdaGN(nn.Module):
         return h
 
 
+@th.jit.script
+def adagn(h, emb_out, gn_w, gn_b):
+    scale, shift = th.chunk(emb_out, 2, dim=1)
+    h = F.group_norm(h.float(), 32, w, b).type(h.type) * (1 + scale) + shift
+    return h
+
+
 def conv_nd(dims, *args, **kwargs):
     """
     Create a 1D, 2D, or 3D convolution module.
