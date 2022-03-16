@@ -678,7 +678,7 @@ def create_gaussian_diffusion(
     if not timestep_respacing:
         timestep_respacing = [steps]
     def diffusion_factory(timestep_respacing_=timestep_respacing):
-        cls, **kwargs = gd.GaussianDiffusion, {}
+        cls, kwargs = gd.GaussianDiffusion, {}
         if timestep_respacing_ != [steps]:
             cls = SpacedDiffusion
             kwargs['use_timesteps'] = space_timesteps(steps, timestep_respacing_)
