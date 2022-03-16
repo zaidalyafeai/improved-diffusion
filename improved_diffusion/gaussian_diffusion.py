@@ -211,9 +211,7 @@ class GaussianDiffusion:
         arrays = {name: getattr(self, name) for name in vars(self) if isinstance(getattr(self, name), np.ndarray)}
 
         for name, arr in arrays.items():
-            print(f"{name} before: {self.name}")
             setattr(self, name, th.from_numpy(arr).to(device=device, dtype=th.float))
-            print(f"{name} after: {self.name}")
 
         self.tensorized_for = device
 
