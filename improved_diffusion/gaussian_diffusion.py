@@ -1278,7 +1278,13 @@ class GaussianDiffusion:
         :return: a tensor of shape [batch_size, 1, ...] where the shape has K dims.
         """
         if self.is_tensorized(timesteps.device):
-            res = arr[timesteps]
+            try:
+                res = arr[timesteps]
+            except TypeError as e:
+                print(type(timesteps), type(arr))
+                print((getattr(timesteps, 'device'), timesteps.dtype))
+                print((getattr(arr, 'device'), arr.dtype))
+                raise e
         else:
             res = th.from_numpy(arr).to(device=timesteps.device)[timesteps].float()
             self.tensorize(timesteps.device)
