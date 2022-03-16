@@ -90,9 +90,9 @@ class SpacedDiffusion(GaussianDiffusion):
     def is_tensorized(self, device):
         out = self.tensorized_for == device
         if out:
-            print(f"YES | {device}")
+            print(f"RESPACE YES | {device}")
         else:
-            print(f"NO  | have {self.tensorized_for} want {device}")
+            print(f"RESPACE NO  | have {self.tensorized_for} want {device}")
         return out
         # return self.tensorized_for == device
 

@@ -200,7 +200,12 @@ class GaussianDiffusion:
         self.tensorized_for = None
 
     def is_tensorized(self, device):
-        return self.tensorized_for == device
+        out = self.tensorized_for == device
+        if out:
+            print(f"DIFF YES | {device}")
+        else:
+            print(f"DIFF NO  | have {self.tensorized_for} want {device}")
+        return out
 
     def tensorize(self, device):
         arrays = {name: getattr(self, name) for name in vars(self) if isinstance(getattr(self, name), np.ndarray)}
