@@ -138,6 +138,8 @@ class AdaGN(nn.Module):
         self.out_channels = out_channels
         self.base_out_channels = base_channels * out_channels // emb_channels
 
+        self.fused = silu_impl == "fused"
+
     def forward(self, h, emb, side_emb=None):
         emb_out = self.emb_layers(emb).type(h.dtype)
 
@@ -147,19 +149,40 @@ class AdaGN(nn.Module):
         if side_emb is not None:
             emb_out = emb_out + side_emb.type(emb_out.dtype)
 
-        if self.base_channels > 0:
-            base, xtra = th.split(
-                emb_out,
-                [2 * self.base_out_channels, 2 * self.out_channels - 2 * self.base_out_channels],
-                dim=1
-            )
-            base_scale, base_shift = th.chunk(base, 2, dim=1)
-            xtra_scale, xtra_shift = th.chunk(xtra, 2, dim=1)
-            scale = th.cat([base_scale, xtra_scale], dim=1)
-            shift = th.cat([base_shift, xtra_shift], dim=1)
+        if self.fused:
+            if self.base_channels > 0:
+                base, xtra = th.split(
+                    emb_out,
+                    [2 * self.base_out_channels, 2 * self.out_channels - 2 * self.base_out_channels],
+                    dim=1
+                )
+                base_h, xtra_h = th.split(h, [self.normalization.num_channels_base, self.normalization.num_channels_xtra], dim=1)
+                if self.normalization.num_groups_xtra == 1:
+                    fn = adagn_extended_32_1
+                else:
+                    raise ValueError(self.normalization.num_groups_xtra)
+                h = fn(
+                    base_h, xtra_h,
+                    base, xtra,
+                    self.normalization.weight, self.normalization.bias,
+                    self.normalization.weight_xtra, self.normalization.bias_xtra,
+                )
+            else:
+                return adagn_silu(h, emb_out, self.normalization.weight, self.normalization.bias)
         else:
-            scale, shift = th.chunk(emb_out, 2, dim=1)
-        h = self.normalization(h) * (1 + scale) + shift
+            if self.base_channels > 0:
+                base, xtra = th.split(
+                    emb_out,
+                    [2 * self.base_out_channels, 2 * self.out_channels - 2 * self.base_out_channels],
+                    dim=1
+                )
+                base_scale, base_shift = th.chunk(base, 2, dim=1)
+                xtra_scale, xtra_shift = th.chunk(xtra, 2, dim=1)
+                scale = th.cat([base_scale, xtra_scale], dim=1)
+                shift = th.cat([base_shift, xtra_shift], dim=1)
+            else:
+                scale, shift = th.chunk(emb_out, 2, dim=1)
+            h = self.normalization(h) * (1 + scale) + shift
         return h
 
 
@@ -220,6 +243,21 @@ def adagn_silu_extended_32_1(h, h2, emb_out, emb_out2, w, b, w2, b2):
     shift = th.cat([shift, shift2], dim=1)
     h = h * (1 + scale) + shift
     return F.silu(h)
+
+
+@th.jit.script
+def adagn_extended_32_1(h, h2, emb_out, emb_out2, w, b, w2, b2):
+    h = th.group_norm(h.float(), 32, w, b).type(h.dtype)
+    h2 = th.group_norm(h2.float(), 1, w2, b2).type(h.dtype)
+
+    h = th.cat([h, h2], dim=1)
+
+    scale, shift = th.chunk(emb_out, 2, dim=1)
+    scale2, shift2 = th.chunk(emb_out2, 2, dim=1)
+    scale = th.cat([scale, scale2], dim=1)
+    shift = th.cat([shift, shift2], dim=1)
+    h = h * (1 + scale) + shift
+    return h
 
 
 def conv_nd(dims, *args, **kwargs):
