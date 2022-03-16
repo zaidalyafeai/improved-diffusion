@@ -97,7 +97,7 @@ class SpacedDiffusion(GaussianDiffusion):
         # return self.tensorized_for == device
 
     def tensorize(self, device):
-        self.timestep_map = th.as_tensor(self.timestep_map, device=device, dtype=torch.long)
+        self.timestep_map = th.as_tensor(self.timestep_map, device=device, dtype=th.long)
         self.tensorized_for = device
 
     def p_mean_variance(
