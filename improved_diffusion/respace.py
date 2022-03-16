@@ -88,13 +88,13 @@ class SpacedDiffusion(GaussianDiffusion):
         super().__init__(**kwargs)
 
     def is_map_tensorized(self, device):
-        out = self.map_tensorized_for == device
-        if out:
-            print(f"RESPACE YES | {device}")
-        else:
-            print(f"RESPACE NO  | have {self.map_tensorized_for} want {device}")
-        return out
-        # return self.tensorized_for == device
+        # out = self.map_tensorized_for == device
+        # if out:
+        #     print(f"RESPACE YES | {device}")
+        # else:
+        #     print(f"RESPACE NO  | have {self.map_tensorized_for} want {device}")
+        # return out
+        return self.map_tensorized_for == device
 
     def tensorize_map(self, device):
         self.timestep_map = th.as_tensor(self.timestep_map, device=device, dtype=th.long)
