@@ -70,32 +70,32 @@ def silu(impl="torch", use_checkpoint=False):
 
 @th.jit.script
 def groupnorm_silu(x, ng, w, b):
-    return F.silu(F.group_norm(x.float(), ng, w, b).type(x.dtype))
+    return F.silu(th.group_norm(x.float(), ng, w, b).type(x.dtype))
 
 
 @th.jit.script
 def groupnorm_silu_32(x, w, b):
-    return F.silu(F.group_norm(x.float(), 32, w, b).type(x.dtype))
+    return F.silu(th.group_norm(x.float(), 32, w, b).type(x.dtype))
 
 
 @th.jit.script
 def groupnorm_silu_24(x, w, b):
-    return F.silu(F.group_norm(x.float(), 24, w, b).type(x.dtype))
+    return F.silu(th.group_norm(x.float(), 24, w, b).type(x.dtype))
 
 
 @th.jit.script
 def groupnorm_silu_8(x, w, b):
-    return F.silu(F.group_norm(x.float(), 8, w, b).type(x.dtype))
+    return F.silu(th.group_norm(x.float(), 8, w, b).type(x.dtype))
 
 
 @th.jit.script
 def groupnorm_silu_6(x, w, b):
-    return F.silu(F.group_norm(x.float(), 6, w, b).type(x.dtype))
+    return F.silu(th.group_norm(x.float(), 6, w, b).type(x.dtype))
 
 
 @th.jit.script
 def groupnorm_silu_1(x, w, b):
-    return F.silu(F.group_norm(x.float(), 1, w, b).type(x.dtype))
+    return F.silu(th.group_norm(x.float(), 1, w, b).type(x.dtype))
 
 
 class GroupNorm32(nn.GroupNorm):
@@ -166,21 +166,21 @@ class AdaGN(nn.Module):
 @th.jit.script
 def adagn(h, emb_out, w, b):
     scale, shift = th.chunk(emb_out, 2, dim=1)
-    h = F.group_norm(h.float(), 32, w, b).type(h.dtype) * (1 + scale) + shift
+    h = th.group_norm(h.float(), 32, w, b).type(h.dtype) * (1 + scale) + shift
     return h
 
 
 @th.jit.script
 def adagn_silu(h, emb_out, w, b):
     scale, shift = th.chunk(emb_out, 2, dim=1)
-    h = F.group_norm(h.float(), 32, w, b).type(h.dtype) * (1 + scale) + shift
+    h = th.group_norm(h.float(), 32, w, b).type(h.dtype) * (1 + scale) + shift
     return F.silu(h)
 
 
 @th.jit.script
 def adagn_silu_extended_32_8(h, h2, emb_out, emb_out2, w, b, w2, b2):
-    h = F.group_norm(h.float(), 32, w, b).type(h.dtype)
-    h2 = F.group_norm(h2.float(), 8, w2, b2).type(h.dtype)
+    h = th.group_norm(h.float(), 32, w, b).type(h.dtype)
+    h2 = th.group_norm(h2.float(), 8, w2, b2).type(h.dtype)
 
     h = th.cat([h, h2], dim=1)
 
@@ -194,8 +194,8 @@ def adagn_silu_extended_32_8(h, h2, emb_out, emb_out2, w, b, w2, b2):
 
 @th.jit.script
 def adagn_silu_extended_32_6(h, h2, emb_out, emb_out2, w, b, w2, b2):
-    h = F.group_norm(h.float(), 32, w, b).type(h.dtype)
-    h2 = F.group_norm(h2.float(), 6, w2, b2).type(h.dtype)
+    h = th.group_norm(h.float(), 32, w, b).type(h.dtype)
+    h2 = th.group_norm(h2.float(), 6, w2, b2).type(h.dtype)
 
     h = th.cat([h, h2], dim=1)
 
@@ -209,8 +209,8 @@ def adagn_silu_extended_32_6(h, h2, emb_out, emb_out2, w, b, w2, b2):
 
 @th.jit.script
 def adagn_silu_extended_32_1(h, h2, emb_out, emb_out2, w, b, w2, b2):
-    h = F.group_norm(h.float(), 32, w, b).type(h.dtype)
-    h2 = F.group_norm(h2.float(), 1, w2, b2).type(h.dtype)
+    h = th.group_norm(h.float(), 32, w, b).type(h.dtype)
+    h2 = th.group_norm(h2.float(), 1, w2, b2).type(h.dtype)
 
     h = th.cat([h, h2], dim=1)
 
@@ -338,8 +338,8 @@ def normalization_1group(channels, base_channels=-1):
 #     x = x.float()
 #
 #     base, xtra = th.split(x, sizes[nch, nch_xtra], dim=1)
-#     base_out = F.silu(F.group_norm(base, ng, w, b))
-#     xtra_out = F.silu(F.group_norm(xtra, ng_xtra, w_xtra, b_xtra))
+#     base_out = F.silu(th.group_norm(base, ng, w, b))
+#     xtra_out = F.silu(th.group_norm(xtra, ng_xtra, w_xtra, b_xtra))
 #
 #     return th.cat([base_out, xtra_out], dim=1).type(dtype)
 
@@ -405,8 +405,8 @@ class GroupNormExtended(GroupNorm32):
 
             base, xtra = th.split(x, [self.num_channels_base, self.num_channels_xtra], dim=1)
 
-            base_out = F.group_norm(base, self.num_groups_base, self.weight, self.bias, self.eps)
-            xtra_out = F.group_norm(xtra, self.num_groups_xtra, self.weight_xtra, self.bias_xtra, self.eps)
+            base_out = th.group_norm(base, self.num_groups_base, self.weight, self.bias, self.eps)
+            xtra_out = th.group_norm(xtra, self.num_groups_xtra, self.weight_xtra, self.bias_xtra, self.eps)
 
             out = th.cat([base_out, xtra_out], dim=1).type(dtype)
             return out
