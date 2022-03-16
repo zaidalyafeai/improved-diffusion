@@ -678,8 +678,11 @@ def create_gaussian_diffusion(
     if not timestep_respacing:
         timestep_respacing = [steps]
     def diffusion_factory(timestep_respacing_=timestep_respacing):
-        return SpacedDiffusion(
-            use_timesteps=space_timesteps(steps, timestep_respacing_),
+        cls, **kwargs = gd.GaussianDiffusion, {}
+        if timestep_respacing_ != [steps]:
+            cls = SpacedDiffusion
+            kwargs['use_timesteps'] = space_timesteps(steps, timestep_respacing_)
+        return cls(
             betas=betas,
             model_mean_type=(
                 gd.ModelMeanType.EPSILON if not predict_xstart else gd.ModelMeanType.START_X
@@ -695,6 +698,7 @@ def create_gaussian_diffusion(
             ),
             loss_type=loss_type,
             rescale_timesteps=rescale_timesteps,
+            **kwargs
         )
     if return_diffusion_factory:
         return diffusion_factory
