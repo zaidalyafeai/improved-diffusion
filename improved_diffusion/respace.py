@@ -74,6 +74,8 @@ class SpacedDiffusion(GaussianDiffusion):
         self.timestep_map = []
         self.original_num_steps = len(kwargs["betas"])
 
+        self.tensorized_for = None
+
         base_diffusion = GaussianDiffusion(**kwargs)  # pylint: disable=missing-kwoa
         last_alpha_cumprod = 1.0
         new_betas = []
@@ -84,6 +86,19 @@ class SpacedDiffusion(GaussianDiffusion):
                 self.timestep_map.append(i)
         kwargs["betas"] = np.array(new_betas)
         super().__init__(**kwargs)
+
+    def is_tensorized(self, device):
+        out = self.tensorized_for == device
+        if out:
+            print(f"YES | {device}")
+        else:
+            print(f"NO  | have {self.tensorized_for} want {device}")
+        return out
+        # return self.tensorized_for == device
+
+    def tensorize(self, device):
+        self.timestep_map = th.as_tensor(self.timestep_map, device=device, dtype=torch.long)
+        self.tensorized_for = device
 
     def p_mean_variance(
         self, model, *args, **kwargs
@@ -98,6 +113,12 @@ class SpacedDiffusion(GaussianDiffusion):
     def _wrap_model(self, model):
         if isinstance(model, _WrappedModel):
             return model
+        device = None
+        for p in model.parameters():
+            device = p.device
+            break
+        if not self.is_tensorized(device):
+            self.tensorize(device)
         return _WrappedModel(
             model, self.timestep_map, self.rescale_timesteps, self.original_num_steps
         )
@@ -114,24 +135,7 @@ class _WrappedModel:
         self.rescale_timesteps = rescale_timesteps
         self.original_num_steps = original_num_steps
 
-        self.tensorized_for = None
-
-    def is_tensorized(self, device, dtype):
-        out = self.tensorized_for == (device, dtype)
-        if out:
-            print(f"YES | {(device, dtype)}")
-        else:
-            print(f"NO  | have {self.tensorized_for} want {(device, dtype)}")
-        return out
-        # return self.tensorized_for == (device, dtype)
-
-    def tensorize(self, device, dtype):
-        self.timestep_map = th.tensor(self.timestep_map, device=device, dtype=dtype)
-        self.tensorized_for = (device, dtype)
-
     def __call__(self, x, ts, **kwargs):
-        if not self.is_tensorized(ts.device, ts.dtype):
-            self.tensorize(ts.device, ts.dtype)
         new_ts = self.timestep_map[ts]
         # map_tensor = th.tensor(self.timestep_map, device=ts.device, dtype=ts.dtype)
         # new_ts = map_tensor[ts]
