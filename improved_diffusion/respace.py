@@ -74,7 +74,7 @@ class SpacedDiffusion(GaussianDiffusion):
         self.timestep_map = []
         self.original_num_steps = len(kwargs["betas"])
 
-        self.tensorized_for = None
+        self.map_tensorized_for = None
 
         base_diffusion = GaussianDiffusion(**kwargs)  # pylint: disable=missing-kwoa
         last_alpha_cumprod = 1.0
@@ -87,18 +87,18 @@ class SpacedDiffusion(GaussianDiffusion):
         kwargs["betas"] = np.array(new_betas)
         super().__init__(**kwargs)
 
-    def is_tensorized(self, device):
-        out = self.tensorized_for == device
+    def is_map_tensorized(self, device):
+        out = self.map_tensorized_for == device
         if out:
             print(f"RESPACE YES | {device}")
         else:
-            print(f"RESPACE NO  | have {self.tensorized_for} want {device}")
+            print(f"RESPACE NO  | have {self.map_tensorized_for} want {device}")
         return out
         # return self.tensorized_for == device
 
-    def tensorize(self, device):
+    def tensorize_map(self, device):
         self.timestep_map = th.as_tensor(self.timestep_map, device=device, dtype=th.long)
-        self.tensorized_for = device
+        self.map_tensorized_for = device
 
     def p_mean_variance(
         self, model, *args, **kwargs
@@ -117,8 +117,8 @@ class SpacedDiffusion(GaussianDiffusion):
         for p in model.parameters():
             device = p.device
             break
-        if not self.is_tensorized(device):
-            self.tensorize(device)
+        if not self.is_map_tensorized(device):
+            self.tensorize_map(device)
         return _WrappedModel(
             model, self.timestep_map, self.rescale_timesteps, self.original_num_steps
         )
