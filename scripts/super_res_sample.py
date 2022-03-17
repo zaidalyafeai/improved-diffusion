@@ -74,6 +74,7 @@ def main():
             blur_prob=args.blur_prob,
             blur_sigma_min=args.blur_sigma_min,
             blur_sigma_max=args.blur_sigma_max,
+            blur_width=args.blur_width,
         )
         data = (model_kwargs for _, model_kwargs in data)
     else:
@@ -82,6 +83,7 @@ def main():
                                     blur_prob=args.blur_prob,
                                     blur_sigma_min=args.blur_sigma_min,
                                     blur_sigma_max=args.blur_sigma_max,
+                                    blur_width=args.blur_width,
                                     )
 
     logger.log("creating samples...")
@@ -146,7 +148,7 @@ def main():
     logger.log("sampling complete")
 
 
-def load_data_for_worker(base_samples, batch_size, class_cond, txt, colorize=False, blur_prob=0., blur_sigma_min=0.4, blur_sigma_max=0.6):
+def load_data_for_worker(base_samples, batch_size, class_cond, txt, colorize=False, blur_prob=0., blur_sigma_min=0.4, blur_sigma_max=0.6, blur_width=5):
     with bf.BlobFile(base_samples, "rb") as f:
         obj = np.load(f)
         image_arr = obj["arr_0"]
@@ -199,7 +201,8 @@ def create_argparser():
         txt_drop_string='<mask><mask><mask><mask>',  # TODO: model attr
         blur_prob=0.,
         blur_sigma_min=0.4,
-        blur_sigma_max=0.6
+        blur_sigma_max=0.6,
+        blur_width=5,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
