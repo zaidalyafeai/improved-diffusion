@@ -69,11 +69,19 @@ def main():
             monochrome=args.monochrome,
             deterministic=True,
             offset=args.base_data_offset,
-            colorize=args.colorize
+            colorize=args.colorize,
+            blur_prob=args.blur_prob,
+            blur_sigma_min=args.blur_sigma_min,
+            blur_sigma_max=args.blur_sigma_max,
         )
         data = (model_kwargs for _, model_kwargs in data)
     else:
-        data = load_data_for_worker(args.base_samples, args.batch_size, args.class_cond, args.txt, colorize=args.colorize)
+        data = load_data_for_worker(args.base_samples, args.batch_size, args.class_cond, args.txt,
+                                    colorize=args.colorize,
+                                    blur_prob=args.blur_prob,
+                                    blur_sigma_min=args.blur_sigma_min,
+                                    blur_sigma_max=args.blur_sigma_max,
+                                    )
 
     logger.log("creating samples...")
     if args.seed > -1:
@@ -188,6 +196,9 @@ def create_argparser():
         clf_free_guidance=False,
         guidance_scale=0.,
         txt_drop_string='<mask><mask><mask><mask>',  # TODO: model attr
+        blur_prob=0.,
+        blur_sigma_min=0.4,
+        blur_sigma_max=0.6
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
