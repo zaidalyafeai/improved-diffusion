@@ -10,6 +10,7 @@ import blobfile as bf
 import numpy as np
 import torch as th
 import torch.distributed as dist
+import torchvision.transforms as T
 
 from improved_diffusion import dist_util, logger
 from improved_diffusion.script_util import (
