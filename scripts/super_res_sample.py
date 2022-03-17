@@ -137,7 +137,7 @@ def main():
     logger.log("sampling complete")
 
 
-def load_data_for_worker(base_samples, batch_size, class_cond, txt, colorize=False):
+def load_data_for_worker(base_samples, batch_size, class_cond, txt, colorize=False, blur_prob=0., blur_sigma_min=0.4, blur_sigma_max=0.6):
     with bf.BlobFile(base_samples, "rb") as f:
         obj = np.load(f)
         image_arr = obj["arr_0"]
@@ -147,6 +147,7 @@ def load_data_for_worker(base_samples, batch_size, class_cond, txt, colorize=Fal
     num_ranks = dist.get_world_size()
     buffer = []
     label_buffer = []
+    blurrer = T.RandomApply(transforms=[T.GaussianBlur(blur_width, sigma=(blur_sigma_min, blur_sigma_max))], p=blur_prob)
     while True:
         for i in range(rank, len(image_arr), num_ranks):
             buffer.append(image_arr[i])
@@ -158,6 +159,8 @@ def load_data_for_worker(base_samples, batch_size, class_cond, txt, colorize=Fal
                 batch = batch.permute(0, 3, 1, 2)
                 if colorize:
                     batch = batch.mean(dim=1, keepdim=True)
+                if blur_prob > 0:
+                    batch = blurrer(batch)
                 res = dict(low_res=batch)
                 if class_cond or txt:
                     key = "txt" if txt else "y"
