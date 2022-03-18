@@ -312,7 +312,7 @@ class SamplingPipeline(nn.Module):
         if yield_intermediates:
             for i, (sample, pred_xstart) in enumerate(high_res):
                 print(f'high_res {i}')
-                yield (_to_visible(sample).cpu().numpy(), _to_visible(pred_xstart).cpu().numpy())
+                yield (sample.cpu().numpy(), pred_xstart.cpu().numpy())
 
         if return_both_resolutions:
             return high_res, low_res
