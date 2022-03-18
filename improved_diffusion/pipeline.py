@@ -288,9 +288,12 @@ class SamplingPipeline(nn.Module):
             yield_intermediates=yield_intermediates
         )
         if yield_intermediates:
+            low_res_ = None
             for i, (sample, pred_xstart) in enumerate(low_res):
                 print(f'low_res {i}')
+                low_res_ = sample
                 yield (sample, pred_xstart)
+            low_res = low_res_
         high_res = self.super_res_model.sample(
             text,
             batch_size_sres,
