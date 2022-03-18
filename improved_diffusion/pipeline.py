@@ -293,7 +293,11 @@ class SamplingPipeline(nn.Module):
             for i, (sample, pred_xstart) in enumerate(low_res):
                 print(f'low_res {i}')
                 low_res_ = sample
-                yield (_to_visible(sample), _to_visible(pred_xstart))
+                print(type(sample))
+                img1 = _to_visible(sample)
+                img2 = _to_visible(pred_xstart)
+                print(type(img1))
+                yield (img1, img2)
             low_res = low_res_
         high_res = self.super_res_model.sample(
             text,
