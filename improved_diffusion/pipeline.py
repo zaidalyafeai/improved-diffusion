@@ -293,7 +293,7 @@ class SamplingPipeline(nn.Module):
             for i, (sample, pred_xstart) in enumerate(low_res):
                 print(f'low_res {i}')
                 low_res_ = sample
-                yield (_to_visible(sample), _to_visible(pred_xstart))
+                yield (_to_visible(sample).cpu().numpy(), _to_visible(pred_xstart).cpu().numpy())
             low_res = low_res_
         high_res = self.super_res_model.sample(
             text,
@@ -312,7 +312,7 @@ class SamplingPipeline(nn.Module):
         if yield_intermediates:
             for i, (sample, pred_xstart) in enumerate(high_res):
                 print(f'high_res {i}')
-                yield (sample, pred_xstart)
+                yield (_to_visible(sample).cpu().numpy(), _to_visible(pred_xstart).cpu().numpy())
 
         if return_both_resolutions:
             return high_res, low_res
