@@ -86,6 +86,7 @@ class SamplingModel(nn.Module):
         ddim_eta=0.,
         plms_ddim_first_n=0,
         plms_ddim_last_n=None,
+        yield_intermediates=False
     ):
         dist_util.setup_dist()
 
@@ -105,14 +106,16 @@ class SamplingModel(nn.Module):
             print(f"setting seed to {seed}")
             th.manual_seed(seed)
 
+        use_prog = yield_intermediates or return_intermediates
+
         if use_plms:
-            sample_fn_base = self.diffusion.plms_sample_loop_progressive if return_intermediates else self.diffusion.plms_sample_loop
+            sample_fn_base = self.diffusion.plms_sample_loop_progressive if use_prog else self.diffusion.plms_sample_loop
         elif use_prk:
-            sample_fn_base = self.diffusion.prk_sample_loop_progressive if return_intermediates else self.diffusion.prk_sample_loop
+            sample_fn_base = self.diffusion.prk_sample_loop_progressive if use_prog else self.diffusion.prk_sample_loop
         elif use_ddim:
-            sample_fn_base = self.diffusion.ddim_sample_loop_progressive if return_intermediates else self.diffusion.ddim_sample_loop
+            sample_fn_base = self.diffusion.ddim_sample_loop_progressive if use_prog else self.diffusion.ddim_sample_loop
         else:
-            sample_fn_base = self.diffusion.p_sample_loop_progressive if return_intermediates else self.diffusion.p_sample_loop
+            sample_fn_base = self.diffusion.p_sample_loop_progressive if use_prog else self.diffusion.p_sample_loop
 
         if return_intermediates:
             def sample_fn_(*args, **kwargs):
@@ -199,7 +202,15 @@ class SamplingModel(nn.Module):
                 **sample_fn_kwargs
             )
 
-            if return_intermediates:
+            if yield_intermediates:
+                for out in sample:
+                    sample, pred_xstart = out['sample'], out['pred_xstart']
+                    if to_visible:
+                        sample = _to_visible(sample)
+                        pred_xstart = _to_visible(pred_xstart)
+                    yield (sample, pred_xstart)
+                raise StopIteration
+            elif return_intermediates:
                 sample_sequence = sample['sample']
                 xstart_sequence = sample['xstart']
                 sample = sample_sequence[-1]
