@@ -27,6 +27,13 @@ def _strip_space(s):
     return "\n".join([part.strip(" ") for part in s.split("\n")])
 
 
+def _to_visible(img):
+    img = ((img + 1) * 127.5).clamp(0, 255).to(th.uint8)
+    img = img.permute(0, 2, 3, 1)
+    img = img.contiguous()
+    return img
+
+
 class SamplingModel(nn.Module):
     def __init__(
         self,
@@ -175,12 +182,6 @@ class SamplingModel(nn.Module):
         all_sample_sequences = []
         all_xstart_sequences = []
 
-        def _to_visible(img):
-            img = ((img + 1) * 127.5).clamp(0, 255).to(th.uint8)
-            img = img.permute(0, 2, 3, 1)
-            img = img.contiguous()
-            return img
-
         while len(all_images) * batch_size < n_samples:
             offset = len(all_images)
             if self.is_super_res:
@@ -292,7 +293,7 @@ class SamplingPipeline(nn.Module):
             for i, (sample, pred_xstart) in enumerate(low_res):
                 print(f'low_res {i}')
                 low_res_ = sample
-                yield (sample, pred_xstart)
+                yield (_to_visible(sample), _to_visible(pred_xstart))
             low_res = low_res_
         high_res = self.super_res_model.sample(
             text,
