@@ -1,13 +1,15 @@
 import string, os, random, json
 from PIL import Image
 import blobfile as bf
-from mpi4py import MPI
+# from mpi4py import MPI
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
 import torch as th
 import torch.nn.functional as F
 import torchvision.transforms as T
 from .crop import RandomResizedProtectedCropLazy
+from .dist_util import FakeMPI
+MPI = FakeMPI()
 
 import tokenizers
 from tqdm.auto import trange
