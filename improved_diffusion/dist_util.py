@@ -19,6 +19,10 @@ SETUP_RETRY_COUNT = 3
 
 
 class FakeComm:
+    def __init__(self):
+        self.rank = 0
+        self.size = 1
+    
     def bcast(self, *args, **kwargs):
         return ''
 
