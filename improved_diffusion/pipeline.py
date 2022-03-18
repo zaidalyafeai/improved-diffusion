@@ -87,7 +87,7 @@ class SamplingModel(nn.Module):
         plms_ddim_first_n=0,
         plms_ddim_last_n=None,
     ):
-        dist_util.setup_dist()
+        # dist_util.setup_dist()
 
         if self.is_super_res and low_res is None:
             raise ValueError("must pass low_res for super res")
