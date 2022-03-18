@@ -264,7 +264,8 @@ class SamplingPipeline(nn.Module):
         clf_free_guidance_sres=False,
         guidance_scale_sres=0.,
         strip_space=True,
-        return_both_resolutions=False
+        return_both_resolutions=False,
+        yield_intermediates=False,
     ):
         if isinstance(text, list):
             text = [_strip_space(s) for s in text]
@@ -285,7 +286,11 @@ class SamplingPipeline(nn.Module):
             txt_drop_string=txt_drop_string,
             seed=seed,
             to_visible=False,
+            yield_intermediates=yield_intermediates
         )
+        if yield_intermediates:
+            for sample, pred_xstart in low_res:
+                yield (sample, pred_xstart)
         high_res = self.super_res_model.sample(
             text,
             batch_size_sres,
@@ -298,7 +303,12 @@ class SamplingPipeline(nn.Module):
             txt_drop_string=txt_drop_string,
             seed=seed,
             from_visible=False,
+            yield_intermediates=yield_intermediates
         )
+        if yield_intermediates:
+            for sample, pred_xstart in high_res:
+                yield (sample, pred_xstart)
+
         if return_both_resolutions:
             return high_res, low_res
         return high_res
