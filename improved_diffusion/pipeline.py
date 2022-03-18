@@ -294,7 +294,7 @@ class SamplingPipeline(nn.Module):
                 print(f'low_res {i}')
                 low_res_ = sample
                 yield (_to_visible(sample).cpu().numpy(), _to_visible(pred_xstart).cpu().numpy())
-            low_res = low_res_
+            low_res = low_res_.cpu().numpy()
         high_res = self.super_res_model.sample(
             text,
             batch_size_sres,
