@@ -209,7 +209,6 @@ class SamplingModel(nn.Module):
                         sample = _to_visible(sample)
                         pred_xstart = _to_visible(pred_xstart)
                     yield (sample, pred_xstart)
-                raise StopIteration
             elif return_intermediates:
                 sample_sequence = sample['sample']
                 xstart_sequence = sample['xstart']
@@ -289,7 +288,8 @@ class SamplingPipeline(nn.Module):
             yield_intermediates=yield_intermediates
         )
         if yield_intermediates:
-            for sample, pred_xstart in low_res:
+            for i, (sample, pred_xstart) in enumerate(low_res):
+                print(f'low_res {i}')
                 yield (sample, pred_xstart)
         high_res = self.super_res_model.sample(
             text,
@@ -306,7 +306,8 @@ class SamplingPipeline(nn.Module):
             yield_intermediates=yield_intermediates
         )
         if yield_intermediates:
-            for sample, pred_xstart in high_res:
+            for i, (sample, pred_xstart) in enumerate(high_res):
+                print(f'high_res {i}')
                 yield (sample, pred_xstart)
 
         if return_both_resolutions:
