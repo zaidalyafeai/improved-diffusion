@@ -93,7 +93,8 @@ class SamplingModel(nn.Module):
         ddim_eta=0.,
         plms_ddim_first_n=0,
         plms_ddim_last_n=None,
-        yield_intermediates=False
+        yield_intermediates=False,
+        guidance_after_step=0,
     ):
         # dist_util.setup_dist()
 
@@ -153,6 +154,7 @@ class SamplingModel(nn.Module):
             txt_uncon = th.as_tensor(txt_uncon).to(dist_util.dev())
 
             model_kwargs["guidance_scale"] = guidance_scale
+            model_kwargs["guidance_after_step"] = guidance_after_step
             model_kwargs["unconditional_model_kwargs"] = {
                 "txt": txt_uncon
             }
