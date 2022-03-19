@@ -151,7 +151,7 @@ class SamplingModel(nn.Module):
 
         if self.is_super_res:
             # TODO: shape vs. text shape
-            print(f"batch_size: {batch_size} vs low_res shape {low_res.shape}")
+            # print(f"batch_size: {batch_size} vs low_res shape {low_res.shape}")
 
             low_res = th.from_numpy(low_res).float()
 
@@ -160,9 +160,9 @@ class SamplingModel(nn.Module):
                 low_res = low_res.permute(0, 3, 1, 2)
 
             all_low_res = low_res.to(dist_util.dev())
-            print(
-                f"batch_size: {batch_size} vs low_res kwarg shape {all_low_res.shape}"
-            )
+            # print(
+            #     f"batch_size: {batch_size} vs low_res kwarg shape {all_low_res.shape}"
+            # )
 
         image_channels = self.model.in_channels
         if self.is_super_res:
