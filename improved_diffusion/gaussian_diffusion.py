@@ -303,7 +303,10 @@ class GaussianDiffusion:
         unconditional_model_output = None
         if is_guided:
             unconditional_model_output = model(x, self._scale_timesteps(t), **unconditional_model_kwargs)
-            effective_guidance_scale = th.where(t < guidance_after_step, float(guidance_scale), 0.)
+
+            # broadcast
+            effective_guidance_scale = effective_guidance_scale.reshape([-1] + [1 for _ in model_output.shape[1:]])
+
             # print(effective_guidance_scale)
             model_output = (1 + effective_guidance_scale) * model_output - effective_guidance_scale * unconditional_model_output
 
