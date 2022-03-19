@@ -206,12 +206,14 @@ class SamplingModel(nn.Module):
             )
 
             if yield_intermediates:
-                for out in sample:
-                    sample, pred_xstart = out['sample'], out['pred_xstart']
-                    if to_visible:
-                        sample = _to_visible(sample)
-                        pred_xstart = _to_visible(pred_xstart)
-                    yield (sample, pred_xstart)
+                def gen():
+                    for out in sample:
+                        sample, pred_xstart = out['sample'], out['pred_xstart']
+                        if to_visible:
+                            sample = _to_visible(sample)
+                            pred_xstart = _to_visible(pred_xstart)
+                        yield (sample, pred_xstart)
+                return gen()
             elif return_intermediates:
                 sample_sequence = sample['sample']
                 xstart_sequence = sample['xstart']
@@ -278,47 +280,56 @@ class SamplingPipeline(nn.Module):
         batch_size_sres = batch_size_sres or batch_size
         n_samples_sres = n_samples_sres or n_samples
 
-        low_res = self.base_model.sample(
-            text,
-            batch_size,
-            n_samples,
-            clip_denoised=clip_denoised,
-            use_ddim=use_ddim,
-            clf_free_guidance=clf_free_guidance,
-            guidance_scale=guidance_scale,
-            txt_drop_string=txt_drop_string,
-            seed=seed,
-            to_visible=False,
-            yield_intermediates=yield_intermediates,
-            guidance_after_step=guidance_after_step_base
-        )
+        def base_sample():
+            return self.base_model.sample(
+                text,
+                batch_size,
+                n_samples,
+                clip_denoised=clip_denoised,
+                use_ddim=use_ddim,
+                clf_free_guidance=clf_free_guidance,
+                guidance_scale=guidance_scale,
+                txt_drop_string=txt_drop_string,
+                seed=seed,
+                to_visible=False,
+                yield_intermediates=yield_intermediates,
+                guidance_after_step=guidance_after_step_base
+            )
+
+        def high_res_sample(low_res):
+            return self.super_res_model.sample(
+                text,
+                batch_size_sres,
+                n_samples_sres,
+                low_res=low_res,
+                clip_denoised=clip_denoised,
+                use_ddim=use_ddim,
+                clf_free_guidance=clf_free_guidance_sres,
+                guidance_scale=guidance_scale_sres,
+                txt_drop_string=txt_drop_string,
+                seed=seed,
+                from_visible=False,
+                yield_intermediates=yield_intermediates
+            )
         if yield_intermediates:
-            low_res_ = None
-            for i, (sample, pred_xstart) in enumerate(low_res):
-                low_res_ = sample
-                yield (_to_visible(sample).cpu().numpy(), _to_visible(pred_xstart).cpu().numpy())
-            low_res = low_res_.cpu().numpy()
-        high_res = self.super_res_model.sample(
-            text,
-            batch_size_sres,
-            n_samples_sres,
-            low_res=low_res,
-            clip_denoised=clip_denoised,
-            use_ddim=use_ddim,
-            clf_free_guidance=clf_free_guidance_sres,
-            guidance_scale=guidance_scale_sres,
-            txt_drop_string=txt_drop_string,
-            seed=seed,
-            from_visible=False,
-            yield_intermediates=yield_intermediates
-        )
-        if yield_intermediates:
-            for i, (sample, pred_xstart) in enumerate(high_res):
-                yield (sample.cpu().numpy(), pred_xstart.cpu().numpy())
+            return _yield_intermediates(base_sample, high_res_sample)
+
+        low_res = base_sample()
+        high_res = high_res_sample(low_res)
 
         if return_both_resolutions:
             return high_res, low_res
         return high_res
+
+    def _yield_intermediates(base_sample, high_res_sample):
+        low_res_ = None
+        for i, (sample, pred_xstart) in enumerate(base_sample()):
+            low_res_ = sample
+            yield (_to_visible(sample).cpu().numpy(), _to_visible(pred_xstart).cpu().numpy())
+        low_res = low_res_.cpu().numpy()
+
+        for i, (sample, pred_xstart) in enumerate(high_res_sample(low_res)):
+            yield (sample.cpu().numpy(), pred_xstart.cpu().numpy())
 
     def sample_with_pruning(
         self,
