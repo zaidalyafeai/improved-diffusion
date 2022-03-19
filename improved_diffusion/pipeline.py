@@ -318,7 +318,8 @@ class SamplingPipeline(nn.Module):
         high_res = high_res_sample(low_res)
 
         if return_both_resolutions:
-            return high_res, low_res
+            low_res = _to_visible(th.as_tensor(low_res)).cpu().numpy()
+            return low_res, high_res
         return high_res
 
     def sample_with_pruning(
