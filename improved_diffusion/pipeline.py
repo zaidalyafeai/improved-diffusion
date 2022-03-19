@@ -208,11 +208,11 @@ class SamplingModel(nn.Module):
             if yield_intermediates:
                 def gen():
                     for out in sample:
-                        sample, pred_xstart = out['sample'], out['pred_xstart']
+                        sample_, pred_xstart = out['sample'], out['pred_xstart']
                         if to_visible:
-                            sample = _to_visible(sample)
+                            sample_ = _to_visible(sample_)
                             pred_xstart = _to_visible(pred_xstart)
-                        yield (sample, pred_xstart)
+                        yield (sample_, pred_xstart)
                 return gen()
             elif return_intermediates:
                 sample_sequence = sample['sample']
