@@ -288,7 +288,7 @@ class GaussianDiffusion:
         # are we doing clf free guide?
         guidance_scale = model_kwargs.get("guidance_scale")
         unconditional_model_kwargs = model_kwargs.get("unconditional_model_kwargs")
-        guidance_after_step = model_kwargs.get("guidance_after_step", 100000)
+        guidance_after_step = float(model_kwargs.get("guidance_after_step", 100000.))
         is_eps = self.model_mean_type == ModelMeanType.EPSILON
         effective_guidance_scale = th.where(t < guidance_after_step, guidance_scale, 0.)
         can_skip = effective_guidance_scale.all()
