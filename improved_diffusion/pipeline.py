@@ -94,7 +94,7 @@ class SamplingModel(nn.Module):
         plms_ddim_first_n=0,
         plms_ddim_last_n=None,
         yield_intermediates=False,
-        guidance_after_step=0,
+        guidance_after_step=100000,
     ):
         # dist_util.setup_dist()
 
