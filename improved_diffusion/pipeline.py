@@ -321,16 +321,6 @@ class SamplingPipeline(nn.Module):
             return high_res, low_res
         return high_res
 
-    def _yield_intermediates(base_sample, high_res_sample):
-        low_res_ = None
-        for i, (sample, pred_xstart) in enumerate(base_sample()):
-            low_res_ = sample
-            yield (_to_visible(sample).cpu().numpy(), _to_visible(pred_xstart).cpu().numpy())
-        low_res = low_res_.cpu().numpy()
-
-        for i, (sample, pred_xstart) in enumerate(high_res_sample(low_res)):
-            yield (sample.cpu().numpy(), pred_xstart.cpu().numpy())
-
     def sample_with_pruning(
         self,
         text: Union[str, List[str]],
@@ -421,3 +411,13 @@ class SamplingPipeline(nn.Module):
         if return_both_resolutions:
             return high_res, low_res
         return high_res
+
+def _yield_intermediates(base_sample, high_res_sample):
+    low_res_ = None
+    for i, (sample, pred_xstart) in enumerate(base_sample()):
+        low_res_ = sample
+        yield (_to_visible(sample).cpu().numpy(), _to_visible(pred_xstart).cpu().numpy())
+    low_res = low_res_.cpu().numpy()
+
+    for i, (sample, pred_xstart) in enumerate(high_res_sample(low_res)):
+        yield (sample.cpu().numpy(), pred_xstart.cpu().numpy())
