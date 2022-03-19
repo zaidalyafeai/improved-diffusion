@@ -290,8 +290,9 @@ class GaussianDiffusion:
         unconditional_model_kwargs = model_kwargs.get("unconditional_model_kwargs")
         guidance_after_step = float(model_kwargs.get("guidance_after_step", 100000.))
         is_eps = self.model_mean_type == ModelMeanType.EPSILON
-        effective_guidance_scale = th.where(t < guidance_after_step, guidance_scale, 0.)
-        can_skip = effective_guidance_scale.all()
+        # effective_guidance_scale = th.where(t < guidance_after_step, guidance_scale, 0.)
+        # can_skip = (effective_guidance_scale <= 0).all()
+        can_skip = False
         is_guided = (guidance_scale is not None) and (unconditional_model_kwargs is not None) and is_eps and (not can_skip)
         # print(f"is_guided {is_guided} | guidance_scale {guidance_scale} | is_eps {is_eps}")
 
