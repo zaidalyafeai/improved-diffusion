@@ -95,6 +95,7 @@ class SamplingModel(nn.Module):
         plms_ddim_last_n=None,
         yield_intermediates=False,
         guidance_after_step=100000,
+        verbose=True,
     ):
         # dist_util.setup_dist()
 
@@ -111,7 +112,8 @@ class SamplingModel(nn.Module):
         n_batches = n_samples // batch_size
 
         if seed is not None:
-            print(f"setting seed to {seed}")
+            if verbose:
+                print(f"setting seed to {seed}")
             th.manual_seed(seed)
 
         use_prog = yield_intermediates or return_intermediates
@@ -271,6 +273,7 @@ class SamplingPipeline(nn.Module):
         return_both_resolutions=False,
         yield_intermediates=False,
         guidance_after_step_base=100000,
+        verbose=True,
     ):
         if isinstance(text, list):
             text = [_strip_space(s) for s in text]
@@ -293,7 +296,8 @@ class SamplingPipeline(nn.Module):
                 seed=seed,
                 to_visible=False,
                 yield_intermediates=yield_intermediates,
-                guidance_after_step=guidance_after_step_base
+                guidance_after_step=guidance_after_step_base,
+                verbose=verbose,
             )
 
         def high_res_sample(low_res):
@@ -309,7 +313,8 @@ class SamplingPipeline(nn.Module):
                 txt_drop_string=txt_drop_string,
                 seed=seed,
                 from_visible=False,
-                yield_intermediates=yield_intermediates
+                yield_intermediates=yield_intermediates,
+                verbose=verbose,
             )
         if yield_intermediates:
             return _yield_intermediates(base_sample, high_res_sample)
@@ -347,6 +352,7 @@ class SamplingPipeline(nn.Module):
         plms_ddim_last_n=None,
         plms_ddim_last_n_sres=None,
         guidance_after_step_base=100000,
+        verbose=True,
     ):
         if strip_space:
             if isinstance(text, list):
@@ -370,7 +376,8 @@ class SamplingPipeline(nn.Module):
             use_plms=use_plms,
             to_visible=True,
             plms_ddim_last_n=plms_ddim_last_n,
-            guidance_after_step=guidance_after_step_base
+            guidance_after_step=guidance_after_step_base,
+            verbose=verbose
         )
         low_res_pruned, text_pruned = prune_fn(low_res, text)
         if len(low_res_pruned) == 0:
@@ -408,6 +415,7 @@ class SamplingPipeline(nn.Module):
             use_plms=use_plms_sres,
             plms_ddim_last_n=plms_ddim_last_n_sres,
             from_visible=True,
+            verbose=verbose
         )
         if return_both_resolutions:
             return high_res, low_res
