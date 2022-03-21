@@ -91,18 +91,24 @@ def load_data(
     all_files = all_files[offset:]
 
     n_texts = sum(1 for k in file_sizes.keys() if k.endswith('.txt'))  # sanity check
-    n_nonempty_texts = sum(file_sizes[k] > 0 for k in file_sizes.keys() if k.endswith('.txt'))
+    nonempty_text_files = {k for k in file_sizes.keys() if k.endswith('.txt') and file_sizes[k] > 0}
+    n_nonempty_texts = len(nonempty_text_files)
+    # n_nonempty_texts = sum(file_sizes[k] > 0 for k in file_sizes.keys() if k.endswith('.txt'))
     n_empty_texts = n_texts - n_nonempty_texts
 
     if n_texts > 0:
+        text_file_to_image_file = {v: k for k, v in image_file_to_text_file.items()}  # computed for logging
+        n_with_safebox = sum(text_file_to_image_file[k] in image_file_to_safebox for k in nonempty_text_files])
+
         frac_empty = n_empty_texts/n_texts
         frac_nonempty = n_nonempty_texts/n_texts
 
         print(f"of {n_texts} texts, {n_empty_texts} ({frac_empty:.1%}) are empty, {n_nonempty_texts} ({frac_nonempty:.1%}) are nonempty")
-        print(f"of {n_nonempty_texts} nonempty texts, {len(image_file_to_safebox)} have safeboxes")
+        print(f"of {n_nonempty_texts} nonempty texts, {n_with_safebox} have safeboxes (all safeboxes: {len(image_file_to_safebox)})")
 
     if px_scales is not None:
-        print(f"of {n_texts} texts, {len(image_file_to_px_scales)} have px scales")
+        n_with_px_scale = sum(text_file_to_image_file[k] in image_file_to_px_scales for k in nonempty_text_files])
+        print(f"of {n_texts} texts, {n_with_px_scale} have px scales (all px scales: {len(image_file_to_px_scales)})")
 
     classes = None
     if class_cond:
