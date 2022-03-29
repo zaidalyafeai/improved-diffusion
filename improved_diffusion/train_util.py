@@ -26,6 +26,8 @@ from .resample import LossAwareSampler, UniformSampler
 
 from .image_datasets import tokenize
 
+import clip
+
 # For ImageNet experiments, this was a good default value.
 # We found that the lg_loss_scale quickly climbed to
 # 20-21 within the first ~1K steps of training.
@@ -491,7 +493,12 @@ class TrainLoop:
                 for k, v in cond.items()
             }
             if 'txt' in micro_cond:
-                micro_cond['txt'] = th.as_tensor(tokenize(self.tokenizer, micro_cond['txt']), device=dist_util.dev())
+                # micro_cond['txt'] = th.as_tensor(tokenize(self.tokenizer, micro_cond['txt']), device=dist_util.dev())
+
+                txt = th.as_tensor(tokenize(self.tokenizer, micro_cond['txt']), device=dist_util.dev())
+                # TESTING ONLY
+                capt = th.as_tensor(cl.uptokenize(self.tokenizer, micro_cond['txt']), device=dist_util.dev())
+                micro_cond['txt'] = {'txt': txt, 'capt': capt}
             last_batch = (i + self.microbatch) >= batch.shape[0]
             t, weights = self.schedule_sampler.sample(micro.shape[0], dist_util.dev())
 

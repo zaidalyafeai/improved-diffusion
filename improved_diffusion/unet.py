@@ -29,6 +29,22 @@ from .nn import (
 
 from .text_nn import TextEncoder, CrossAttention, WeaveAttention
 
+import clip
+
+
+def clip_encode_text_nopool(clip_model, toks):
+    x = clip_model.token_embedding(toks).type(clip_model.dtype)  # [batch_size, n_ctx, d_model]
+
+    x = x + clip_model.positional_embedding.type(clip_model.dtype)
+    x = x.permute(1, 0, 2)  # NLD -> LND
+    x = clip_model.transformer(x)
+    x = x.permute(1, 0, 2)  # LND -> NLD
+    x = clip_model.ln_final(x).type(clip_model.dtype)
+
+    # x.shape = [batch_size, n_ctx, transformer.width]
+
+    return x
+
 
 class TimestepBlock(nn.Module):
     """
@@ -44,44 +60,42 @@ class TimestepBlock(nn.Module):
 
 class TextTimestepBlock(nn.Module):
     @abstractmethod
-    def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None):
+    def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, capt_attn_mask=None, ):
         """
         Apply the module to `x` given `txt` texts.
         """
 
 
 class CrossAttentionAdapter(TextTimestepBlock):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs, use_capt=False):
         super().__init__()
-        # if self.use_checkpoint:
-        #     raise ValueError('grad ckpt for xattn not working yet')
         self.cross_attn = CrossAttention(*args, **kwargs)
+        self.use_capt = use_capt
 
-    def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
-        return self.cross_attn.forward(src=txt, tgt=x, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
+    def forward(self, x, emb, txt, capt, attn_mask=None, tgt_pos_embs=None, timesteps=None, capt_attn_mask=None):
+        if use_capt:
+            src = capt
+            attn_mask_ = capt_attn_mask
+        else:
+            src = txt
 
-    # def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
-    #     return checkpoint(self._forward, (x, emb, txt, attn_mask, tgt_pos_embs, timesteps), self.parameters(), self.use_checkpoint)
-    #
-    # def _forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
-    #     return self.cross_attn.forward(src=txt, tgt=x, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
+        return self.cross_attn.forward(src=src, tgt=x, attn_mask=attn_mask_, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
 
 
 class WeaveAttentionAdapter(TextTimestepBlock):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs, use_capt=False):
         super().__init__()
-        # if self.use_checkpoint:
-        #     raise ValueError('grad ckpt for xattn not working yet')
         self.weave_attn = WeaveAttention(*args, **kwargs)
+        self.use_capt = use_capt
 
-    def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
-        return self.weave_attn.forward(text=txt, image=x, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
+        def forward(self, x, emb, txt, capt, attn_mask=None, tgt_pos_embs=None, timesteps=None, capt_attn_mask=None):
+            if use_capt:
+                src = capt
+                attn_mask_ = capt_attn_mask
+            else:
+                src = txt
 
-    # def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
-    #     return checkpoint(self._forward, (x, emb, txt, attn_mask, tgt_pos_embs, timesteps), self.parameters(), self.use_checkpoint)
-    #
-    # def _forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, timesteps=None):
-    #     return self.weave_attn.forward(text=txt, image=x, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
+            return self.weave_attn.forward(src=src, tgt=x, attn_mask=attn_mask_, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
 
 
 class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
@@ -90,13 +104,13 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
     support it as an extra input.
     """
 
-    def forward(self, inps, emb, attn_mask=None, tgt_pos_embs=None, timesteps=None):
-        x, txt = inps
+    def forward(self, inps, emb, attn_mask=None, tgt_pos_embs=None, timesteps=None, capt_attn_mask=None):
+        x, txt, capt = inps
         for layer in self:
             if isinstance(layer, TimestepBlock):
                 x = layer(x, emb)
             elif isinstance(layer, TextTimestepBlock):
-                x, txt = layer(x, emb, txt, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs)
+                x, txt = layer(x, emb, txt, capt, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, capt_attn_mask=capt_attn_mask)
             else:
                 x = layer(x)
         return x, txt
@@ -693,6 +707,8 @@ class UNetModel(nn.Module):
                 silu_impl=silu_impl
             )
 
+            self.capt_encoder = clip.load(name='RN50')
+
         self.tgt_pos_embs = nn.ModuleDict({})
 
         time_embed_dim = model_channels * 4
@@ -914,59 +930,61 @@ class UNetModel(nn.Module):
                         )
                     )
                 if self.txt and ds in self.txt_resolutions:
-                    num_heads_here = num_heads
-                    if cross_attn_channels_per_head > 0:
-                        num_heads_here = txt_dim // cross_attn_channels_per_head
+                    for use_capt in [False, True]:
+                        num_heads_here = num_heads
+                        if cross_attn_channels_per_head > 0:
+                            num_heads_here = txt_dim // cross_attn_channels_per_head
 
-                    emb_res = image_size // ds
-                    if emb_res not in self.tgt_pos_embs:
-                        pos_emb_dim = ch
-                        # pos emb in AdaGN
-                        if (not txt_avoid_groupnorm) and cross_attn_q_t_emb:
-                            pos_emb_dim *= 2
-                        self.tgt_pos_embs[str(emb_res)] = AxialPositionalEmbedding(
-                            dim=pos_emb_dim,
-                            axial_shape=(emb_res, emb_res),
+                        emb_res = image_size // ds
+                        if emb_res not in self.tgt_pos_embs:
+                            pos_emb_dim = ch
+                            # pos emb in AdaGN
+                            if (not txt_avoid_groupnorm) and cross_attn_q_t_emb:
+                                pos_emb_dim *= 2
+                            self.tgt_pos_embs[str(emb_res)] = AxialPositionalEmbedding(
+                                dim=pos_emb_dim,
+                                axial_shape=(emb_res, emb_res),
+                            )
+                        caa_args = dict(
+                            use_checkpoint=use_checkpoint or use_checkpoint_up,
+                            dim=ch,
+                            time_embed_dim=time_embed_dim,
+                            heads=num_heads_here,
+                            text_dim=txt_dim,
+                            emb_res = emb_res,
+                            init_gain = cross_attn_init_gain,
+                            gain_scale = cross_attn_gain_scale,
+                            lr_mult=text_lr_mult,
+                            needs_tgt_pos_emb=False,
+                            avoid_groupnorm=txt_avoid_groupnorm,
+                            orth_init=cross_attn_orth_init,
+                            q_t_emb=cross_attn_q_t_emb,
+                            use_rezero=cross_attn_rezero,
+                            rezero_keeps_prenorm=cross_attn_rezero_keeps_prenorm,
+                            use_layerscale=cross_attn_use_layerscale,
+                            image_base_channels=expand_timestep_base_dim * ch // model_channels,
+                            silu_impl=silu_impl,
+                            use_capt=use_capt,
                         )
-                    caa_args = dict(
-                        use_checkpoint=use_checkpoint or use_checkpoint_up,
-                        dim=ch,
-                        time_embed_dim=time_embed_dim,
-                        heads=num_heads_here,
-                        text_dim=txt_dim,
-                        emb_res = emb_res,
-                        init_gain = cross_attn_init_gain,
-                        gain_scale = cross_attn_gain_scale,
-                        lr_mult=text_lr_mult,
-                        needs_tgt_pos_emb=False,
-                        avoid_groupnorm=txt_avoid_groupnorm,
-                        orth_init=cross_attn_orth_init,
-                        q_t_emb=cross_attn_q_t_emb,
-                        use_rezero=cross_attn_rezero,
-                        rezero_keeps_prenorm=cross_attn_rezero_keeps_prenorm,
-                        use_layerscale=cross_attn_use_layerscale,
-                        image_base_channels=expand_timestep_base_dim * ch // model_channels,
-                        silu_impl=silu_impl,
-                    )
-                    if weave_attn:
-                        caa_args['image_dim'] = caa_args.pop('dim')
-                        caa_args.update(dict(
-                            use_ff=weave_use_ff,
-                            ff_rezero=weave_ff_rezero,
-                            ff_force_prenorm=weave_ff_force_prenorm,
-                            ff_mult=weave_ff_mult,
-                            ff_glu=weave_ff_glu,
-                            qkv_dim_always_text=weave_qkv_dim_always_text,
-                            weave_v2=weave_v2,
-                            use_ff_gain=weave_use_ff_gain,
-                        ))
-                        caa = WeaveAttentionAdapter(**caa_args)
-                    else:
-                        caa = CrossAttentionAdapter(**caa_args)
-                    if txt_attn_before_attn and (ds in attention_resolutions):
-                        layers.insert(-1, caa)
-                    else:
-                        layers.append(caa)
+                        if weave_attn:
+                            caa_args['image_dim'] = caa_args.pop('dim')
+                            caa_args.update(dict(
+                                use_ff=weave_use_ff,
+                                ff_rezero=weave_ff_rezero,
+                                ff_force_prenorm=weave_ff_force_prenorm,
+                                ff_mult=weave_ff_mult,
+                                ff_glu=weave_ff_glu,
+                                qkv_dim_always_text=weave_qkv_dim_always_text,
+                                weave_v2=weave_v2,
+                                use_ff_gain=weave_use_ff_gain,
+                            ))
+                            caa = WeaveAttentionAdapter(**caa_args)
+                        else:
+                            caa = CrossAttentionAdapter(**caa_args)
+                        if txt_attn_before_attn and (ds in attention_resolutions):
+                            layers.insert(-1, caa)
+                        else:
+                            layers.append(caa)
                 vprint(f"down | {level} of {len(channel_mult)} | ch {ch} | ds {ds}")
                 if level and i == num_res_blocks:
                     if (bread_adapter_at_ds == ds) and (not bread_adapter_out_added):
@@ -1063,6 +1081,9 @@ class UNetModel(nn.Module):
         :return: an [N x C x ...] Tensor of outputs.
         """
         # print(f"forward: txt passed = {txt is not None}, model txt = {self.txt}")
+        if isinstance(txt, dict):
+            capt = txt['capt']
+            txt = txt['txt']
         assert (y is not None) == (
             self.num_classes is not None
         ), "must specify y if and only if the model is class-conditional"
@@ -1083,6 +1104,12 @@ class UNetModel(nn.Module):
             txt, attn_mask = self.text_encoder(txt, timesteps=timesteps)
             txt = txt.type(self.inner_dtype)
 
+        capt_attn_mask = None
+        if capt is not None:
+            capt_attn_mask = capt != 0
+            capt = clip_encode_text_nopool(self.capt_encoder, capt)
+            capt = capt.type(self.inner_dtype)
+
         h = x
 
         if self.monochrome_adapter:
@@ -1097,14 +1124,14 @@ class UNetModel(nn.Module):
             h_bread_in = self.bread_adapter_in(h)
             h_bread_out = None
         for module in self.input_blocks:
-            h, txt = module((h, txt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
+            h, txt, capt = module((h, txt, capt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs, capt_attn_mask=capt_attn_mask)
             if getattr(module, 'bread_adapter_in_pt', False):
                 if self.bread_adapter_only:
                     h = h_bread_in
                 else:
                     h = h + h_bread_in
             hs.append(h)
-        h, txt = self.middle_block((h, txt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
+        h, txt, capt = self.middle_block((h, txt, capt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs, capt_attn_mask=capt_attn_mask)
         skip_pop = False
         for module in self.output_blocks:
             # print(f"h: {h.shape} | hs: {[t.shape for t in hs]}")
@@ -1133,7 +1160,7 @@ class UNetModel(nn.Module):
                     cat_in = th.cat([h_base, popped_base, h_xtra, popped_xtra], dim=1)
                 else:
                     cat_in = th.cat([h, hs.pop()], dim=1)
-            h, txt = module((cat_in, txt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs)
+            h, txt, capt = module((h, txt, capt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs, capt_attn_mask=capt_attn_mask)
             if getattr(module, 'bread_adapter_out_pt', False):
                 h_bread_out = self.bread_adapter_out(h)
                 skip_pop = True
