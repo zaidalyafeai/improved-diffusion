@@ -67,7 +67,7 @@ class TextTimestepBlock(nn.Module):
 
 
 class CrossAttentionAdapter(TextTimestepBlock):
-    def __init__(self, *args, **kwargs, use_capt=False):
+    def __init__(self, *args, use_capt=False, **kwargs):
         super().__init__()
         self.cross_attn = CrossAttention(*args, **kwargs)
         self.use_capt = use_capt
