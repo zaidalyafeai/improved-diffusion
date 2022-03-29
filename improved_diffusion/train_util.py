@@ -214,7 +214,7 @@ class TrainLoop:
         self.param_name_groups = [*self.text_param_names, *self.xattn_param_names, *self.itot_param_names, self.gain_param_names, self.bread_param_names, self.other_param_names, self.ff_gain_param_names, self.capt_param_names]
 
         # self.model_params = list(self.model.parameters())
-        self.model_params = [*text_params, *xattn_params, *itot_params, gain_params, bread_params, other_params, ff_gain_params, capt_params]
+        self.model_params = [*text_params, *xattn_params, *itot_params, gain_params, bread_params, other_params, capt_params, ff_gain_params]
 
         if len(gain_params) == 0:
             self.param_name_groups = [self.other_param_names]
@@ -237,7 +237,7 @@ class TrainLoop:
         text_nparams = 0
         xattn_nparams = 0
         itot_nparams = 0
-        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff', 'capt']):
+        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other',  'capt', 'xgainff']):
             if isinstance(p, list):
                 nparams = sum(np.product(pp.shape) for pp in p)
             else:
@@ -649,7 +649,7 @@ class TrainLoop:
         # for n in sorted(name_to_norm.keys(), key=lambda n_: name_to_norm[n_]):
         #     print(f"{name_to_norm[n]:.4e}\t | {name_to_nparam[n]:08d}\t | {n}")
 
-        for p_, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff', 'capt']):
+        for p_, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'capt', 'xgainff']):
             if isinstance(p_, list):
                 pp = p_
             else:
