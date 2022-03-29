@@ -1138,7 +1138,8 @@ class UNetModel(nn.Module):
         h, txt, capt = self.middle_block((h, txt, capt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs, capt_attn_mask=capt_attn_mask)
         skip_pop = False
         for module in self.output_blocks:
-            # print(f"h: {h.shape} | hs: {[t.shape for t in hs]}")
+            print(module)
+            print(f"h: {h.shape} | hs: {[t.shape for t in hs]}")
             if skip_pop:
                 cat_in = h
                 skip_pop = False
