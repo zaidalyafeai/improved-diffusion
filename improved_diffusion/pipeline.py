@@ -86,6 +86,7 @@ class SamplingModel(nn.Module):
         ddim_eta=0.,
         plms_ddim_first_n=0,
         plms_ddim_last_n=None,
+        capt: Optional[Union[str, List[str]]]=None
     ):
         dist_util.setup_dist()
 
@@ -98,6 +99,13 @@ class SamplingModel(nn.Module):
             if len(text) != batch_size:
                 raise ValueError(f"got {len(text)} texts for bs {batch_size}")
             batch_text = text
+
+        if isinstance(capt, str):
+            batch_capt = batch_size * [capt]
+        else:
+            if capt is not None and len(capt) != batch_size:
+                raise ValueError(f"got {len(capt)} capts for bs {batch_size}")
+            batch_capt = capt
 
         n_batches = n_samples // batch_size
 
@@ -137,6 +145,10 @@ class SamplingModel(nn.Module):
         txt = tokenize(self.tokenizer, batch_text)
         txt = th.as_tensor(txt).to(dist_util.dev())
         model_kwargs["txt"] = txt
+
+        if batch_capt is not None:
+            capt = clip.tokenize(batch_capt, truncate=True).to(dist_util.dev())
+            model_kwargs["capt"] = capt
 
         if clf_free_guidance and (guidance_scale > 0):
             txt_uncon = batch_size * tokenize(self.tokenizer, [txt_drop_string])
@@ -253,7 +265,8 @@ class SamplingPipeline(nn.Module):
         clf_free_guidance_sres=False,
         guidance_scale_sres=0.,
         strip_space=True,
-        return_both_resolutions=False
+        return_both_resolutions=False,
+        capt: Optional[Union[str, List[str]]]=None
     ):
         if isinstance(text, list):
             text = [_strip_space(s) for s in text]
@@ -274,6 +287,7 @@ class SamplingPipeline(nn.Module):
             txt_drop_string=txt_drop_string,
             seed=seed,
             to_visible=False,
+            capt=capt,
         )
         high_res = self.super_res_model.sample(
             text,
@@ -316,6 +330,7 @@ class SamplingPipeline(nn.Module):
         use_plms_sres=False,
         plms_ddim_last_n=None,
         plms_ddim_last_n_sres=None,
+        capt=None,
     ):
         if strip_space:
             if isinstance(text, list):
@@ -339,6 +354,7 @@ class SamplingPipeline(nn.Module):
             use_plms=use_plms,
             to_visible=True,
             plms_ddim_last_n=plms_ddim_last_n,
+            capt=capt,
         )
         low_res_pruned, text_pruned = prune_fn(low_res, text)
         if len(low_res_pruned) == 0:
