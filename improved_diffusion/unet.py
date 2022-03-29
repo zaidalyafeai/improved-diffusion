@@ -113,7 +113,7 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
                 x, txt = layer(x, emb, txt, capt, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, capt_attn_mask=capt_attn_mask)
             else:
                 x = layer(x)
-        return x, txt
+        return x, txt, capt
 
 
 class Upsample(nn.Module):
