@@ -112,6 +112,9 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
             if isinstance(layer, TimestepBlock):
                 x = layer(x, emb)
             elif isinstance(layer, TextTimestepBlock):
+                print(getattr(layer, '__class__'))
+                import inspect
+                print(inspect.signature(layer.forward))
                 x, txt = layer(x, emb, txt, capt, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, capt_attn_mask=capt_attn_mask)
             else:
                 x = layer(x)
