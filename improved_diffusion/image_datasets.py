@@ -192,6 +192,7 @@ def load_data(
         image_file_to_safebox=image_file_to_safebox,
         use_random_safebox_for_empty_string=use_random_safebox_for_empty_string,
         image_file_to_px_scales=image_file_to_px_scales,
+        image_file_to_capt=image_file_to_capt
     )
     if return_dataset:
         return dataset
