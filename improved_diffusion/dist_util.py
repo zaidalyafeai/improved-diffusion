@@ -29,6 +29,9 @@ class FakeComm:
     def Get_rank(self):
         return 0
 
+    def Get_size(self):
+        return 1
+
 
 class FakeMPI:
     def __init__(self):
