@@ -91,7 +91,7 @@ def model_and_diffusion_defaults():
         bread_adapter_zero_conv_in=False,
         bread_adapter_only=False,
         expand_timestep_base_dim=-1,
-        silu_impl="torch"
+        silu_impl="torch",
     )
 
 

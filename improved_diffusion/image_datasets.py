@@ -55,6 +55,7 @@ def load_data(
     prefetch_factor=2,
     min_imagesize=0,
     capt_path="",
+    capt_pdrop=0.1,
     debug=False,
 ):
     """
@@ -192,7 +193,8 @@ def load_data(
         image_file_to_safebox=image_file_to_safebox,
         use_random_safebox_for_empty_string=use_random_safebox_for_empty_string,
         image_file_to_px_scales=image_file_to_px_scales,
-        image_file_to_capt=image_file_to_capt
+        image_file_to_capt=image_file_to_capt,
+        capt_pdrop=capt_pdrop,
     )
     if return_dataset:
         return dataset
