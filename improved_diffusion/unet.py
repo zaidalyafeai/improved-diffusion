@@ -347,7 +347,7 @@ class ResBlock(TimestepBlock):
             h = in_conv(h)
         else:
             print(f'x shape: {x.shape}')
-            print(f'self.in_layers[0] shape: {self.in_layers[0].shape}')
+            print(f'self.in_layers[0].weight shape: {self.in_layers[0].weight.shape}')
             h = self.in_layers(x)
         emb_out = self.emb_layers(emb).type(h.dtype)
         while len(emb_out.shape) < len(h.shape):
