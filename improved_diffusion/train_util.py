@@ -776,6 +776,7 @@ class TrainLoop:
                 master_params
             )
         state_dict = self.model.state_dict()
+        print(state_dict['capt_encoder.resblocks.0.ln_1.weight'])
         if self.use_amp:
             for p, name_or_group in zip(master_params, self.param_name_groups):
                 if isinstance(name_or_group, list):
@@ -793,6 +794,7 @@ class TrainLoop:
         # for i, (name, _value) in enumerate(self.model.named_parameters()):
         #     assert name in state_dict
         #     state_dict[name] = master_params[i]
+        print(state_dict['capt_encoder.resblocks.0.ln_1.weight'])
         return state_dict
 
     def _state_dict_to_master_params(self, state_dict):
