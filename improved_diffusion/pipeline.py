@@ -391,12 +391,9 @@ class SamplingPipeline(nn.Module):
             use_plms=use_plms,
             to_visible=True,
             plms_ddim_last_n=plms_ddim_last_n,
-<<<<<<< HEAD
             capt=capt,
-=======
             guidance_after_step=guidance_after_step_base,
             verbose=verbose
->>>>>>> nbar-dev
         )
         low_res_pruned, text_pruned = prune_fn(low_res, text)
         if len(low_res_pruned) == 0:
