@@ -111,6 +111,10 @@ def main():
             all_txts.extend(txt)
             txt = th.as_tensor(txt).to(dist_util.dev())
             model_kwargs["txt"] = txt
+        if args.capt_input:
+            this_capt = args.batch_size * [args.capt_input}
+            capt = clip.tokenize(this_capt, truncate=True).to(dist_util.dev())
+            micro_cond['capt'] = capt
         if args.clf_free_guidance:
             txt_uncon = args.batch_size * tokenize(tokenizer, [args.txt_drop_string])
             txt_uncon = th.as_tensor(txt_uncon).to(dist_util.dev())
@@ -119,6 +123,7 @@ def main():
             model_kwargs["unconditional_model_kwargs"] = {
                 "txt": txt_uncon
             }
+            # TODO: guidance on capt (should be separately controlled)
         sample_fn = (
             diffusion.p_sample_loop if not args.use_ddim else diffusion.ddim_sample_loop
         )
@@ -190,6 +195,7 @@ def create_argparser():
         guidance_scale=0.,
         txt_drop_string='<mask><mask><mask><mask>',  # TODO: model attr
         state_dict_sandwich=0,
+        capt_input=""
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
