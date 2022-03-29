@@ -22,7 +22,7 @@ class FakeComm:
     def __init__(self):
         self.rank = 0
         self.size = 1
-    
+
     def bcast(self, *args, **kwargs):
         return ''
 
@@ -58,7 +58,7 @@ def setup_dist():
 
     port = comm.bcast(_find_free_port(), root=0)
     os.environ["MASTER_PORT"] = str(port)
-    dist.init_process_group(backend=backend, init_method="env://")
+    # dist.init_process_group(backend=backend, init_method="env://")
 
 
 def dev():
