@@ -1079,7 +1079,7 @@ class UNetModel(nn.Module):
         """
         return next(self.input_blocks.parameters()).dtype
 
-    def forward(self, x, timesteps, y=None, txt=None):
+    def forward(self, x, timesteps, y=None, txt=None, capt=None):
         """
         Apply the model to an input batch.
 
@@ -1089,9 +1089,9 @@ class UNetModel(nn.Module):
         :return: an [N x C x ...] Tensor of outputs.
         """
         # print(f"forward: txt passed = {txt is not None}, model txt = {self.txt}")
-        if isinstance(txt, dict):
-            capt = txt['capt']
-            txt = txt['txt']
+        # if isinstance(txt, dict):
+        #     capt = txt['capt']
+        #     txt = txt['txt']
         assert (y is not None) == (
             self.num_classes is not None
         ), "must specify y if and only if the model is class-conditional"
