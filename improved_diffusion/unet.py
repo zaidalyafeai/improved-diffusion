@@ -80,7 +80,8 @@ class CrossAttentionAdapter(TextTimestepBlock):
             src = txt
             attn_mask_ = attn_mask
 
-        return self.cross_attn.forward(src=src, tgt=x, attn_mask=attn_mask_, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
+        x, orig_text = self.cross_attn.forward(src=src, tgt=x, attn_mask=attn_mask_, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
+        return x, txt
 
 
 class WeaveAttentionAdapter(TextTimestepBlock):
@@ -97,8 +98,9 @@ class WeaveAttentionAdapter(TextTimestepBlock):
             text = txt
             attn_mask_ = attn_mask
 
-        return self.weave_attn.forward(text=text, image=x, attn_mask=attn_mask_, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
-        return self.weave_attn.forward(src=src, tgt=x, attn_mask=attn_mask_, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
+        x, orig_text = self.weave_attn.forward(text=text, image=x, attn_mask=attn_mask_, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
+        return x, txt
+
 
 class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
     """
