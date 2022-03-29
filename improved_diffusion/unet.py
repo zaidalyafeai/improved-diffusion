@@ -74,13 +74,13 @@ class CrossAttentionAdapter(TextTimestepBlock):
 
     def forward(self, x, emb, txt, capt, attn_mask=None, tgt_pos_embs=None, timesteps=None, capt_attn_mask=None):
         if self.use_capt:
-            src = capt
+            text = capt
             attn_mask_ = capt_attn_mask
         else:
-            src = txt
+            text = txt
             attn_mask_ = attn_mask
 
-        return self.cross_attn.forward(src=src, tgt=x, attn_mask=attn_mask_, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
+        return self.cross_attn.forward(text=text, image=x, attn_mask=attn_mask_, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
 
 
 class WeaveAttentionAdapter(TextTimestepBlock):
