@@ -144,9 +144,12 @@ class TrainLoop:
         other_params, self.other_param_names = [], []
         ff_gain_params, self.ff_gain_param_names = [], []
         bread_params, self.bread_param_names = [], []
-        # capt_params, self.capt_param_names = [], []
+        capt_params, self.capt_param_names = [], []
         for n, p in model.named_parameters():
-            if 'text_encoder' in n:
+            if 'capt_encoder' in n:
+                self.capt_param_names.append(n)
+                capt_params.append(p)
+            elif 'text_encoder' in n:
                 # subname = 'text'
                 if 'text_encoder.model.layers.' in n:
                     subname = 'textl.' + '.'.join(n.partition('text_encoder.model.layers.')[2].split('.')[:2])
@@ -208,9 +211,11 @@ class TrainLoop:
         itot_params = [itot_params[n] for n in self.itot_mods]
         self.itot_param_names = [itot_param_names[n] for n in self.itot_mods]
 
-        self.param_name_groups = [*self.text_param_names, *self.xattn_param_names, *self.itot_param_names, self.gain_param_names, self.bread_param_names, self.other_param_names, self.ff_gain_param_names]
+        self.param_name_groups = [*self.text_param_names, *self.xattn_param_names, *self.itot_param_names, self.gain_param_names, self.bread_param_names, self.other_param_names, self.ff_gain_param_names, self.capt_param_names]
+
         # self.model_params = list(self.model.parameters())
-        self.model_params = [*text_params, *xattn_params, *itot_params, gain_params, bread_params, other_params, ff_gain_params]
+        self.model_params = [*text_params, *xattn_params, *itot_params, gain_params, bread_params, other_params, ff_gain_params, capt_params]
+
         if len(gain_params) == 0:
             self.param_name_groups = [self.other_param_names]
             self.model_params = [other_params]
@@ -232,7 +237,7 @@ class TrainLoop:
         text_nparams = 0
         xattn_nparams = 0
         itot_nparams = 0
-        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff']):
+        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff', 'capt']):
             if isinstance(p, list):
                 nparams = sum(np.product(pp.shape) for pp in p)
             else:
@@ -286,11 +291,11 @@ class TrainLoop:
                         [*[self.text_lr for _ in self.text_mods],
                          *[self.text_lr for _ in self.xattn_mods],
                          *[self.text_lr for _ in self.itot_mods],
-                          self.gain_lr, self.bread_lr, self.lr],
+                          self.gain_lr, self.bread_lr, self.lr, self.lr],
                         [*[0. for _ in self.text_mods],
                          *[0. for _ in self.xattn_mods],
                          *[0. for _ in self.itot_mods],
-                          0., 0., self.weight_decay]
+                          0., 0., self.weight_decay, 0.]
                     )
                 ],
                 lr=self.lr,
@@ -644,7 +649,7 @@ class TrainLoop:
         # for n in sorted(name_to_norm.keys(), key=lambda n_: name_to_norm[n_]):
         #     print(f"{name_to_norm[n]:.4e}\t | {name_to_nparam[n]:08d}\t | {n}")
 
-        for p_, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff']):
+        for p_, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'xgainff', 'capt']):
             if isinstance(p_, list):
                 pp = p_
             else:
