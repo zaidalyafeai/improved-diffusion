@@ -115,7 +115,8 @@ def main():
         prefetch_factor=args.perf_prefetch_factor,
         min_imagesize=args.min_imagesize,
         capt_path=args.capt_path,
-        capt_pdrop=args.capt_pdrop
+        capt_pdrop=args.capt_pdrop,
+        require_capts=args.require_capts,
     )
 
     if args.save_first_batch:
@@ -227,7 +228,8 @@ def create_argparser():
         perf_prefetch_factor=2,
         min_imagesize=0,
         capt_path="",
-        capt_pdrop=0.1
+        capt_pdrop=0.1,
+        require_capts=False,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
