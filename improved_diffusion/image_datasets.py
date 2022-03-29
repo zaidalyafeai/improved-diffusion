@@ -462,7 +462,7 @@ class ImageDataset(Dataset):
                 text = self.txt_drop_string
             out_dict['txt'] = text
 
-            capt = self.image_file_to_capt[path]
+            capt = self.image_file_to_capt.get(path, '')
             if (self.capt_pdrop > 0) and (random.random() < self.capt_pdrop):
                 capt = self.txt_drop_string
             out_dict['capt'] = capt
