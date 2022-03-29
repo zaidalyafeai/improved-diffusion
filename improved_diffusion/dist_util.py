@@ -7,7 +7,7 @@ import os
 import socket
 
 import blobfile as bf
-from mpi4py import MPI
+# from mpi4py import MPI
 import torch as th
 import torch.distributed as dist
 
@@ -16,6 +16,26 @@ import torch.distributed as dist
 GPUS_PER_NODE = 8
 
 SETUP_RETRY_COUNT = 3
+
+
+class FakeComm:
+    def __init__(self):
+        self.rank = 0
+        self.size = 1
+    
+    def bcast(self, *args, **kwargs):
+        return ''
+
+    def Get_rank(self):
+        return 0
+
+
+class FakeMPI:
+    def __init__(self):
+        self.COMM_WORLD = FakeComm()
+
+
+MPI = FakeMPI()
 
 
 def setup_dist():
@@ -61,7 +81,7 @@ def load_state_dict(path, **kwargs):
         data = None
     # next line is commented out bc i only use 1 gpu and it made me hit the 2gb mpi limit with large models
     # would need to fix this for real if doing distributed training - nost
-    
+
     # data = MPI.COMM_WORLD.bcast(data)
     return th.load(io.BytesIO(data), **kwargs)
 

@@ -27,6 +27,13 @@ def _strip_space(s):
     return "\n".join([part.strip(" ") for part in s.split("\n")])
 
 
+def _to_visible(img):
+    img = ((img + 1) * 127.5).clamp(0, 255).to(th.uint8)
+    img = img.permute(0, 2, 3, 1)
+    img = img.contiguous()
+    return img
+
+
 class SamplingModel(nn.Module):
     def __init__(
         self,
@@ -87,8 +94,11 @@ class SamplingModel(nn.Module):
         plms_ddim_first_n=0,
         plms_ddim_last_n=None,
         capt: Optional[Union[str, List[str]]]=None
+        yield_intermediates=False,
+        guidance_after_step=100000,
+        verbose=True,
     ):
-        dist_util.setup_dist()
+        # dist_util.setup_dist()
 
         if self.is_super_res and low_res is None:
             raise ValueError("must pass low_res for super res")
@@ -110,17 +120,20 @@ class SamplingModel(nn.Module):
         n_batches = n_samples // batch_size
 
         if seed is not None:
-            print(f"setting seed to {seed}")
+            if verbose:
+                print(f"setting seed to {seed}")
             th.manual_seed(seed)
 
+        use_prog = yield_intermediates or return_intermediates
+
         if use_plms:
-            sample_fn_base = self.diffusion.plms_sample_loop_progressive if return_intermediates else self.diffusion.plms_sample_loop
+            sample_fn_base = self.diffusion.plms_sample_loop_progressive if use_prog else self.diffusion.plms_sample_loop
         elif use_prk:
-            sample_fn_base = self.diffusion.prk_sample_loop_progressive if return_intermediates else self.diffusion.prk_sample_loop
+            sample_fn_base = self.diffusion.prk_sample_loop_progressive if use_prog else self.diffusion.prk_sample_loop
         elif use_ddim:
-            sample_fn_base = self.diffusion.ddim_sample_loop_progressive if return_intermediates else self.diffusion.ddim_sample_loop
+            sample_fn_base = self.diffusion.ddim_sample_loop_progressive if use_prog else self.diffusion.ddim_sample_loop
         else:
-            sample_fn_base = self.diffusion.p_sample_loop_progressive if return_intermediates else self.diffusion.p_sample_loop
+            sample_fn_base = self.diffusion.p_sample_loop_progressive if use_prog else self.diffusion.p_sample_loop
 
         if return_intermediates:
             def sample_fn_(*args, **kwargs):
@@ -155,6 +168,7 @@ class SamplingModel(nn.Module):
             txt_uncon = th.as_tensor(txt_uncon).to(dist_util.dev())
 
             model_kwargs["guidance_scale"] = guidance_scale
+            model_kwargs["guidance_after_step"] = guidance_after_step
             model_kwargs["unconditional_model_kwargs"] = {
                 "txt": txt_uncon
             }
@@ -163,7 +177,7 @@ class SamplingModel(nn.Module):
 
         if self.is_super_res:
             # TODO: shape vs. text shape
-            print(f"batch_size: {batch_size} vs low_res shape {low_res.shape}")
+            # print(f"batch_size: {batch_size} vs low_res shape {low_res.shape}")
 
             low_res = th.from_numpy(low_res).float()
 
@@ -172,9 +186,9 @@ class SamplingModel(nn.Module):
                 low_res = low_res.permute(0, 3, 1, 2)
 
             all_low_res = low_res.to(dist_util.dev())
-            print(
-                f"batch_size: {batch_size} vs low_res kwarg shape {all_low_res.shape}"
-            )
+            # print(
+            #     f"batch_size: {batch_size} vs low_res kwarg shape {all_low_res.shape}"
+            # )
 
         image_channels = self.model.in_channels
         if self.is_super_res:
@@ -183,12 +197,6 @@ class SamplingModel(nn.Module):
         all_images = []
         all_sample_sequences = []
         all_xstart_sequences = []
-
-        def _to_visible(img):
-            img = ((img + 1) * 127.5).clamp(0, 255).to(th.uint8)
-            img = img.permute(0, 2, 3, 1)
-            img = img.contiguous()
-            return img
 
         while len(all_images) * batch_size < n_samples:
             offset = len(all_images)
@@ -211,7 +219,16 @@ class SamplingModel(nn.Module):
                 **sample_fn_kwargs
             )
 
-            if return_intermediates:
+            if yield_intermediates:
+                def gen():
+                    for out in sample:
+                        sample_, pred_xstart = out['sample'], out['pred_xstart']
+                        if to_visible:
+                            sample_ = _to_visible(sample_)
+                            pred_xstart = _to_visible(pred_xstart)
+                        yield (sample_, pred_xstart)
+                return gen()
+            elif return_intermediates:
                 sample_sequence = sample['sample']
                 xstart_sequence = sample['xstart']
                 sample = sample_sequence[-1]
@@ -267,6 +284,9 @@ class SamplingPipeline(nn.Module):
         strip_space=True,
         return_both_resolutions=False,
         capt: Optional[Union[str, List[str]]]=None
+        yield_intermediates=False,
+        guidance_after_step_base=100000,
+        verbose=True,
     ):
         if isinstance(text, list):
             text = [_strip_space(s) for s in text]
@@ -276,34 +296,49 @@ class SamplingPipeline(nn.Module):
         batch_size_sres = batch_size_sres or batch_size
         n_samples_sres = n_samples_sres or n_samples
 
-        low_res = self.base_model.sample(
-            text,
-            batch_size,
-            n_samples,
-            clip_denoised=clip_denoised,
-            use_ddim=use_ddim,
-            clf_free_guidance=clf_free_guidance,
-            guidance_scale=guidance_scale,
-            txt_drop_string=txt_drop_string,
-            seed=seed,
-            to_visible=False,
-            capt=capt,
-        )
-        high_res = self.super_res_model.sample(
-            text,
-            batch_size_sres,
-            n_samples_sres,
-            low_res=low_res,
-            clip_denoised=clip_denoised,
-            use_ddim=use_ddim,
-            clf_free_guidance=clf_free_guidance_sres,
-            guidance_scale=guidance_scale_sres,
-            txt_drop_string=txt_drop_string,
-            seed=seed,
-            from_visible=False,
-        )
+        def base_sample():
+            return self.base_model.sample(
+                text,
+                batch_size,
+                n_samples,
+                clip_denoised=clip_denoised,
+                use_ddim=use_ddim,
+                clf_free_guidance=clf_free_guidance,
+                guidance_scale=guidance_scale,
+                txt_drop_string=txt_drop_string,
+                seed=seed,
+                to_visible=False,
+                yield_intermediates=yield_intermediates,
+                guidance_after_step=guidance_after_step_base,
+                verbose=verbose,
+                capt=capt,
+            )
+
+        def high_res_sample(low_res):
+            return self.super_res_model.sample(
+                text,
+                batch_size_sres,
+                n_samples_sres,
+                low_res=low_res,
+                clip_denoised=clip_denoised,
+                use_ddim=use_ddim,
+                clf_free_guidance=clf_free_guidance_sres,
+                guidance_scale=guidance_scale_sres,
+                txt_drop_string=txt_drop_string,
+                seed=seed,
+                from_visible=False,
+                yield_intermediates=yield_intermediates,
+                verbose=verbose,
+            )
+        if yield_intermediates:
+            return _yield_intermediates(base_sample, high_res_sample)
+
+        low_res = base_sample()
+        high_res = high_res_sample(low_res)
+
         if return_both_resolutions:
-            return high_res, low_res
+            low_res = _to_visible(th.as_tensor(low_res)).cpu().numpy()
+            return low_res, high_res
         return high_res
 
     def sample_with_pruning(
@@ -331,6 +366,8 @@ class SamplingPipeline(nn.Module):
         plms_ddim_last_n=None,
         plms_ddim_last_n_sres=None,
         capt=None,
+        guidance_after_step_base=100000,
+        verbose=True,
     ):
         if strip_space:
             if isinstance(text, list):
@@ -354,7 +391,12 @@ class SamplingPipeline(nn.Module):
             use_plms=use_plms,
             to_visible=True,
             plms_ddim_last_n=plms_ddim_last_n,
+<<<<<<< HEAD
             capt=capt,
+=======
+            guidance_after_step=guidance_after_step_base,
+            verbose=verbose
+>>>>>>> nbar-dev
         )
         low_res_pruned, text_pruned = prune_fn(low_res, text)
         if len(low_res_pruned) == 0:
@@ -392,7 +434,18 @@ class SamplingPipeline(nn.Module):
             use_plms=use_plms_sres,
             plms_ddim_last_n=plms_ddim_last_n_sres,
             from_visible=True,
+            verbose=verbose
         )
         if return_both_resolutions:
             return high_res, low_res
         return high_res
+
+def _yield_intermediates(base_sample, high_res_sample):
+    low_res_ = None
+    for i, (sample, pred_xstart) in enumerate(base_sample()):
+        low_res_ = sample
+        yield (_to_visible(sample).cpu().numpy(), _to_visible(pred_xstart).cpu().numpy())
+    low_res = low_res_.cpu().numpy()
+
+    for i, (sample, pred_xstart) in enumerate(high_res_sample(low_res)):
+        yield (sample.cpu().numpy(), pred_xstart.cpu().numpy())
