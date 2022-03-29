@@ -381,8 +381,8 @@ class ImageDataset(Dataset):
             self.image_file_to_px_scales = {}
 
         self.image_file_to_capt = image_file_to_capt
-        if image_file_to_capt is None:
-            image_file_to_capt = {}
+        if self.image_file_to_capt is None:
+            self.image_file_to_capt = {}
         self.capt_pdrop = capt_pdrop
 
         if (self.image_file_to_safebox is not None) and (self.pre_resize_transform is None):
