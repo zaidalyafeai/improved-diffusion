@@ -651,6 +651,7 @@ class UNetModel(nn.Module):
         bread_adapter_zero_conv_in=False,
         expand_timestep_base_dim=-1,
         silu_impl="torch",
+        using_capt=False,
     ):
         super().__init__()
 
@@ -690,6 +691,8 @@ class UNetModel(nn.Module):
         self.txt_resolutions = txt_resolutions
         self.image_size = image_size
 
+        self.using_capt = using_capt
+
         if monochrome_adapter and rgb_adapter:
             print("using both monochrome_adapter and rgb_adapter, make sure this is intentional!")
         self.monochrome_adapter = monochrome_adapter
@@ -716,6 +719,7 @@ class UNetModel(nn.Module):
                 silu_impl=silu_impl
             )
 
+        if self.using_capt:
             clipmod, _ = clip.load(name='RN50')
             clipmod.float()
             self.capt_embedding = clipmod.token_embedding
@@ -944,7 +948,8 @@ class UNetModel(nn.Module):
                         )
                     )
                 if self.txt and ds in self.txt_resolutions:
-                    for use_capt in [False, True]:
+                    use_capts = [False, True] if self.using_capt else [False]
+                    for use_capt in use_capts:
                         num_heads_here = num_heads
                         if cross_attn_channels_per_head > 0:
                             num_heads_here = txt_dim // cross_attn_channels_per_head
@@ -981,7 +986,6 @@ class UNetModel(nn.Module):
                             use_capt=use_capt,
                         )
                         if weave_attn:
-                        # if weave_attn and not use_capt:  # TESTING ONLY
                             caa_args['image_dim'] = caa_args.pop('dim')
                             caa_args.update(dict(
                                 use_ff=weave_use_ff,
@@ -992,7 +996,7 @@ class UNetModel(nn.Module):
                                 qkv_dim_always_text=weave_qkv_dim_always_text,
                                 weave_v2=weave_v2,
                                 use_ff_gain=weave_use_ff_gain,
-                                no_itot=use_capt,  # TESTING ONLY
+                                no_itot=use_capt,
                             ))
                             caa = WeaveAttentionAdapter(**caa_args)
                         else:

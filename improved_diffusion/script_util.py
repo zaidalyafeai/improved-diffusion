@@ -92,6 +92,7 @@ def model_and_diffusion_defaults():
         bread_adapter_only=False,
         expand_timestep_base_dim=-1,
         silu_impl="torch",
+        using_capt=False,
     )
 
 
@@ -170,6 +171,7 @@ def create_model_and_diffusion(
     bread_adapter_only=False,
     expand_timestep_base_dim=-1,
     silu_impl="torch",
+    using_capt=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     print(f"create_model_and_diffusion: use_checkpoint={use_checkpoint}")
@@ -236,6 +238,7 @@ def create_model_and_diffusion(
         expand_timestep_base_dim=expand_timestep_base_dim,
         verbose=verbose,
         silu_impl=silu_impl,
+        using_capt=using_capt,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -326,6 +329,7 @@ def create_model(
     expand_timestep_base_dim=-1,
     verbose=False,
     silu_impl="torch",
+    using_capt=False,
 ):
     text_lr_mult = 1.
     print(
@@ -431,6 +435,7 @@ def create_model(
         expand_timestep_base_dim=expand_timestep_base_dim,
         verbose=verbose,
         silu_impl=silu_impl,
+        using_capt=using_capt,
     )
 
 
@@ -519,6 +524,7 @@ def sr_create_model_and_diffusion(
     use_v_loss=False,
     use_snr_plus_one_loss=False,
     silu_impl="torch",
+    using_capt=False,
 ):
     model = sr_create_model(
         large_size,
@@ -577,6 +583,7 @@ def sr_create_model_and_diffusion(
         use_checkpoint_lowcost=use_checkpoint_lowcost,
         weave_use_ff_gain=weave_use_ff_gain,
         silu_impl=silu_impl,
+        using_capt=using_capt,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
