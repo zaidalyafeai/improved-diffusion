@@ -144,6 +144,7 @@ class TrainLoop:
         other_params, self.other_param_names = [], []
         ff_gain_params, self.ff_gain_param_names = [], []
         bread_params, self.bread_param_names = [], []
+        # capt_params, self.capt_param_names = [], []
         for n, p in model.named_parameters():
             if 'text_encoder' in n:
                 # subname = 'text'
@@ -497,7 +498,7 @@ class TrainLoop:
 
                 txt = th.as_tensor(tokenize(self.tokenizer, micro_cond['txt']), device=dist_util.dev())
                 # TESTING ONLY
-                capt = th.as_tensor(cl.uptokenize(self.tokenizer, micro_cond['txt']), device=dist_util.dev())
+                capt = clip.tokenize(micro_cond['txt']).to(dist_util.dev())
                 micro_cond['txt'] = {'txt': txt, 'capt': capt}
             last_batch = (i + self.microbatch) >= batch.shape[0]
             t, weights = self.schedule_sampler.sample(micro.shape[0], dist_util.dev())
