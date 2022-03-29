@@ -613,6 +613,7 @@ class WeaveAttention(nn.Module):
         use_ff_gain=False,
         image_base_channels=-1,
         silu_impl="torch",
+        no_itot=False,
         **text_to_image_kwargs,
     ):
         super().__init__()
@@ -657,9 +658,16 @@ class WeaveAttention(nn.Module):
             **shared_args
         )
 
-        self.image_to_text_layers = nn.Sequential(
-            *[ImageToTextCrossAttention(**image_to_text_kwargs) for _ in range(n_layers)]
-        )
+        self.no_itot = no_itot
+
+        if no_itot:
+            self.image_to_text_layers = nn.Sequential(
+                *[nn.Identity() for _ in range(n_layers)]
+            )
+        else:
+            self.image_to_text_layers = nn.Sequential(
+                *[ImageToTextCrossAttention(**image_to_text_kwargs) for _ in range(n_layers)]
+            )
 
         self.text_to_image_layers = nn.Sequential(
             *[CrossAttention(**text_to_image_kwargs) for _ in range(n_layers)]
@@ -667,17 +675,13 @@ class WeaveAttention(nn.Module):
 
 
     def forward(self, text, image, attn_mask=None, tgt_pos_embs=None, timestep_emb=None):
-        # print(f'got image shape {image.shape}')
-        # print(f'got tgt_pos_embs shape {tgt_pos_embs[self.text_to_image_layers[0].emb_res].shape}')
-        # print(f'got base_channels {self.text_to_image_layers[0].tgt_ln.base_channels}')
-        # print(f'got out_channels {self.text_to_image_layers[0].tgt_ln.out_channels}')
-        # print(f'got base_out_channels {self.text_to_image_layers[0].tgt_ln.base_out_channels}')
         shared_kwargs = dict(attn_mask=attn_mask, timestep_emb=timestep_emb)
 
         orig_text = text
 
         for i_to_t, t_to_i in zip(self.image_to_text_layers, self.text_to_image_layers):
-            text, image = i_to_t(src=image, tgt=text, image_pos_embs=tgt_pos_embs, **shared_kwargs)
+            if not self.no_itot:
+                text, image = i_to_t(src=image, tgt=text, image_pos_embs=tgt_pos_embs, **shared_kwargs)
             image, text = t_to_i(src=text, tgt=image, tgt_pos_embs=tgt_pos_embs, **shared_kwargs)
 
         if self.weave_v2:

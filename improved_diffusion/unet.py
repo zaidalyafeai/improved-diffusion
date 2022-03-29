@@ -980,8 +980,8 @@ class UNetModel(nn.Module):
                             silu_impl=silu_impl,
                             use_capt=use_capt,
                         )
-                        # if weave_attn:
-                        if weave_attn and not use_capt:  # TESTING ONLY
+                        if weave_attn:
+                        # if weave_attn and not use_capt:  # TESTING ONLY
                             caa_args['image_dim'] = caa_args.pop('dim')
                             caa_args.update(dict(
                                 use_ff=weave_use_ff,
@@ -992,6 +992,7 @@ class UNetModel(nn.Module):
                                 qkv_dim_always_text=weave_qkv_dim_always_text,
                                 weave_v2=weave_v2,
                                 use_ff_gain=weave_use_ff_gain,
+                                no_itot=use_capt,  # TESTING ONLY
                             ))
                             caa = WeaveAttentionAdapter(**caa_args)
                         else:
