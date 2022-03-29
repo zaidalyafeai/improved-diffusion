@@ -93,7 +93,7 @@ class SamplingModel(nn.Module):
         ddim_eta=0.,
         plms_ddim_first_n=0,
         plms_ddim_last_n=None,
-        capt: Optional[Union[str, List[str]]]=None
+        capt: Optional[Union[str, List[str]]]=None,
         yield_intermediates=False,
         guidance_after_step=100000,
         verbose=True,
@@ -283,7 +283,7 @@ class SamplingPipeline(nn.Module):
         guidance_scale_sres=0.,
         strip_space=True,
         return_both_resolutions=False,
-        capt: Optional[Union[str, List[str]]]=None
+        capt: Optional[Union[str, List[str]]]=None,
         yield_intermediates=False,
         guidance_after_step_base=100000,
         verbose=True,
