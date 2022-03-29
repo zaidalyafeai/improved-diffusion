@@ -90,7 +90,7 @@ def load_data(
 
     capts = None
     if capt_path and os.path.exists(capt_path):
-        print('using px_scales_path')
+        print('using capt_path')
         with open(capt_path, 'r') as f:
             capts = json.load(f)
 
