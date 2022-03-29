@@ -294,10 +294,10 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_image
         prefix, _, ext = entry.rpartition(".")
         safebox_key = prefix.replace('/', '_')
 
-        if require_capts and (safebox_key not in capts):
-            continue
-
         if "." in entry and ext.lower() in ["jpg", "jpeg", "png", "gif"]:
+            if require_capts and (safebox_key not in capts):
+                continue
+
             if min_filesize > 0:
                 filesize = os.path.getsize(full_path)
                 if filesize < min_filesize:
