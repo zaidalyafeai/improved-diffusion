@@ -32,7 +32,7 @@ from .text_nn import TextEncoder, CrossAttention, WeaveAttention
 import clip
 
 
-def clip_encode_text_nopool(token_embedding, positional_embedding, transformer, ln_final, toks, dtype=th.float16):
+def clip_encode_text_nopool(token_embedding, positional_embedding, transformer, ln_final, toks, dtype=th.float32):
     x = token_embedding(toks).type(dtype)  # [batch_size, n_ctx, d_model]
 
     x = x + positional_embedding.type(dtype)
@@ -717,6 +717,7 @@ class UNetModel(nn.Module):
             )
 
             clipmod, _ = clip.load(name='RN50')
+            clipmod.float()
             self.capt_embedding = clipmod.token_embedding
             self.capt_positional_embedding = clipmod.positional_embedding
             self.capt_encoder = clipmod.transformer
