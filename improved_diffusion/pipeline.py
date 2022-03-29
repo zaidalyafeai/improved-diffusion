@@ -175,6 +175,10 @@ class SamplingModel(nn.Module):
                 "txt": txt_uncon
             }
 
+            if batch_capt is not None:
+                capt_uncon = clip.tokenize(batch_size * [txt_drop_string], truncate=True).to(dist_util.dev())
+                model_kwargs["unconditional_model_kwargs"]["capt"] = capt_uncon
+
         all_low_res = []
 
         if self.is_super_res:
