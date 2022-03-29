@@ -1169,7 +1169,7 @@ class UNetModel(nn.Module):
                     cat_in = th.cat([h_base, popped_base, h_xtra, popped_xtra], dim=1)
                 else:
                     cat_in = th.cat([h, hs.pop()], dim=1)
-            h, txt, capt = module((h, txt, capt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs, capt_attn_mask=capt_attn_mask)
+            h, txt, capt = module((cat_in, txt, capt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs, capt_attn_mask=capt_attn_mask)
             if getattr(module, 'bread_adapter_out_pt', False):
                 h_bread_out = self.bread_adapter_out(h)
                 skip_pop = True
