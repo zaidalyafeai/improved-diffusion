@@ -498,6 +498,7 @@ def save_first_batch(dataloader, path):
     batch, cond = next(dataloader)
     batch = to_visible(batch)
     txts = cond['txt']
+    capts = cond.get('capt')
 
     for i in trange(len(batch)):
         img = batch[i]
@@ -509,3 +510,8 @@ def save_first_batch(dataloader, path):
 
         with open(os.path.join(path, f'{i:04d}.txt'), 'w') as f:
             f.write(txt)
+
+        if capts is not None:
+            capt = capts[i]
+            with open(os.path.join(path, f'{i:04d}_capt.txt'), 'w') as f:
+                f.write(txt)
