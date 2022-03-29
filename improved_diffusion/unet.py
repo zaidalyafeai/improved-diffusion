@@ -707,7 +707,8 @@ class UNetModel(nn.Module):
                 silu_impl=silu_impl
             )
 
-            self.capt_encoder = clip.load(name='RN50')
+            clipmod, _ = clip.load(name='RN50')
+            self.capt_encoder = clipmod.transformer
 
         self.tgt_pos_embs = nn.ModuleDict({})
 
