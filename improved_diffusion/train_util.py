@@ -133,7 +133,7 @@ class TrainLoop:
 
         self.step = 0
         self.resume_step = 0
-        self.global_batch = self.batch_size * dist.get_world_size()
+        self.global_batch = self.batch_size # * dist.get_world_size()
 
         # text_params, self.text_param_names = [], []
         text_params, text_param_names = defaultdict(list), defaultdict(list)
@@ -342,11 +342,6 @@ class TrainLoop:
                 find_unused_parameters=False,
             )
         else:
-            if dist.get_world_size() > 1:
-                logger.warn(
-                    "Distributed training requires CUDA. "
-                    "Gradients will not be synchronized properly!"
-                )
             self.use_ddp = False
             self.ddp_model = self.model
 
@@ -355,7 +350,7 @@ class TrainLoop:
 
         if resume_checkpoint:
             self.resume_step = parse_resume_step_from_filename(resume_checkpoint)
-            if dist.get_rank() == 0:
+            if True: #dist.get_rank() == 0:
                 logger.log(f"loading model from checkpoint: {resume_checkpoint}...")
                 sd = dist_util.load_state_dict(
                     resume_checkpoint, map_location=dist_util.dev()
@@ -391,7 +386,7 @@ class TrainLoop:
         main_checkpoint = find_resume_checkpoint() or self.resume_checkpoint
         ema_checkpoint = find_ema_checkpoint(main_checkpoint, self.resume_step, rate)
         if ema_checkpoint:
-            if dist.get_rank() == 0:
+            if True: #dist.get_rank() == 0:
                 logger.log(f"loading EMA from checkpoint: {ema_checkpoint}...")
                 state_dict = dist_util.load_state_dict(
                     ema_checkpoint, map_location=dist_util.dev()
@@ -739,7 +734,7 @@ class TrainLoop:
     def save(self):
         def save_checkpoint(rate, params):
             state_dict = self._master_params_to_state_dict(params)
-            if dist.get_rank() == 0:
+            if True: # dist.get_rank() == 0:
                 logger.log(f"saving model {rate}...")
                 if not rate:
                     filename = f"model{(self.step+self.resume_step):06d}.pt"
@@ -754,7 +749,7 @@ class TrainLoop:
 
         logger.log("saving opt...")
 
-        if dist.get_rank() == 0:
+        if True: # dist.get_rank() == 0:
             with bf.BlobFile(
                 bf.join(get_blob_logdir(), f"opt{(self.step+self.resume_step):06d}.pt"),
                 "wb",
@@ -766,7 +761,7 @@ class TrainLoop:
         if self.autosave:
             save_progress_to_gcs(step=self.step+self.resume_step, ema_rates=self.ema_rate, autosave_dir=self.autosave_dir)
 
-        dist.barrier()
+        # dist.barrier()
 
     def _master_params_to_state_dict(self, master_params):
         if self.use_fp16:
