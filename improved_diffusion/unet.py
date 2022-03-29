@@ -1128,6 +1128,8 @@ class UNetModel(nn.Module):
             h_bread_in = self.bread_adapter_in(h)
             h_bread_out = None
         for module in self.input_blocks:
+            print(module)
+            print(f"h: {h.shape} | hs: {[t.shape for t in hs]}")
             h, txt, capt = module((h, txt, capt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs, capt_attn_mask=capt_attn_mask)
             if getattr(module, 'bread_adapter_in_pt', False):
                 if self.bread_adapter_only:

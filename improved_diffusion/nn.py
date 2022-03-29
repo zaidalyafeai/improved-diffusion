@@ -141,6 +141,12 @@ class AdaGN(nn.Module):
         self.fused = silu_impl == "fused"
 
     def forward(self, h, emb, side_emb=None):
+        print(f'got image shape {h.shape}')
+        print(f'got emb shape {emb.shape}')
+        print(f'got base_channels {selfbase_channels}')
+        print(f'got out_channels {selfout_channels}')
+        print(f'got base_out_channels {selfbase_out_channels}')
+
         emb_out = self.emb_layers(emb).type(h.dtype)
 
         while len(emb_out.shape) < len(h.shape):
