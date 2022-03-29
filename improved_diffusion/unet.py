@@ -346,8 +346,8 @@ class ResBlock(TimestepBlock):
             x = self.x_upd(x)
             h = in_conv(h)
         else:
-            print(f'x shape: {x.shape}')
-            print(f'self.in_layers[0].weight shape: {self.in_layers[0].weight.shape}')
+            # print(f'x shape: {x.shape}')
+            # print(f'self.in_layers[0].weight shape: {self.in_layers[0].weight.shape}')
             h = self.in_layers(x)
         emb_out = self.emb_layers(emb).type(h.dtype)
         while len(emb_out.shape) < len(h.shape):
@@ -1130,8 +1130,8 @@ class UNetModel(nn.Module):
             h_bread_in = self.bread_adapter_in(h)
             h_bread_out = None
         for module in self.input_blocks:
-            print(module)
-            print(f"h: {h.shape} | hs: {[t.shape for t in hs]}")
+            # print(module)
+            # print(f"h: {h.shape} | hs: {[t.shape for t in hs]}")
             h, txt, capt = module((h, txt, capt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs, capt_attn_mask=capt_attn_mask)
             if getattr(module, 'bread_adapter_in_pt', False):
                 if self.bread_adapter_only:
@@ -1142,8 +1142,8 @@ class UNetModel(nn.Module):
         h, txt, capt = self.middle_block((h, txt, capt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs, capt_attn_mask=capt_attn_mask)
         skip_pop = False
         for module in self.output_blocks:
-            print(module)
-            print(f"h: {h.shape} | hs: {[t.shape for t in hs]}")
+            # print(module)
+            # print(f"h: {h.shape} | hs: {[t.shape for t in hs]}")
             if skip_pop:
                 cat_in = h
                 skip_pop = False

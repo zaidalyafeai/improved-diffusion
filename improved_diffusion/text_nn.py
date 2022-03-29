@@ -667,11 +667,11 @@ class WeaveAttention(nn.Module):
 
 
     def forward(self, text, image, attn_mask=None, tgt_pos_embs=None, timestep_emb=None):
-        print(f'got image shape {image.shape}')
-        print(f'got tgt_pos_embs shape {tgt_pos_embs[self.text_to_image_layers[0].emb_res].shape}')
-        print(f'got base_channels {self.text_to_image_layers[0].tgt_ln.base_channels}')
-        print(f'got out_channels {self.text_to_image_layers[0].tgt_ln.out_channels}')
-        print(f'got base_out_channels {self.text_to_image_layers[0].tgt_ln.base_out_channels}')
+        # print(f'got image shape {image.shape}')
+        # print(f'got tgt_pos_embs shape {tgt_pos_embs[self.text_to_image_layers[0].emb_res].shape}')
+        # print(f'got base_channels {self.text_to_image_layers[0].tgt_ln.base_channels}')
+        # print(f'got out_channels {self.text_to_image_layers[0].tgt_ln.out_channels}')
+        # print(f'got base_out_channels {self.text_to_image_layers[0].tgt_ln.base_out_channels}')
         shared_kwargs = dict(attn_mask=attn_mask, timestep_emb=timestep_emb)
 
         orig_text = text
