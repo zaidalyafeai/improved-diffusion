@@ -22,6 +22,8 @@ from improved_diffusion.image_datasets import load_tokenizer, tokenize
 from improved_diffusion.unet import UNetModel
 from improved_diffusion.respace import SpacedDiffusion
 
+import clip
+
 
 def _strip_space(s):
     return "\n".join([part.strip(" ") for part in s.split("\n")])
