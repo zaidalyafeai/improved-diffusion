@@ -211,7 +211,7 @@ class TrainLoop:
         itot_params = [itot_params[n] for n in self.itot_mods]
         self.itot_param_names = [itot_param_names[n] for n in self.itot_mods]
 
-        self.param_name_groups = [*self.text_param_names, *self.xattn_param_names, *self.itot_param_names, self.gain_param_names, self.bread_param_names, self.other_param_names, self.ff_gain_param_names, self.capt_param_names]
+        self.param_name_groups = [*self.text_param_names, *self.xattn_param_names, *self.itot_param_names, self.gain_param_names, self.bread_param_names, self.other_param_names, self.capt_param_names, self.ff_gain_param_names]
 
         # self.model_params = list(self.model.parameters())
         self.model_params = [*text_params, *xattn_params, *itot_params, gain_params, bread_params, other_params, capt_params, ff_gain_params]
