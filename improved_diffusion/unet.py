@@ -89,15 +89,15 @@ class WeaveAttentionAdapter(TextTimestepBlock):
         self.weave_attn = WeaveAttention(*args, **kwargs)
         self.use_capt = use_capt
 
-        def forward(self, x, emb, txt, capt, attn_mask=None, tgt_pos_embs=None, timesteps=None, capt_attn_mask=None):
-            if use_capt:
-                src = capt
-                attn_mask_ = capt_attn_mask
-            else:
-                src = txt
-                attn_mask_ = attn_mask
+    def forward(self, x, emb, txt, capt, attn_mask=None, tgt_pos_embs=None, timesteps=None, capt_attn_mask=None):
+        if use_capt:
+            src = capt
+            attn_mask_ = capt_attn_mask
+        else:
+            src = txt
+            attn_mask_ = attn_mask
 
-            return self.weave_attn.forward(src=src, tgt=x, attn_mask=attn_mask_, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
+        return self.weave_attn.forward(src=src, tgt=x, attn_mask=attn_mask_, tgt_pos_embs=tgt_pos_embs, timestep_emb=emb)
 
 
 class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
@@ -112,9 +112,9 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
             if isinstance(layer, TimestepBlock):
                 x = layer(x, emb)
             elif isinstance(layer, TextTimestepBlock):
-                print(getattr(layer, '__class__'))
-                import inspect
-                print(inspect.signature(layer.forward))
+                # print(getattr(layer, '__class__'))
+                # import inspect
+                # print(inspect.signature(layer.forward))
                 x, txt = layer(x, emb, txt, capt, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, capt_attn_mask=capt_attn_mask)
             else:
                 x = layer(x)
