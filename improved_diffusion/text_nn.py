@@ -573,10 +573,12 @@ class ImageToTextCrossAttention(nn.Module):
             my_attn_mask = torch.tile(attn_mask.unsqueeze(2), (self.heads, 1, k.shape[1]))
             my_attn_mask = (~my_attn_mask).to(q.dtype) * -10000.
 
-        print(attn_mask.shape)
-        print(my_attn_mask.shape)
-        print(q.shape)
-        print(v.shape)
+        print('weave attn _forward')
+        print(('attn_mask', attn_mask.shape))
+        print(('my_attn_mask', my_attn_mask.shape))
+        print(('q',q.shape))
+        print(('v',v.shape))
+        print()
 
         attn_output, attn_output_weights = self.attn(q, k, v, attn_mask=my_attn_mask)
         attn_output = attn_output * self.effective_gain()
