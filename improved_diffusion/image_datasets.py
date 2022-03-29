@@ -54,6 +54,7 @@ def load_data(
     pin_memory=False,
     prefetch_factor=2,
     min_imagesize=0,
+    capt_path="",
     debug=False,
 ):
     """
@@ -87,7 +88,13 @@ def load_data(
         with open(px_scales_path, 'r') as f:
             px_scales = json.load(f)
 
-    all_files, image_file_to_text_file, file_sizes, image_file_to_safebox, image_file_to_px_scales = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize, min_imagesize=min_imagesize, safeboxes=safeboxes, px_scales=px_scales)
+    capts = None
+    if capt_path and os.path.exists(capt_path):
+        print('using px_scales_path')
+        with open(capt_path, 'r') as f:
+            capts = json.load(f)
+
+    all_files, image_file_to_text_file, file_sizes, image_file_to_safebox, image_file_to_px_scales, image_file_to_capt = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize, min_imagesize=min_imagesize, safeboxes=safeboxes, px_scales=px_scales, capts=capts)
     print(f"found {len(all_files)} images, {len(image_file_to_text_file)} texts")
     all_files = all_files[offset:]
 
@@ -264,16 +271,19 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         yield large_batch, model_kwargs
 
 
-def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_imagesize=0, safeboxes=None, px_scales=None):
+def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_imagesize=0, safeboxes=None, px_scales=None, capts=None):
     results = []
     image_file_to_text_file = {}
     file_sizes = {}
     image_file_to_safebox = {}
     image_file_to_px_scales = {}
+    image_file_to_capt = {}
     if safeboxes is None:
         safeboxes = {}
     if px_scales is None:
         px_scales = {}
+    if capts is None:
+        capts = {}
     n_excluded_imagesize = 0
     for entry in sorted(bf.listdir(data_dir)):
         full_path = bf.join(data_dir, entry)
@@ -297,6 +307,9 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_image
                 prefix, _, ext = full_path.rpartition(".")
                 path_txt = prefix + ".txt"
                 # print(f'made path_txt={repr(path_txt)} from {repr(entry)}')
+
+                image_file_to_capt[full_path] = capts.get(safebox_key)
+
                 if bf.exists(path_txt):
                     image_file_to_text_file[full_path] = path_txt
                     filesize = os.path.getsize(path_txt)
@@ -307,19 +320,22 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_image
                 else:
                     pass
                     # raise ValueError(path_txt)
+
         elif bf.isdir(full_path):
-            next_results, next_map, next_file_sizes, next_image_file_to_safebox, next_image_file_to_px_scales = _list_image_files_recursively(
-                full_path, txt=txt, min_filesize=min_filesize, min_imagesize=min_imagesize, safeboxes=safeboxes, px_scales=px_scales
+            next_results, next_map, next_file_sizes, next_image_file_to_safebox, next_image_file_to_px_scales, next_image_file_to_capt = _list_image_files_recursively(
+                full_path, txt=txt, min_filesize=min_filesize, min_imagesize=min_imagesize, safeboxes=safeboxes, px_scales=px_scales, capts=capts
             )
             results.extend(next_results)
             image_file_to_text_file.update(next_map)
             file_sizes.update(next_file_sizes)
             image_file_to_safebox.update(next_image_file_to_safebox)
             image_file_to_px_scales.update(next_image_file_to_px_scales)
+            image_file_to_capt.update(next_image_file_to_capt)
     print(f"_list_image_files_recursively: data_dir={data_dir}, n_excluded_imagesize={n_excluded_imagesize}")
     image_file_to_safebox = {k: v for k, v in image_file_to_safebox.items() if v is not None}
     image_file_to_px_scales = {k: v for k, v in image_file_to_px_scales.items() if v is not None}
-    return results, image_file_to_text_file, file_sizes, image_file_to_safebox, image_file_to_px_scales
+    image_file_to_capt = {k: v for k, v in image_file_to_capt.items() if v is not None}
+    return results, image_file_to_text_file, file_sizes, image_file_to_safebox, image_file_to_px_scales, image_file_to_capt
 
 
 class ImageDataset(Dataset):
@@ -338,6 +354,8 @@ class ImageDataset(Dataset):
                  image_file_to_safebox=None,
                  use_random_safebox_for_empty_string=False,
                  image_file_to_px_scales=None,
+                 image_file_to_capt=None,
+                 capt_pdrop=0.1,
                  ):
         super().__init__()
         self.resolution = resolution
@@ -361,6 +379,11 @@ class ImageDataset(Dataset):
         self.image_file_to_px_scales = image_file_to_px_scales
         if self.image_file_to_px_scales is None:
             self.image_file_to_px_scales = {}
+
+        self.image_file_to_capt = image_file_to_capt
+        if image_file_to_capt is None:
+            image_file_to_capt = {}
+        self.capt_pdrop = capt_pdrop
 
         if (self.image_file_to_safebox is not None) and (self.pre_resize_transform is None):
             raise ValueError
@@ -438,6 +461,11 @@ class ImageDataset(Dataset):
             if (len(text) == 0) and self.empty_string_to_drop_string:
                 text = self.txt_drop_string
             out_dict['txt'] = text
+
+            capt = self.image_file_to_capt[path]
+            if (self.capt_pdrop > 0) and (random.random() < self.capt_pdrop):
+                capt = self.txt_drop_string
+            out_dict['capt'] = capt
         return np.transpose(arr, [2, 0, 1]), out_dict
 
 

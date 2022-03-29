@@ -114,6 +114,7 @@ def main():
         pin_memory=args.perf_pin_memory,
         prefetch_factor=args.perf_prefetch_factor,
         min_imagesize=args.min_imagesize,
+        capt_path=args.capt_path
     )
 
     if args.save_first_batch:
@@ -224,6 +225,7 @@ def create_argparser():
         perf_pin_memory=False,
         perf_prefetch_factor=2,
         min_imagesize=0,
+        capt_path=""
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
