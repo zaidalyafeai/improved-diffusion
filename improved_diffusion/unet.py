@@ -32,14 +32,14 @@ from .text_nn import TextEncoder, CrossAttention, WeaveAttention
 import clip
 
 
-def clip_encode_text_nopool(token_embedding, transformer, ln_final, toks):
-    x = token_embedding(toks).type(clip_model.dtype)  # [batch_size, n_ctx, d_model]
+def clip_encode_text_nopool(token_embedding, positional_embedding, transformer, ln_final, toks, dtype=th.float16):
+    x = token_embedding(toks).type(dtype)  # [batch_size, n_ctx, d_model]
 
-    x = x + clip_model.positional_embedding.type(clip_model.dtype)
+    x = x + positional_embedding.type(dtype)
     x = x.permute(1, 0, 2)  # NLD -> LND
     x = transformer(x)
     x = x.permute(1, 0, 2)  # LND -> NLD
-    x = ln_final(x).type(clip_model.dtype)
+    x = ln_final(x).type(dtype)
 
     # x.shape = [batch_size, n_ctx, transformer.width]
 
@@ -709,6 +709,7 @@ class UNetModel(nn.Module):
 
             clipmod, _ = clip.load(name='RN50')
             self.capt_embedding = clipmod.token_embedding
+            self.capt_positional_embedding = clipmod.positional_embedding
             self.capt_encoder = clipmod.transformer
             self.capt_ln_final = clipmod.ln_final
 
@@ -1110,7 +1111,7 @@ class UNetModel(nn.Module):
         capt_attn_mask = None
         if capt is not None:
             capt_attn_mask = capt != 0
-            capt = clip_encode_text_nopool(self.capt_embedding, self.capt_encoder, self.capt_ln_final, capt)
+            capt = clip_encode_text_nopool(self.capt_embedding, self.capt_positional_embedding, self.capt_encoder, self.capt_ln_final, capt)
             capt = capt.type(self.inner_dtype)
 
         h = x
