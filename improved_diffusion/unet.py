@@ -475,7 +475,7 @@ class AttentionBlock(GlideStyleBlock):
             encoder_kv = self.encoder_kv(encoder_out)
             encoder_kv = encoder_kv.reshape(b * self.num_heads, -1, encoder_kv.shape[2])
 
-            my_attn_mask = torch.tile(attn_mask.unsqueeze(1), (self.heads, encoder_kv.shape[1], 1))
+            my_attn_mask = th.tile(attn_mask.unsqueeze(1), (self.heads, encoder_kv.shape[1], 1))
             my_attn_mask = (~my_attn_mask).to(encoder_kv.dtype) * -10000.
 
             h = self.attention(qkv, encoder_kv, my_attn_mask)
