@@ -253,6 +253,7 @@ class CrossAttention(nn.Module):
         use_checkpoint=False,
         image_base_channels=-1,
         silu_impl="torch",
+        txt_already_normed=False,
     ):
         super().__init__()
         print(
@@ -270,7 +271,7 @@ class CrossAttention(nn.Module):
         self.q_t_emb = q_t_emb
         self.use_rezero = use_rezero
         self.use_layerscale = use_layerscale
-        self.no_prenorm = use_rezero and not rezero_keeps_prenorm
+        self.no_prenorm = txt_already_normed or (use_rezero and not rezero_keeps_prenorm)
         self.use_checkpoint = use_checkpoint
 
         if self.no_prenorm:
@@ -440,7 +441,8 @@ class ImageToTextCrossAttention(nn.Module):
         use_checkpoint=False,
         use_ff_gain=False,
         image_base_channels=-1,
-        silu_impl="torch"
+        silu_impl="torch",
+        txt_already_normed=False,
     ):
         super().__init__()
         if qkv_dim is None:
@@ -459,7 +461,10 @@ class ImageToTextCrossAttention(nn.Module):
         self.use_layerscale = use_layerscale
         self.use_checkpoint = use_checkpoint
 
-        self.tgt_ln = torch.nn.LayerNorm(self.text_dim)
+        if txt_already_normed:
+            self.tgt_ln = torch.nn.Identity()
+        else:
+            self.tgt_ln = torch.nn.LayerNorm(self.text_dim)
 
         self.emb_res = emb_res
 
@@ -612,6 +617,7 @@ class WeaveAttention(nn.Module):
         image_base_channels=-1,
         silu_impl="torch",
         no_itot=False,
+        txt_already_normed=False,
         **text_to_image_kwargs,
     ):
         super().__init__()
@@ -632,6 +638,7 @@ class WeaveAttention(nn.Module):
             use_checkpoint=use_checkpoint,
             image_base_channels=image_base_channels,
             silu_impl=silu_impl,
+            txt_already_normed=txt_already_normed,
         )
 
         text_to_image_kwargs.update(

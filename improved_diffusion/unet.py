@@ -32,14 +32,15 @@ from .text_nn import TextEncoder, CrossAttention, WeaveAttention
 import clip
 
 
-def clip_encode_text_nopool(token_embedding, positional_embedding, transformer, ln_final, toks, dtype=th.float32):
+def clip_encode_text_nopool(token_embedding, positional_embedding, transformer, toks, dtype=th.float32):
     x = token_embedding(toks).type(dtype)  # [batch_size, n_ctx, d_model]
 
     x = x + positional_embedding.type(dtype)
     x = x.permute(1, 0, 2)  # NLD -> LND
     x = transformer(x)
     x = x.permute(1, 0, 2)  # LND -> NLD
-    x = ln_final(x).type(dtype)
+    # x = ln_final(x)
+    x = x.type(dtype)
 
     # x.shape = [batch_size, n_ctx, transformer.width]
 
@@ -751,7 +752,7 @@ class UNetModel(nn.Module):
             self.capt_embedding = clipmod.token_embedding
             self.capt_positional_embedding = clipmod.positional_embedding
             self.capt_encoder = clipmod.transformer
-            self.capt_ln_final = clipmod.ln_final
+            # self.capt_ln_final = clipmod.ln_final
             self.capt_embd_dim = clipmod.ln_final.weight.shape[0]
 
         self.tgt_pos_embs = nn.ModuleDict({})
@@ -1001,7 +1002,7 @@ class UNetModel(nn.Module):
                             dim=ch,
                             time_embed_dim=time_embed_dim,
                             heads=num_heads_here,
-                            text_dim=txt_dim,
+                            text_dim=self.capt_embd_dim if use_capt else txt_dim,
                             emb_res = emb_res,
                             init_gain = cross_attn_init_gain,
                             gain_scale = cross_attn_gain_scale,
@@ -1022,13 +1023,14 @@ class UNetModel(nn.Module):
                             caa_args.update(dict(
                                 use_ff=weave_use_ff,
                                 ff_rezero=weave_ff_rezero,
-                                ff_force_prenorm=weave_ff_force_prenorm,
+                                ff_force_prenorm=weave_ff_force_prenorm or use_capt, # ! testing this out
                                 ff_mult=weave_ff_mult,
                                 ff_glu=weave_ff_glu,
                                 qkv_dim_always_text=weave_qkv_dim_always_text,
                                 weave_v2=weave_v2,
                                 use_ff_gain=weave_use_ff_gain,
                                 no_itot=use_capt and (not weave_capt),
+
                             ))
                             caa = WeaveAttentionAdapter(**caa_args)
                         else:
@@ -1159,7 +1161,10 @@ class UNetModel(nn.Module):
         capt_attn_mask = None
         if capt is not None:
             capt_attn_mask = capt != 0
-            capt = clip_encode_text_nopool(self.capt_embedding, self.capt_positional_embedding, self.capt_encoder, self.capt_ln_final, capt)
+            capt = clip_encode_text_nopool(
+                self.capt_embedding, self.capt_positional_embedding, self.capt_encoder,
+                # self.capt_ln_final,
+                capt)
             capt = capt.type(self.inner_dtype)
 
         h = x
