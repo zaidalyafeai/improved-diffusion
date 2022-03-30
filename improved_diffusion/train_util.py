@@ -636,7 +636,7 @@ class TrainLoop:
                 sqsum += (p.grad ** 2).sum().item()
         logger.logkv_mean("grad_norm", np.sqrt(sqsum))
 
-        gn_xattn, gn_text, gn_itot = 0., 0., 0.
+        gn_xattn, gn_text, gn_itot, gn_capt = 0., 0., 0., 0.
 
         # name_to_norm = {}
         # name_to_nparam = {}
@@ -672,6 +672,8 @@ class TrainLoop:
             # bottom = [np.sqrt(x) for x in vals[:3]]
             # print(f"grad_norm_{name}: {gn:.3f} for {len(pp)} params\n\ttop {top}\n\tbottom {bottom}")
             logger.logkv_mean(f"grad_norm_{name}", gn)
+            if name == 'capt':
+                gn_capt = gn
 
         gn_text = np.sqrt(gn_text)
         logger.logkv_mean(f"grad_norm_text", gn_text)
@@ -688,6 +690,9 @@ class TrainLoop:
 
         if gn_itot > 0:
             logger.logkv_mean(f"grad_norm_xi_ratio", gn_xattn / max(gn_itot, 1e-8))
+
+        if gn_capt > 0:
+            logger.logkv_mean(f"grad_norm_xc_ratio", gn_xattn / max(gn_capt, 1e-8))
 
     def _anneal_lr(self):
         if not self.lr_anneal_steps:
