@@ -43,7 +43,7 @@ def clip_encode_text_nopool(token_embedding, positional_embedding, transformer, 
         x = x.permute(1, 0, 2)  # LND -> NLD
         x = ln_final(x)
         if out_format == 'ndl':
-            x = x.permute(0, 2, 1)  # NLD -> NLD
+            x = x.permute(0, 2, 1)  # NLD -> NDL
     else:
         if out_format == 'nld':
             x = x.permute(1, 0, 2)  # LND -> NLD
@@ -81,7 +81,7 @@ class TextTimestepBlock(nn.Module):
 
 class GlideStyleBlock(nn.Module):
     @abstractmethod
-    def forward(self, x, capt):
+    def forward(self, x, capt, capt_attn_mask):
         """
         Hack to let AttentionBlock just add capt to its usual x without adding too much code
         """
@@ -137,7 +137,7 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
             elif isinstance(layer, TextTimestepBlock):
                 x, txt = layer(x, emb, txt, capt, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, capt_attn_mask=capt_attn_mask)
             elif isinstance(layer, GlideStyleBlock):
-                x = layer(x, capt)
+                x = layer(x, capt, capt_attn_mask)
             else:
                 x = layer(x)
         return x, txt, capt
@@ -462,10 +462,10 @@ class AttentionBlock(GlideStyleBlock):
             self.encoder_kv = None
             self.encoder_norm = None
 
-    def forward(self, x, encoder_out=None):
-        return checkpoint(self._forward, (x, encoder_out), self.parameters(), self.use_checkpoint)
+    def forward(self, x, encoder_out=None, capt_attn_mask=None):
+        return checkpoint(self._forward, (x, encoder_out, capt_attn_mask), self.parameters(), self.use_checkpoint)
 
-    def _forward(self, x, encoder_out=None):
+    def _forward(self, x, encoder_out=None, attn_mask=None):
         b, c, *spatial = x.shape
         x = x.reshape(b, c, -1)
         qkv = self.qkv(self.norm(x))
@@ -474,7 +474,11 @@ class AttentionBlock(GlideStyleBlock):
             # encoder_out = self.encoder_norm(encoder_out)
             encoder_kv = self.encoder_kv(encoder_out)
             encoder_kv = encoder_kv.reshape(b * self.num_heads, -1, encoder_kv.shape[2])
-            h = self.attention(qkv, encoder_kv)
+
+            my_attn_mask = torch.tile(attn_mask.unsqueeze(1), (self.heads, encoder_kv.shape[1], 1))
+            my_attn_mask = (~my_attn_mask).to(encoder_kv.dtype) * -10000.
+
+            h = self.attention(qkv, encoder_kv, my_attn_mask)
         else:
             h = self.attention(qkv)
         h = h.reshape(b, -1, h.shape[-1])
@@ -487,7 +491,7 @@ class QKVAttention(nn.Module):
     A module which performs QKV attention.
     """
 
-    def forward(self, qkv, encoder_kv=None):
+    def forward(self, qkv, encoder_kv=None, attn_mask=None):
         """
         Apply QKV attention.
 
@@ -504,14 +508,17 @@ class QKVAttention(nn.Module):
         weight = th.einsum(
             "bct,bcs->bts", q * scale, k * scale
         )  # More stable with f16 than dividing afterwards
-        weight = th.softmax(weight.float(), dim=-1).type(weight.dtype)
-        # if encoder_kv is not None:
-        #     l_base = qkv.shape[2]
-        #     weight_on_capt = weight[:, :, l_base:].sum(dim=-1)
-        #     wmin = weight_on_capt.min().item()
-        #     wmean = weight_on_capt.mean().item()
-        #     wmax = weight_on_capt.max().item()
-        #     print(f"weight_on_capt min {wmin:.3f} | mean {wmean:.3f} | max {wmax:.3f}")
+        weight = weight.float()
+        if attn_mask is not None:
+            weight = weight + attn_mask
+        weight = th.softmax(weight, dim=-1).type(weight.dtype)
+        if encoder_kv is not None:
+            l_base = qkv.shape[2]
+            weight_on_capt = weight[:, :, l_base:].sum(dim=-1)
+            wmin = weight_on_capt.min().item()
+            wmean = weight_on_capt.mean().item()
+            wmax = weight_on_capt.max().item()
+            print(f"weight_on_capt min {wmin:.3f} | mean {wmean:.3f} | max {wmax:.3f}")
         return th.einsum("bts,bcs->bct", weight, v)
 
     @staticmethod
