@@ -24,7 +24,8 @@ from .nn import (
     normalization,
     timestep_embedding,
     checkpoint,
-    expanded_timestep_embedding
+    expanded_timestep_embedding,
+    scale_module
 )
 
 from .text_nn import TextEncoder, CrossAttention, WeaveAttention
@@ -710,6 +711,7 @@ class UNetModel(nn.Module):
         weave_capt=False,
         glide_style_capt_attn=False,
         glide_style_capt_emb=False,
+        glide_style_capt_emb_init_scale=0.1,
     ):
         super().__init__()
 
@@ -802,7 +804,7 @@ class UNetModel(nn.Module):
         )
 
         if self.glide_style_capt_emb:
-            self.capt_embed = linear(self.capt_embd_dim, time_embed_dim)
+            self.capt_embed = scale_module(linear(self.capt_embd_dim, time_embed_dim), glide_style_capt_emb_init_scale)
 
         if self.num_classes is not None:
             self.label_emb = nn.Embedding(num_classes, time_embed_dim)
