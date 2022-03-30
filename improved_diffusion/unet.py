@@ -1211,7 +1211,7 @@ class UNetModel(nn.Module):
                 )
             # capt = capt.type(self.inner_dtype)
             if self.glide_style_capt_emb:
-                eos = capt[th.arange(capt_toks.shape[0]), capt_toks.argmax(dim=-1)]
+                eos = capt[th.arange(capt_toks.shape[0]), :, capt_toks.argmax(dim=-1)]
                 emb = emb + self.capt_embed(eos)
 
         h = x
