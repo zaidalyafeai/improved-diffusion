@@ -146,7 +146,7 @@ class TrainLoop:
         bread_params, self.bread_param_names = [], []
         capt_params, self.capt_param_names = [], []
         for n, p in model.named_parameters():
-            if n.startswith('capt'):
+            if n.startswith('capt') or n.endswith('encoder_kv'):
                 self.capt_param_names.append(n)
                 capt_params.append(p)
             elif 'text_encoder' in n:
