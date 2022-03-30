@@ -421,7 +421,8 @@ class AttentionBlock(nn.Module):
     https://github.com/hojonathanho/diffusion/blob/1e0dceb3b3495bbe19116a5e1b3596cd0706c543/diffusion_tf/models/unet.py#L66.
     """
 
-    def __init__(self, channels, num_heads=1, use_checkpoint=False, use_checkpoint_lowcost=False, base_channels=None):
+    def __init__(self, channels, num_heads=1, use_checkpoint=False, use_checkpoint_lowcost=False, base_channels=None,
+                 encoder_channels=None):
         super().__init__()
         self.channels = channels
         self.num_heads = num_heads
@@ -433,15 +434,23 @@ class AttentionBlock(nn.Module):
         self.attention = QKVAttention()
         self.proj_out = zero_module(conv_nd(1, channels, channels, 1))
 
-    def forward(self, x):
-        return checkpoint(self._forward, (x,), self.parameters(), self.use_checkpoint)
+        if encoder_channels is not None:
+            self.encoder_kv = conv_nd(1, encoder_channels, channels * 2, 1)
 
-    def _forward(self, x):
+    def forward(self, x, encoder_out=None):
+        return checkpoint(self._forward, (x, encoder_out), self.parameters(), self.use_checkpoint)
+
+    def _forward(self, x, encoder_out=None):
         b, c, *spatial = x.shape
         x = x.reshape(b, c, -1)
         qkv = self.qkv(self.norm(x))
         qkv = qkv.reshape(b * self.num_heads, -1, qkv.shape[2])
-        h = self.attention(qkv)
+        if encoder_out is not None:
+            encoder_kv = self.encoder_kv(encoder_out)
+            encoder_kv = encoder_kv.reshape(b * self.num_heads, -1, encoder_kv.shape[2])
+            h = self.attention(qkv, encoder_kv)
+        else:
+            h = self.attention(qkv)
         h = h.reshape(b, -1, h.shape[-1])
         h = self.proj_out(h)
         return (x + h).reshape(b, c, *spatial)
@@ -452,7 +461,7 @@ class QKVAttention(nn.Module):
     A module which performs QKV attention.
     """
 
-    def forward(self, qkv):
+    def forward(self, qkv, encoder_kv=None):
         """
         Apply QKV attention.
 
@@ -461,6 +470,10 @@ class QKVAttention(nn.Module):
         """
         ch = qkv.shape[1] // 3
         q, k, v = th.split(qkv, ch, dim=1)
+        if encoder_kv is not None:
+            ek, ev = encoder_kv.split(ch, dim=1)
+            k = th.cat([ek, k], dim=-1)
+            v = th.cat([ev, v], dim=-1)
         scale = 1 / math.sqrt(math.sqrt(ch))
         weight = th.einsum(
             "bct,bcs->bts", q * scale, k * scale
