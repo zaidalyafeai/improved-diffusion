@@ -95,6 +95,7 @@ def model_and_diffusion_defaults():
         using_capt=False,
         weave_capt=False,
         glide_style_capt_attn=False,
+        glide_style_capt_emb=False,
     )
 
 
@@ -176,6 +177,7 @@ def create_model_and_diffusion(
     using_capt=False,
     weave_capt=False,
     glide_style_capt_attn=False,
+    glide_style_capt_emb=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     print(f"create_model_and_diffusion: use_checkpoint={use_checkpoint}")
@@ -245,6 +247,7 @@ def create_model_and_diffusion(
         using_capt=using_capt,
         weave_capt=weave_capt,
         glide_style_capt_attn=glide_style_capt_attn,
+        glide_style_capt_emb=glide_style_capt_emb,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -338,6 +341,7 @@ def create_model(
     using_capt=False,
     weave_capt=False,
     glide_style_capt_attn=False,
+    glide_style_capt_emb=False,
 ):
     text_lr_mult = 1.
     print(
@@ -446,6 +450,7 @@ def create_model(
         using_capt=using_capt,
         weave_capt=weave_capt,
         glide_style_capt_attn=glide_style_capt_attn,
+        glide_style_capt_emb=glide_style_capt_emb,
     )
 
 
@@ -537,6 +542,7 @@ def sr_create_model_and_diffusion(
     using_capt=False,
     weave_capt=False,
     glide_style_capt_attn=False,
+    glide_style_capt_emb=False,
 ):
     model = sr_create_model(
         large_size,
@@ -598,6 +604,7 @@ def sr_create_model_and_diffusion(
         using_capt=using_capt,
         weave_capt=weave_capt,
         glide_style_capt_attn=glide_style_capt_attn,
+        glide_style_capt_emb=glide_style_capt_emb,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,

@@ -709,6 +709,7 @@ class UNetModel(nn.Module):
         using_capt=False,
         weave_capt=False,
         glide_style_capt_attn=False,
+        glide_style_capt_emb=False,
     ):
         super().__init__()
 
@@ -750,6 +751,7 @@ class UNetModel(nn.Module):
 
         self.using_capt = using_capt
         self.glide_style_capt_attn = glide_style_capt_attn
+        self.glide_style_capt_emb = glide_style_capt_emb
 
         if monochrome_adapter and rgb_adapter:
             print("using both monochrome_adapter and rgb_adapter, make sure this is intentional!")
@@ -798,6 +800,9 @@ class UNetModel(nn.Module):
             silu(impl="torch" if silu_impl == "fused" else silu_impl, use_checkpoint=use_checkpoint_lowcost),
             linear(time_embed_dim, time_embed_dim),
         )
+
+        if self.glide_style_capt_emb:
+            self.capt_embed = linear(self.capt_embd_dim, time_embed_dim)
 
         if self.num_classes is not None:
             self.label_emb = nn.Embedding(num_classes, time_embed_dim)
@@ -1195,15 +1200,19 @@ class UNetModel(nn.Module):
 
         capt_attn_mask = None
         if capt is not None:
-            capt_attn_mask = capt != 0
+            capt_toks = capt
+            capt_attn_mask = capt_toks != 0
             capt = clip_encode_text_nopool(
                 self.capt_embedding, self.capt_positional_embedding, self.capt_encoder,
-                capt,
+                capt_toks,
                 ln_final=self.capt_ln_final if self.glide_style_capt_attn else None,
                 out_format='ndl' if self.glide_style_capt_attn else 'nld',
                 dtype = self.inner_dtype
                 )
             # capt = capt.type(self.inner_dtype)
+            if self.glide_style_capt_emb:
+                eos = capt[th.arange(capt_toks.shape[0]), capt_toks.argmax(dim=-1)]
+                emb = emb + self.capt_embed(eos)
 
         h = x
 
