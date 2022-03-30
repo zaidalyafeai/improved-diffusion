@@ -515,6 +515,7 @@ class QKVAttention(nn.Module):
         weight = th.softmax(weight, dim=-1).type(weight.dtype)
         if encoder_kv is not None:
             l_base = qkv.shape[2]
+            print(f'l_base {l_base}')
             weight_on_capt = weight[:, :, l_base:].sum(dim=-1)
             wmin = weight_on_capt.min().item()
             wmean = weight_on_capt.mean().item()
