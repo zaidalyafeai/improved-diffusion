@@ -122,6 +122,9 @@ def load_data(
         n_with_px_scale = sum(text_file_to_image_file[k] in image_file_to_px_scales for k in nonempty_text_files)
         print(f"of {n_texts} texts, {n_with_px_scale} have px scales (all px scales: {len(image_file_to_px_scales)})")
 
+    n_images_with_capts = len(set(image_file_to_text_file.keys()).intersection(image_file_to_capt.keys())
+    print(f"of {len(image_file_to_text_file)} images, {n_images_with_capts} have capts (all capts: {len(image_file_to_capt)})")
+
     classes = None
     if class_cond:
         # Assume classes are the first part of the filename,
