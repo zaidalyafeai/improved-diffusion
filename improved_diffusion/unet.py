@@ -504,6 +504,13 @@ class QKVAttention(nn.Module):
             "bct,bcs->bts", q * scale, k * scale
         )  # More stable with f16 than dividing afterwards
         weight = th.softmax(weight.float(), dim=-1).type(weight.dtype)
+        if encoder_kv is not None:
+            l_base = qkv.shape[2]
+            weight_on_capt = weight[:, :, l_base:].sum(dim=-1)
+            wmin = weight_on_capt.min().item()
+            wmean = weight_on_capt.mean().item()
+            wmax = weight_on_capt.max().item()
+            print(f"weight_on_capt min {wmin:.3f} | mean {wmean:.3f} | max {wmax:.3f}")
         return th.einsum("bts,bcs->bct", weight, v)
 
     @staticmethod
