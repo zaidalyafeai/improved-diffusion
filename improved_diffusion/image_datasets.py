@@ -516,5 +516,6 @@ def save_first_batch(dataloader, path):
 
         if capts is not None:
             capt = capts[i]
+            print(f'capt {i}: {repr(capt)}')
             with open(os.path.join(path, f'{i:04d}_capt.txt'), 'w') as f:
                 f.write(txt)
