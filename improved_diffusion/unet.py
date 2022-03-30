@@ -457,7 +457,7 @@ class AttentionBlock(GlideStyleBlock):
 
         if encoder_channels is not None:
             self.encoder_kv = conv_nd(1, encoder_channels, channels * 2, 1)
-            self.encoder_norm = normalization(encoder_channels)
+            self.encoder_norm = None # normalization(encoder_channels)
         else:
             self.encoder_kv = None
             self.encoder_norm = None
@@ -471,7 +471,8 @@ class AttentionBlock(GlideStyleBlock):
         qkv = self.qkv(self.norm(x))
         qkv = qkv.reshape(b * self.num_heads, -1, qkv.shape[2])
         if (encoder_out is not None) and (self.encoder_kv is not None):
-            encoder_kv = self.encoder_kv(self.encoder_norm(encoder_out))
+            # encoder_out = self.encoder_norm(encoder_out)
+            encoder_kv = self.encoder_kv(encoder_out)
             encoder_kv = encoder_kv.reshape(b * self.num_heads, -1, encoder_kv.shape[2])
             h = self.attention(qkv, encoder_kv)
         else:
@@ -774,7 +775,7 @@ class UNetModel(nn.Module):
             self.capt_positional_embedding = clipmod.positional_embedding
             self.capt_encoder = clipmod.transformer
             self.capt_embd_dim = clipmod.ln_final.weight.shape[0]
-            if False: # self.glide_style_capt_attn:
+            if self.glide_style_capt_attn:
                 self.capt_ln_final = clipmod.ln_final
                 # self.capt_ln_final = normalization(self.capt_embd_dim)
             else:
@@ -1189,7 +1190,7 @@ class UNetModel(nn.Module):
             capt = clip_encode_text_nopool(
                 self.capt_embedding, self.capt_positional_embedding, self.capt_encoder,
                 capt,
-                # ln_final=self.capt_ln_final if self.glide_style_capt_attn else None,
+                ln_final=self.capt_ln_final if self.glide_style_capt_attn else None,
                 out_format='ndl' if self.glide_style_capt_attn else 'nld',
                 dtype = self.inner_dtype
                 )
