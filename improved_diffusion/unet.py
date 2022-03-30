@@ -764,11 +764,12 @@ class UNetModel(nn.Module):
             self.capt_embedding = clipmod.token_embedding
             self.capt_positional_embedding = clipmod.positional_embedding
             self.capt_encoder = clipmod.transformer
+            self.capt_embd_dim = clipmod.ln_final.weight.shape[0]
             if self.glide_style_capt_attn:
-                self.capt_ln_final = clipmod.ln_final
+                # self.capt_ln_final = clipmod.ln_final
+                self.capt_ln_final = normalization(self.capt_embd_dim)
             else:
                 self.capt_ln_final = None
-            self.capt_embd_dim = clipmod.ln_final.weight.shape[0]
 
         self.tgt_pos_embs = nn.ModuleDict({})
 
