@@ -652,6 +652,7 @@ class UNetModel(nn.Module):
         expand_timestep_base_dim=-1,
         silu_impl="torch",
         using_capt=False,
+        weave_capt=False,
     ):
         super().__init__()
 
@@ -996,7 +997,7 @@ class UNetModel(nn.Module):
                                 qkv_dim_always_text=weave_qkv_dim_always_text,
                                 weave_v2=weave_v2,
                                 use_ff_gain=weave_use_ff_gain,
-                                no_itot=use_capt,
+                                no_itot=use_capt or (not weave_capt),
                             ))
                             caa = WeaveAttentionAdapter(**caa_args)
                         else:
