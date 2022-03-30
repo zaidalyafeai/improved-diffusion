@@ -32,18 +32,25 @@ from .text_nn import TextEncoder, CrossAttention, WeaveAttention
 import clip
 
 
-def clip_encode_text_nopool(token_embedding, positional_embedding, transformer, toks, dtype=th.float32, out_format='nld'):
+def clip_encode_text_nopool(token_embedding, positional_embedding, transformer, toks, dtype=th.float32, out_format='nld',
+                            ln_final=None):
     x = token_embedding(toks).type(dtype)  # [batch_size, n_ctx, d_model]
 
     x = x + positional_embedding.type(dtype)
     x = x.permute(1, 0, 2)  # NLD -> LND
     x = transformer(x)
-    if out_format == 'nld':
+    if ln_final is not None:
         x = x.permute(1, 0, 2)  # LND -> NLD
-    elif out_format == 'ndl':
-        x = x.permute(1, 2, 0)  # LND -> NDL
+        x = ln_final(x)
+        if out_format == 'ndl':
+            x = x.permute(0, 2, 1)  # NLD -> NLD
     else:
-        raise ValueError(out_format)
+        if out_format == 'nld':
+            x = x.permute(1, 0, 2)  # LND -> NLD
+        elif out_format == 'ndl':
+            x = x.permute(1, 2, 0)  # LND -> NDL
+        else:
+            raise ValueError(out_format)
     # x = ln_final(x)
     x = x.type(dtype)
 
@@ -757,7 +764,10 @@ class UNetModel(nn.Module):
             self.capt_embedding = clipmod.token_embedding
             self.capt_positional_embedding = clipmod.positional_embedding
             self.capt_encoder = clipmod.transformer
-            # self.capt_ln_final = clipmod.ln_final
+            if self.glide_style_capt_attn:
+                self.capt_ln_final = clipmod.ln_final
+            else:
+                self.capt_ln_final = None
             self.capt_embd_dim = clipmod.ln_final.weight.shape[0]
 
         self.tgt_pos_embs = nn.ModuleDict({})
@@ -1168,8 +1178,8 @@ class UNetModel(nn.Module):
             capt_attn_mask = capt != 0
             capt = clip_encode_text_nopool(
                 self.capt_embedding, self.capt_positional_embedding, self.capt_encoder,
-                # self.capt_ln_final,
                 capt,
+                ln_final=self.capt_ln_final if self.glide_style_capt_attn else None,
                 out_format='ndl' if self.glide_style_capt_attn else 'nld',
                 dtype = self.inner_dtype
                 )
