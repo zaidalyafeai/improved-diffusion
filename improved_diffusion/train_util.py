@@ -57,6 +57,7 @@ class TrainLoop:
         text_lr=None,
         gain_lr=None,
         bread_lr=None,
+        capt_lr=None,
         lg_loss_scale = INITIAL_LOG_LOSS_SCALE,
         beta1=0.9,
         beta2=0.999,
@@ -86,6 +87,7 @@ class TrainLoop:
         self.text_lr = text_lr if text_lr is not None else lr
         self.gain_lr = gain_lr if gain_lr is not None else lr
         self.bread_lr = bread_lr if bread_lr is not None else lr
+        self.capt_lr = capt_lr if capt_lr is not None else lr
         print(f"train loop: text_lr={text_lr}, gain_lr={gain_lr}, bread_lr={bread_lr}")
         self.ema_rate = (
             [ema_rate]
@@ -270,7 +272,7 @@ class TrainLoop:
                         [*[self.text_lr for _ in self.text_mods],
                          *[self.text_lr for _ in self.xattn_mods],
                          *[self.text_lr for _ in self.itot_mods],
-                          self.gain_lr, self.bread_lr, self.lr],
+                          self.gain_lr, self.bread_lr, self.capt_lr],
                         [*[0. for _ in self.text_mods],
                          *[0. for _ in self.xattn_mods],
                          *[0. for _ in self.itot_mods],

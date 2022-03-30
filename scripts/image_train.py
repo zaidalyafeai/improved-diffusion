@@ -46,6 +46,9 @@ def main():
     if args.bread_lr < 0:
         args.bread_lr = None
 
+    if args.capt_lr < 0:
+        args.capt_lr = None
+
     config_path = args.config_path
     have_config_path = config_path != ""
     using_config = have_config_path and os.path.exists(config_path)
@@ -117,6 +120,7 @@ def main():
         capt_path=args.capt_path,
         capt_pdrop=args.capt_pdrop,
         require_capts=args.require_capts,
+        capt_lr=args.capt_lr
     )
 
     if args.save_first_batch:
@@ -189,6 +193,7 @@ def create_argparser():
         text_lr=-1.,
         gain_lr=-1.,
         bread_lr=-1.,
+        capt_lr=-1.,
         beta1=0.9,
         beta2=0.999,
         verbose=False,
