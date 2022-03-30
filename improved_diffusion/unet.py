@@ -997,7 +997,7 @@ class UNetModel(nn.Module):
                                 qkv_dim_always_text=weave_qkv_dim_always_text,
                                 weave_v2=weave_v2,
                                 use_ff_gain=weave_use_ff_gain,
-                                no_itot=use_capt or (not weave_capt),
+                                no_itot=use_capt and (not weave_capt),
                             ))
                             caa = WeaveAttentionAdapter(**caa_args)
                         else:
