@@ -32,13 +32,18 @@ from .text_nn import TextEncoder, CrossAttention, WeaveAttention
 import clip
 
 
-def clip_encode_text_nopool(token_embedding, positional_embedding, transformer, toks, dtype=th.float32):
+def clip_encode_text_nopool(token_embedding, positional_embedding, transformer, toks, dtype=th.float32, out_format='nld'):
     x = token_embedding(toks).type(dtype)  # [batch_size, n_ctx, d_model]
 
     x = x + positional_embedding.type(dtype)
     x = x.permute(1, 0, 2)  # NLD -> LND
     x = transformer(x)
-    x = x.permute(1, 0, 2)  # LND -> NLD
+    if out_format == 'nld':
+        x = x.permute(1, 0, 2)  # LND -> NLD
+    elif out_format == 'ndl':
+        x = x.permute(1, 2, 0)  # LND -> NDL
+    else:
+        raise ValueError(out_format)
     # x = ln_final(x)
     x = x.type(dtype)
 
@@ -1164,8 +1169,11 @@ class UNetModel(nn.Module):
             capt = clip_encode_text_nopool(
                 self.capt_embedding, self.capt_positional_embedding, self.capt_encoder,
                 # self.capt_ln_final,
-                capt)
-            capt = capt.type(self.inner_dtype)
+                capt,
+                out_format='ndl' if self.glide_style_capt_attn else 'nld',
+                dtype = self.inner_dtype
+                )
+            # capt = capt.type(self.inner_dtype)
 
         h = x
 
