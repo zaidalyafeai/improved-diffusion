@@ -120,7 +120,6 @@ def main():
         capt_path=args.capt_path,
         capt_pdrop=args.capt_pdrop,
         require_capts=args.require_capts,
-        capt_lr=args.capt_lr
     )
 
     if args.save_first_batch:
@@ -165,6 +164,7 @@ def main():
         resize_mult=args.resize_mult,
         use_bf16=args.use_bf16,
         perf_no_ddl=args.perf_no_ddl,
+        capt_lr=args.capt_lr
     ).run_loop()
 
 
