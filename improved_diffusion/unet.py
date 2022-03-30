@@ -60,9 +60,17 @@ class TimestepBlock(nn.Module):
 
 class TextTimestepBlock(nn.Module):
     @abstractmethod
-    def forward(self, x, emb, txt, attn_mask=None, tgt_pos_embs=None, capt_attn_mask=None, ):
+    def forward(self, x, emb, txt, capt, attn_mask=None, tgt_pos_embs=None, capt_attn_mask=None, ):
         """
         Apply the module to `x` given `txt` texts.
+        """
+
+
+class GlideStyleBlock(nn.Module):
+    @abstractmethod
+    def forward(self, x, capt):
+        """
+        Hack to let AttentionBlock just add capt to its usual x without adding too much code
         """
 
 
@@ -114,10 +122,9 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
             if isinstance(layer, TimestepBlock):
                 x = layer(x, emb)
             elif isinstance(layer, TextTimestepBlock):
-                # print(getattr(layer, '__class__'))
-                # import inspect
-                # print(inspect.signature(layer.forward))
                 x, txt = layer(x, emb, txt, capt, attn_mask=attn_mask, tgt_pos_embs=tgt_pos_embs, capt_attn_mask=capt_attn_mask)
+            elif isinstance(layer, GlideStyleBlock):
+                x = layer(x, capt)
             else:
                 x = layer(x)
         return x, txt, capt
@@ -413,14 +420,15 @@ class ResBlock(TimestepBlock):
         return self.skip_connection(x) + h
 
 
-class AttentionBlock(nn.Module):
+class AttentionBlock(GlideStyleBlock):
     """
     An attention block that allows spatial positions to attend to each other.
 
     Originally ported from here, but adapted to the N-d case.
     https://github.com/hojonathanho/diffusion/blob/1e0dceb3b3495bbe19116a5e1b3596cd0706c543/diffusion_tf/models/unet.py#L66.
-    """
 
+    """
+    # TODO: (nost) - why not try AdaGN for norm here?
     def __init__(self, channels, num_heads=1, use_checkpoint=False, use_checkpoint_lowcost=False, base_channels=None,
                  encoder_channels=None):
         super().__init__()
@@ -436,6 +444,8 @@ class AttentionBlock(nn.Module):
 
         if encoder_channels is not None:
             self.encoder_kv = conv_nd(1, encoder_channels, channels * 2, 1)
+        else:
+            self.encoder_kv = None
 
     def forward(self, x, encoder_out=None):
         return checkpoint(self._forward, (x, encoder_out), self.parameters(), self.use_checkpoint)
@@ -445,7 +455,7 @@ class AttentionBlock(nn.Module):
         x = x.reshape(b, c, -1)
         qkv = self.qkv(self.norm(x))
         qkv = qkv.reshape(b * self.num_heads, -1, qkv.shape[2])
-        if encoder_out is not None:
+        if (encoder_out is not None) and (self.encoder_kv is not None):
             encoder_kv = self.encoder_kv(encoder_out)
             encoder_kv = encoder_kv.reshape(b * self.num_heads, -1, encoder_kv.shape[2])
             h = self.attention(qkv, encoder_kv)
@@ -666,6 +676,7 @@ class UNetModel(nn.Module):
         silu_impl="torch",
         using_capt=False,
         weave_capt=False,
+        glide_style_capt_attn=False,
     ):
         super().__init__()
 
@@ -706,6 +717,7 @@ class UNetModel(nn.Module):
         self.image_size = image_size
 
         self.using_capt = using_capt
+        self.glide_style_capt_attn = glide_style_capt_attn
 
         if monochrome_adapter and rgb_adapter:
             print("using both monochrome_adapter and rgb_adapter, make sure this is intentional!")
@@ -740,6 +752,7 @@ class UNetModel(nn.Module):
             self.capt_positional_embedding = clipmod.positional_embedding
             self.capt_encoder = clipmod.transformer
             self.capt_ln_final = clipmod.ln_final
+            self.capt_embd_dim = clipmod.ln_final.weight.shape[0]
 
         self.tgt_pos_embs = nn.ModuleDict({})
 
@@ -805,6 +818,7 @@ class UNetModel(nn.Module):
                             ch, use_checkpoint=use_checkpoint or use_checkpoint_down, num_heads=num_heads_here,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
                             base_channels=expand_timestep_base_dim * ch // model_channels,
+                            encoder_channels=self.capt_embd_dim if self.glide_style_capt_attn else None
                         )
                     )
                 if self.txt and ds in self.txt_resolutions and (not txt_output_layers_only):
@@ -915,7 +929,8 @@ class UNetModel(nn.Module):
             ),
             AttentionBlock(ch, use_checkpoint=use_checkpoint or use_checkpoint_middle, num_heads=num_heads,
                            use_checkpoint_lowcost=use_checkpoint_lowcost,
-                           base_channels=expand_timestep_base_dim * ch // model_channels,),
+                           base_channels=expand_timestep_base_dim * ch // model_channels,
+                           encoder_channels=self.capt_embd_dim if self.glide_style_capt_attn else None),
             ResBlock(
                 ch,
                 time_embed_dim,
@@ -959,10 +974,13 @@ class UNetModel(nn.Module):
                             num_heads=num_heads_here,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
                             base_channels=expand_timestep_base_dim * ch // model_channels,
+                            encoder_channels=self.capt_embd_dim if self.glide_style_capt_attn else None
                         )
                     )
                 if self.txt and ds in self.txt_resolutions:
                     use_capts = [False, True] if self.using_capt else [False]
+                    if self.glide_style_capt_attn:
+                        use_capts = [False]
                     for use_capt in use_capts:
                         num_heads_here = num_heads
                         if cross_attn_channels_per_head > 0:

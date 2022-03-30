@@ -94,6 +94,7 @@ def model_and_diffusion_defaults():
         silu_impl="torch",
         using_capt=False,
         weave_capt=False,
+        glide_style_capt_attn=False,
     )
 
 
@@ -174,6 +175,7 @@ def create_model_and_diffusion(
     silu_impl="torch",
     using_capt=False,
     weave_capt=False,
+    glide_style_capt_attn=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     print(f"create_model_and_diffusion: use_checkpoint={use_checkpoint}")
@@ -242,6 +244,7 @@ def create_model_and_diffusion(
         silu_impl=silu_impl,
         using_capt=using_capt,
         weave_capt=weave_capt,
+        glide_style_capt_attn=glide_style_capt_attn,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -334,6 +337,7 @@ def create_model(
     silu_impl="torch",
     using_capt=False,
     weave_capt=False,
+    glide_style_capt_attn=False,
 ):
     text_lr_mult = 1.
     print(
@@ -441,6 +445,7 @@ def create_model(
         silu_impl=silu_impl,
         using_capt=using_capt,
         weave_capt=weave_capt,
+        glide_style_capt_attn=glide_style_capt_attn,
     )
 
 
@@ -531,6 +536,7 @@ def sr_create_model_and_diffusion(
     silu_impl="torch",
     using_capt=False,
     weave_capt=False,
+    glide_style_capt_attn=False,
 ):
     model = sr_create_model(
         large_size,
@@ -591,6 +597,7 @@ def sr_create_model_and_diffusion(
         silu_impl=silu_impl,
         using_capt=using_capt,
         weave_capt=weave_capt,
+        glide_style_capt_attn=glide_style_capt_attn,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
