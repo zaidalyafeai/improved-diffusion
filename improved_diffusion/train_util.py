@@ -692,7 +692,7 @@ class TrainLoop:
             logger.logkv_mean(f"grad_norm_xi_ratio", gn_xattn / max(gn_itot, 1e-8))
 
         if gn_capt > 0:
-            logger.logkv_mean(f"grad_norm_xc_ratio", gn_xattn / max(gn_capt, 1e-8))
+            logger.logkv_mean(f"grad_norm_xxc_ratio", gn_xattn / max(gn_capt, 1e-8))
 
     def _anneal_lr(self):
         if not self.lr_anneal_steps:
