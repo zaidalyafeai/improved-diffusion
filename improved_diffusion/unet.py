@@ -475,7 +475,11 @@ class AttentionBlock(GlideStyleBlock):
             encoder_kv = self.encoder_kv(encoder_out)
             encoder_kv = encoder_kv.reshape(b * self.num_heads, -1, encoder_kv.shape[2])
 
+            print(('qkv.shape', qkv.shape))
             my_attn_mask = th.tile(attn_mask.unsqueeze(1), (self.num_heads, encoder_kv.shape[1], 1))
+            print(('my_attn_mask.shape', my_attn_mask.shape))
+            my_attn_mask = th.cat([th.ones(qkv.shape, dtype=bool), my_attn_mask], dim=2)
+            print(('my_attn_mask.shape', my_attn_mask.shape))
             my_attn_mask = (~my_attn_mask).to(encoder_kv.dtype) * -10000.
 
             h = self.attention(qkv, encoder_kv, my_attn_mask)
@@ -510,6 +514,8 @@ class QKVAttention(nn.Module):
         )  # More stable with f16 than dividing afterwards
         weight = weight.float()
         if attn_mask is not None:
+            print(('attn_mask.shape', attn_mask.shape))
+            print(('weight.shape', weight.shape))
             weight = weight + attn_mask
         weight = th.softmax(weight, dim=-1).type(weight.dtype)
         if encoder_kv is not None:
