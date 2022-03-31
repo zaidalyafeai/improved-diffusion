@@ -477,15 +477,15 @@ class AttentionBlock(GlideStyleBlock):
             encoder_kv = encoder_kv.reshape(b * self.num_heads, -1, encoder_kv.shape[2])
 
             my_attn_mask = th.tile(attn_mask.unsqueeze(1), (self.num_heads, qkv.shape[2], 1))
-            image_attn_mask_name = f"mask_{qkv.shape[0]}_{qkv.shape[2]}"
-            if not hasattr(self, image_attn_mask_name):
-                self.register_buffer(image_attn_mask_name, th.ones((qkv.shape[0], qkv.shape[2], qkv.shape[2]), dtype=bool, device=qkv.device), persistent=False)
+            # image_attn_mask_name = f"mask_{qkv.shape[0]}_{qkv.shape[2]}"
+            # if not hasattr(self, image_attn_mask_name):
+            #     self.register_buffer(image_attn_mask_name, th.ones((qkv.shape[0], qkv.shape[2], qkv.shape[2]), dtype=bool, device=qkv.device), persistent=False)
+            #
+            # image_attn_mask = getattr(self, image_attn_mask_name)
+            #
+            # my_attn_mask = th.cat([image_attn_mask, my_attn_mask], dim=2)
 
-            image_attn_mask = getattr(self, image_attn_mask_name)
-
-            my_attn_mask = th.cat([image_attn_mask, my_attn_mask], dim=2)
-
-            # my_attn_mask = th.cat([th.ones((qkv.shape[0], qkv.shape[2], qkv.shape[2]), dtype=bool, device=qkv.device), my_attn_mask], dim=2)
+            my_attn_mask = th.cat([th.ones((qkv.shape[0], qkv.shape[2], qkv.shape[2]), dtype=bool, device=qkv.device), my_attn_mask], dim=2)
             my_attn_mask = (~my_attn_mask).to(encoder_kv.dtype) * -10000.
 
             h = self.attention(qkv, encoder_kv, my_attn_mask)
