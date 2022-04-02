@@ -716,7 +716,8 @@ class UNetModel(nn.Module):
         expand_timestep_base_dim=-1,
         silu_impl="torch",
         using_capt=False,
-        weave_capt=False,
+        xattn_capt=True,
+        weave_capt=True,
         glide_style_capt_attn=False,
         glide_style_capt_emb=False,
         glide_style_capt_emb_init_scale=0.1,
@@ -760,6 +761,7 @@ class UNetModel(nn.Module):
         self.image_size = image_size
 
         self.using_capt = using_capt
+        self.xattn_capt = xattn_capt
         self.glide_style_capt_attn = glide_style_capt_attn
         self.glide_style_capt_emb = glide_style_capt_emb
 
@@ -796,7 +798,7 @@ class UNetModel(nn.Module):
             self.capt_positional_embedding = clipmod.positional_embedding
             self.capt_encoder = clipmod.transformer
             self.capt_embd_dim = clipmod.ln_final.weight.shape[0]
-            if self.glide_style_capt_attn:
+            if self.glide_style_capt_attn or self.glide_style_capt_emb:
                 self.capt_ln_final = clipmod.ln_final
                 # self.capt_ln_final = normalization(self.capt_embd_dim)
             else:
@@ -1029,7 +1031,7 @@ class UNetModel(nn.Module):
                         )
                     )
                 if self.txt and ds in self.txt_resolutions:
-                    use_capts = [False, True] if self.using_capt else [False]
+                    use_capts = [False, True] if (self.using_capt and self.xattn_capt) else [False]
                     if self.glide_style_capt_attn:
                         use_capts = [False]
                     for use_capt in use_capts:
@@ -1067,6 +1069,7 @@ class UNetModel(nn.Module):
                             image_base_channels=expand_timestep_base_dim * ch // model_channels,
                             silu_impl=silu_impl,
                             use_capt=use_capt,
+                            txt_already_normed=self.capt_ln_final is not None
                         )
                         if weave_attn:
                             caa_args['image_dim'] = caa_args.pop('dim')
@@ -1080,7 +1083,6 @@ class UNetModel(nn.Module):
                                 weave_v2=weave_v2,
                                 use_ff_gain=weave_use_ff_gain,
                                 no_itot=use_capt and (not weave_capt),
-
                             ))
                             caa = WeaveAttentionAdapter(**caa_args)
                         else:
