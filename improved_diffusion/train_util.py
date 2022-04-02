@@ -714,7 +714,7 @@ class TrainLoop:
             lr_variants = (len(self.opt.param_groups)-4) * [self.text_lr] + [self.gain_lr, self.bread_lr, self.lr, self.gain_lr]
 
         mult = frac_warmup_done if frac_warmup_done < 1 else (1 - frac_done)
-        print(f"mult: {mult} | frac_warmup_done {frac_warmup_done} | frac_done {frac_done}")
+        # print(f"mult: {mult} | frac_warmup_done {frac_warmup_done} | frac_done {frac_done}")
 
         for param_group, lr_variant in zip(self.opt.param_groups, lr_variants):
             this_lr = lr_variant * mult
