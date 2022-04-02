@@ -98,6 +98,7 @@ def model_and_diffusion_defaults():
         glide_style_capt_attn=False,
         glide_style_capt_emb=False,
         glide_style_capt_emb_init_scale=0.1,
+        glide_style_capt_emb_nonlin=False,
     )
 
 
@@ -182,6 +183,7 @@ def create_model_and_diffusion(
     glide_style_capt_attn=False,
     glide_style_capt_emb=False,
     glide_style_capt_emb_init_scale=0.1,
+    glide_style_capt_emb_nonlin=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     print(f"create_model_and_diffusion: use_checkpoint={use_checkpoint}")
@@ -254,6 +256,7 @@ def create_model_and_diffusion(
         glide_style_capt_attn=glide_style_capt_attn,
         glide_style_capt_emb=glide_style_capt_emb,
         glide_style_capt_emb_init_scale=glide_style_capt_emb_init_scale,
+        glide_style_capt_emb_nonlin=glide_style_capt_emb_nonlin,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -350,6 +353,7 @@ def create_model(
     glide_style_capt_attn=False,
     glide_style_capt_emb=False,
     glide_style_capt_emb_init_scale=0.1,
+    glide_style_capt_emb_nonlin=False,
 ):
     text_lr_mult = 1.
     print(
@@ -461,6 +465,7 @@ def create_model(
         glide_style_capt_attn=glide_style_capt_attn,
         glide_style_capt_emb=glide_style_capt_emb,
         glide_style_capt_emb_init_scale=glide_style_capt_emb_init_scale,
+        glide_style_capt_emb_nonlin=glide_style_capt_emb_nonlin,
     )
 
 
@@ -555,6 +560,7 @@ def sr_create_model_and_diffusion(
     glide_style_capt_attn=False,
     glide_style_capt_emb=False,
     glide_style_capt_emb_init_scale=0.1,
+    glide_style_capt_emb_nonlin=False,
 ):
     model = sr_create_model(
         large_size,
@@ -619,6 +625,7 @@ def sr_create_model_and_diffusion(
         glide_style_capt_attn=glide_style_capt_attn,
         glide_style_capt_emb=glide_style_capt_emb,
         glide_style_capt_emb_init_scale=glide_style_capt_emb_init_scale,
+        glide_style_capt_emb_nonlin=glide_style_capt_emb_nonlin,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,

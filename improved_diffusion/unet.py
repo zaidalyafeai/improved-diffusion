@@ -721,6 +721,7 @@ class UNetModel(nn.Module):
         glide_style_capt_attn=False,
         glide_style_capt_emb=False,
         glide_style_capt_emb_init_scale=0.1,
+        glide_style_capt_emb_nonlin=False,
     ):
         super().__init__()
 
@@ -814,7 +815,14 @@ class UNetModel(nn.Module):
         )
 
         if self.glide_style_capt_emb:
-            self.capt_embed = scale_module(linear(self.capt_embd_dim, time_embed_dim), glide_style_capt_emb_init_scale)
+            if glide_style_capt_emb_nonlin:
+                self.capt_embed = nn.Sequential(
+                    linear(self.capt_embd_dim, time_embed_dim),
+                    silu(impl="torch" if silu_impl == "fused" else silu_impl, use_checkpoint=use_checkpoint_lowcost),
+                    scale_module(linear(time_embed_dim, time_embed_dim), glide_style_capt_emb_init_scale)
+                )
+            else:
+                self.capt_embed = scale_module(linear(self.capt_embd_dim, time_embed_dim), glide_style_capt_emb_init_scale)
 
         if self.num_classes is not None:
             self.label_emb = nn.Embedding(num_classes, time_embed_dim)
