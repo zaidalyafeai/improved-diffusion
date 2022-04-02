@@ -376,6 +376,7 @@ class ImageDataset(Dataset):
                  image_file_to_px_scales=None,
                  image_file_to_capt=None,
                  capt_pdrop=0.1,
+                 capt_drop_string='unknown'
                  ):
         super().__init__()
         self.resolution = resolution
@@ -404,6 +405,7 @@ class ImageDataset(Dataset):
         if self.image_file_to_capt is None:
             self.image_file_to_capt = {}
         self.capt_pdrop = capt_pdrop
+        self.capt_drop_string = capt_drop_string
 
         if (self.image_file_to_safebox is not None) and (self.pre_resize_transform is None):
             raise ValueError
@@ -482,9 +484,9 @@ class ImageDataset(Dataset):
                 text = self.txt_drop_string
             out_dict['txt'] = text
 
-            capt = self.image_file_to_capt.get(path, self.txt_drop_string)
+            capt = self.image_file_to_capt.get(path, self.capt_drop_string)
             if (self.capt_pdrop > 0) and (random.random() < self.capt_pdrop):
-                capt = self.txt_drop_string
+                capt = self.capt_drop_string
             out_dict['capt'] = capt
         return np.transpose(arr, [2, 0, 1]), out_dict
 
