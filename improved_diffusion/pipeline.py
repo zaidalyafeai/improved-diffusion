@@ -89,6 +89,7 @@ class SamplingModel(nn.Module):
         clf_free_guidance=False,
         guidance_scale=0.,
         txt_drop_string='<mask><mask><mask><mask>',
+        capt_drop_string='unknown',
         return_intermediates=False,
         use_prk=False,
         use_plms=False,
@@ -176,7 +177,7 @@ class SamplingModel(nn.Module):
             }
 
             if batch_capt is not None:
-                capt_uncon = clip.tokenize(batch_size * [txt_drop_string], truncate=True).to(dist_util.dev())
+                capt_uncon = clip.tokenize(batch_size * [capt_drop_string], truncate=True).to(dist_util.dev())
                 model_kwargs["unconditional_model_kwargs"]["capt"] = capt_uncon
 
         all_low_res = []
@@ -281,6 +282,7 @@ class SamplingPipeline(nn.Module):
         clf_free_guidance=False,
         guidance_scale=0.,
         txt_drop_string='<mask><mask><mask><mask>',
+        capt_drop_string='unknown',
         low_res=None,
         seed=None,
         batch_size_sres=None,
@@ -290,6 +292,7 @@ class SamplingPipeline(nn.Module):
         strip_space=True,
         return_both_resolutions=False,
         capt: Optional[Union[str, List[str]]]=None,
+        capt_drop_string='unknown',
         yield_intermediates=False,
         guidance_after_step_base=100000,
         verbose=True,
@@ -359,6 +362,7 @@ class SamplingPipeline(nn.Module):
         clf_free_guidance=False,
         guidance_scale=0.,
         txt_drop_string='<mask><mask><mask><mask>',
+        capt_drop_string='unknown',
         low_res=None,
         seed=None,
         batch_size_sres=None,
