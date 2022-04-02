@@ -278,7 +278,7 @@ class TrainLoop:
                         [*[0. for _ in self.text_mods],
                          *[0. for _ in self.xattn_mods],
                          *[0. for _ in self.itot_mods],
-                          0., 0., self.weight_decay]
+                          0., 0., self.weight_decay, 0.]
                     )
                     if is_bread
                 ],
@@ -711,9 +711,10 @@ class TrainLoop:
         if self.only_optimize_bread:
             lr_variants = [self.bread_lr]
         else:
-            lr_variants = (len(self.opt.param_groups)-4) * [self.text_lr] + [self.gain_lr, self.bread_lr, self.lr, self.gain_lr]
+            lr_variants = (len(self.opt.param_groups)-5) * [self.text_lr] + [self.gain_lr, self.bread_lr, self.lr, self.capt_lr, self.gain_lr]
 
         mult = frac_warmup_done if frac_warmup_done < 1 else (1 - frac_done)
+        logger.logkv("lr", self.lr * mult)
         # print(f"mult: {mult} | frac_warmup_done {frac_warmup_done} | frac_done {frac_done}")
 
         for param_group, lr_variant in zip(self.opt.param_groups, lr_variants):
