@@ -1069,7 +1069,7 @@ class UNetModel(nn.Module):
                             image_base_channels=expand_timestep_base_dim * ch // model_channels,
                             silu_impl=silu_impl,
                             use_capt=use_capt,
-                            txt_already_normed=self.capt_ln_final is not None
+                            txt_already_normed=use_capt and (self.capt_ln_final is not None)
                         )
                         if weave_attn:
                             caa_args['image_dim'] = caa_args.pop('dim')
