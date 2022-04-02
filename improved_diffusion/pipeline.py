@@ -292,7 +292,6 @@ class SamplingPipeline(nn.Module):
         strip_space=True,
         return_both_resolutions=False,
         capt: Optional[Union[str, List[str]]]=None,
-        capt_drop_string='unknown',
         yield_intermediates=False,
         guidance_after_step_base=100000,
         verbose=True,
