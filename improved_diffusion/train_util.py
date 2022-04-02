@@ -53,6 +53,7 @@ class TrainLoop:
         schedule_sampler=None,
         weight_decay=0.0,
         lr_anneal_steps=0,
+        lr_warmup_steps=0,
         tokenizer=None,
         text_lr=None,
         gain_lr=None,
@@ -102,6 +103,7 @@ class TrainLoop:
         self.schedule_sampler = schedule_sampler or UniformSampler(diffusion)
         self.weight_decay = weight_decay
         self.lr_anneal_steps = lr_anneal_steps
+        self.lr_warmup_steps = lr_warmup_steps
         self.tokenizer = tokenizer
         self.state_dict_sandwich = state_dict_sandwich
         self.state_dict_sandwich_manual_remaps = {kv.split(":")[0]: kv.split(":")[1]
@@ -698,15 +700,24 @@ class TrainLoop:
         if not self.lr_anneal_steps:
             frac_done = 0.
         else:
-            frac_done = (self.step + self.resume_step) / self.lr_anneal_steps
+            frac_done = max(0, self.step + self.resume_step - self.lr_warmup_steps) / self.lr_anneal_steps
+
+        if not self.lr_warmup_steps:
+            frac_warmup_done = 1.
+        else:
+            # +1 so we don't use zero lr on first step
+            frac_warmup_done = min(1., (self.step + self.resume_step + 1) / self.lr_warmup_steps)
 
         if self.only_optimize_bread:
             lr_variants = [self.bread_lr]
         else:
             lr_variants = (len(self.opt.param_groups)-4) * [self.text_lr] + [self.gain_lr, self.bread_lr, self.lr, self.gain_lr]
 
+        mult = frac_warmup_done if frac_warmup_done < 1 else (1 - frac_done)
+        print(f"mult: {mult} | frac_warmup_done {frac_warmup_done} | frac_done {frac_done}")
+
         for param_group, lr_variant in zip(self.opt.param_groups, lr_variants):
-            this_lr = lr_variant * (1 - frac_done)
+            this_lr = lr_variant * mult
             state_lr = param_group["lr"]
             if not self.anneal_log_flag:
                 print(f"for group with {len(param_group['params'])} params, setting lr to {this_lr:.4e} (was {state_lr:.4e})")

@@ -145,6 +145,7 @@ def main():
         schedule_sampler=schedule_sampler,
         weight_decay=args.weight_decay,
         lr_anneal_steps=args.lr_anneal_steps,
+        lr_warmup_steps=args.lr_warmup_steps,
         tokenizer=tokenizer,
         lg_loss_scale=args.lg_loss_scale,
         beta1=args.beta1,
@@ -175,6 +176,7 @@ def create_argparser():
         lr=1e-4,
         weight_decay=0.0,
         lr_anneal_steps=0,
+        lr_warmup_steps=0,
         batch_size=1,
         microbatch=-1,  # -1 disables microbatches
         ema_rate="0.9999",  # comma-separated list of EMA values
