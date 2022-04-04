@@ -197,6 +197,8 @@ class GaussianDiffusion:
 
         self.schedule_fn = schedule_fn
 
+        self.snr = 1.0 / (1 - self.alphas_cumprod) - 1
+
         self.tensorized_for = None
 
     def is_tensorized(self, device):

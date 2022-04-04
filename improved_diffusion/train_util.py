@@ -906,6 +906,12 @@ def log_loss_dict(diffusion, ts, losses):
             quartile = int(4 * sub_t / diffusion.num_timesteps)
             logger.logkv_mean(f"{key}_q{quartile}", sub_loss)
 
+            if key == 'mse':
+                sub_snr = diffusion.snr[int(t)]
+                # 0 = coarse, 1 = content, 2 = cleanup
+                stage = 0 if sub_snr < 1e-2 else (1 if sub_snr < 1 else 2)
+                logger.logkv_mean(f"{key}_s{stage}", sub_loss)
+
 
 def apply_resize(model, sd, mult=1., debug=False):
     for n, p in model.named_parameters():
