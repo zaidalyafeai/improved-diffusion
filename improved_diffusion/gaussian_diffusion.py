@@ -1168,8 +1168,8 @@ class GaussianDiffusion:
                 #  1/(snr + 1) = 1 - alpha_cumprod, percept paper eqn 4 comment
                 recip_snrp1 = self._extract_into_tensor(self.one_minus_alphas_cumprod, t, model_output.shape)
                 ratio = recip_snrp1
-                # normalizer = self.one_minus_alphas_cumprod.mean()
-                normalizer = 1.
+                normalizer = self.one_minus_alphas_cumprod.mean()
+                # normalizer = 1.
 
                 target = noise
                 mse_base = (target - model_output) ** 2
