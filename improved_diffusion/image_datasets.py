@@ -59,6 +59,7 @@ def load_data(
     capt_path="",
     capt_pdrop=0.1,
     require_capts=False,
+    all_pdrop=0.1,
     debug=False,
 ):
     """
@@ -207,6 +208,7 @@ def load_data(
         image_file_to_px_scales=image_file_to_px_scales,
         image_file_to_capt=image_file_to_capt,
         capt_pdrop=capt_pdrop,
+        all_pdrop=all_pdrop,
     )
     if return_dataset:
         return dataset
@@ -376,7 +378,8 @@ class ImageDataset(Dataset):
                  image_file_to_px_scales=None,
                  image_file_to_capt=None,
                  capt_pdrop=0.1,
-                 capt_drop_string='unknown'
+                 capt_drop_string='unknown',
+                 all_pdrop=0.1,
                  ):
         super().__init__()
         self.resolution = resolution
@@ -406,6 +409,7 @@ class ImageDataset(Dataset):
             self.image_file_to_capt = {}
         self.capt_pdrop = capt_pdrop
         self.capt_drop_string = capt_drop_string
+        self.all_pdrop = all_pdrop
 
         if (self.image_file_to_safebox is not None) and (self.pre_resize_transform is None):
             raise ValueError
@@ -478,14 +482,21 @@ class ImageDataset(Dataset):
         if self.local_classes is not None:
             out_dict["y"] = np.array(self.local_classes[idx], dtype=np.int64)
         if self.txt:
-            if (self.txt_pdrop > 0) and (random.random() < self.txt_pdrop):
+            drop_txt = (self.txt_pdrop > 0) and (random.random() < self.txt_pdrop)
+            drop_capt = (self.capt_pdrop > 0) and (random.random() < self.capt_pdrop)
+
+            if (self.all_pdrop > 0) and (random.random() < self.all_pdrop):
+                drop_txt = True
+                drop_capt = True
+
+            if drop_txt:
                 text = self.txt_drop_string
             if (len(text) == 0) and self.empty_string_to_drop_string:
                 text = self.txt_drop_string
             out_dict['txt'] = text
 
             capt = self.image_file_to_capt.get(path, self.capt_drop_string)
-            if (self.capt_pdrop > 0) and (random.random() < self.capt_pdrop):
+            if drop_capt:
                 capt = self.capt_drop_string
             out_dict['capt'] = capt
         return np.transpose(arr, [2, 0, 1]), out_dict

@@ -120,6 +120,7 @@ def main():
         capt_path=args.capt_path,
         capt_pdrop=args.capt_pdrop,
         require_capts=args.require_capts,
+        all_pdrop=args.all_pdrop,
     )
 
     if args.save_first_batch:
@@ -236,6 +237,7 @@ def create_argparser():
         min_imagesize=0,
         capt_path="",
         capt_pdrop=0.1,
+        all_pdrop=0.1,
         require_capts=False,
     )
     defaults.update(model_and_diffusion_defaults())
