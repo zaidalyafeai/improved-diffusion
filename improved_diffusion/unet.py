@@ -1219,7 +1219,7 @@ class UNetModel(nn.Module):
             txt = txt.type(self.inner_dtype)
 
         capt_attn_mask = None
-        if capt is not None:
+        if self.using_capt and capt is not None:
             capt_toks = capt
             capt_attn_mask = capt_toks != 0
             capt = clip_encode_text_nopool(
