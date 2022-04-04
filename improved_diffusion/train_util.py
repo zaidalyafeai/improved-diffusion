@@ -280,7 +280,7 @@ class TrainLoop:
                          *[0. for _ in self.itot_mods],
                           0., 0., self.weight_decay, 0.]
                     )
-                    if is_bread
+                    if is_bread and len(params) != 0
                 ],
                 lr=self.lr,
                 weight_decay=self.weight_decay,
@@ -301,6 +301,7 @@ class TrainLoop:
                          *[0. for _ in self.itot_mods],
                           0., 0., self.weight_decay, 0.]
                     )
+                    if len(params) != 0
                 ],
                 lr=self.lr,
                 weight_decay=self.weight_decay,
@@ -653,9 +654,6 @@ class TrainLoop:
                 pp = p_
             else:
                 pp = [p_]
-
-            if len(pp) == 0:
-                continue
 
             # vals = []
             gn = 0.
