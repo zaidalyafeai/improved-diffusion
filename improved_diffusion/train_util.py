@@ -907,7 +907,7 @@ def log_loss_dict(diffusion, ts, losses):
             logger.logkv_mean(f"{key}_q{quartile}", sub_loss)
 
             if key == 'mse':
-                sub_snr = diffusion.snr[int(t)]
+                sub_snr = diffusion.snr[int(sub_t)]
                 # 0 = coarse, 1 = content, 2 = cleanup
                 stage = 0 if sub_snr < 1e-2 else (1 if sub_snr < 1 else 2)
                 logger.logkv_mean(f"{key}_s{stage}", sub_loss)
