@@ -1158,13 +1158,22 @@ class GaussianDiffusion:
                     terms["vb"] *= self.num_timesteps / 1000.0
 
             if self.loss_type == LossType.RESCALED_MSE_SNR_PLUS_ONE:
-                snr = self._extract_into_tensor(self.alphas_cumprod, t, model_output.shape) / self._extract_into_tensor(self.one_minus_alphas_cumprod, t, model_output.shape)
+                ## OLD VERSION: (snr + 1) / snr
+
+                # snr = self._extract_into_tensor(self.alphas_cumprod, t, model_output.shape) / self._extract_into_tensor(self.one_minus_alphas_cumprod, t, model_output.shape)
+                # ratio = ((snr + 1.) / snr)
+                # normalizer = (self.alphas_cumprod / self.one_minus_alphas_cumprod).mean()
+
+                ## NEW VERSION: 1 / (snr + 1)
+                #  1/(snr + 1) = 1 - alpha_cumprod, percept paper eqn 4 comment
+                recip_snrp1 = self._extract_into_tensor(self.one_minus_alphas_cumprod, t, model_output.shape)
+                ratio = recip_snrp1
+                normalizer = self.one_minus_alphas_cumprod.mean()
+
                 target = noise
                 mse_base = (target - model_output) ** 2
-                ratio = ((snr + 1.) / snr)
                 # normalizer = 1
                 # normalizer = ratio.mean()
-                normalizer = (self.alphas_cumprod / self.one_minus_alphas_cumprod).mean()
                 ratio_weights = ratio / normalizer
                 terms["mse"] = mean_flat(ratio_weights * mse_base)
             elif self.loss_type == LossType.RESCALED_MSE_V:
