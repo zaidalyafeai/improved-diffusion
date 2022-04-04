@@ -654,6 +654,9 @@ class TrainLoop:
             else:
                 pp = [p_]
 
+            if len(pp) == 0:
+                continue
+
             # vals = []
             gn = 0.
             for p in pp:
