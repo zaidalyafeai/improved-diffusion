@@ -816,7 +816,7 @@ def load_config_to_args(config_path, args, request_approval=False):
         use_config = (response.lower() == 'y')
         print(f"Using config?: {use_config}")
 
-    if use_config
+    if use_config:
         for k in updates:
             setattr(args, k, conf[k])
 
