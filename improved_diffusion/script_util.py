@@ -782,8 +782,10 @@ def str2bool(v):
         raise argparse.ArgumentTypeError("boolean value expected")
 
 
-def load_config_to_args(config_path, args):
+def load_config_to_args(config_path, args, request_approval=False):
     is_super_res = None
+
+    updates = {}
 
     with open(config_path, 'r') as f:
         conf = json.load(f)
@@ -792,8 +794,30 @@ def load_config_to_args(config_path, args):
             is_super_res = conf[k]
         elif k == 'tokenizer_config':
             for k2 in conf[k]:
-                setattr(args, k2, conf[k][k2])
+                updates[k2] = conf[k][k2]
         else:
+            updates[k] = conf[k]
+
+    changes = []
+    for k in updates:
+        cur = getattr(args, k, None)
+        new = updates[k]
+        if cur != new:
+            changes.append((k, cur, new))
+
+    use_config = True
+
+    if request_approval and len(changes) > 0:
+        print("Using config file would change these settings:")
+        for (k, cur, new) in changes:
+            print(f"\t{k}:\t\t{cur}\t\t--> {new}")
+        response = input("Really use config?\n")
+
+        use_config = (response.lower() == 'y')
+        print(f"Using config?: {use_config}")
+
+    if use_config
+        for k in updates:
             setattr(args, k, conf[k])
 
     return args, is_super_res

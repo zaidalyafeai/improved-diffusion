@@ -40,7 +40,7 @@ def main():
     using_config = have_config_path and os.path.exists(config_path)
 
     if using_config:
-        args, _ = load_config_to_args(config_path, args)
+        args, _ = load_config_to_args(config_path, args, request_approval=True)
 
     tokenizer = None
     tokenizer_config = dict(
