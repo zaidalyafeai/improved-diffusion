@@ -513,19 +513,21 @@ def save_first_batch(dataloader, path):
     os.makedirs(path, exist_ok=True)
     batch, cond = next(dataloader)
     batch = to_visible(batch)
-    txts = cond['txt']
+    txts = cond.get('txt')
     capts = cond.get('capt')
 
     for i in trange(len(batch)):
         img = batch[i]
-        txt = txts[i]
 
         a = img.cpu().numpy()
         im = Image.fromarray(a)
         im.save(os.path.join(path, f'{i:04d}.jpg'))
 
-        with open(os.path.join(path, f'{i:04d}.txt'), 'w') as f:
-            f.write(txt)
+        if txts is not None:
+            txt = txts[i]
+
+            with open(os.path.join(path, f'{i:04d}.txt'), 'w') as f:
+                f.write(txt)
 
         if capts is not None:
             capt = capts[i]
