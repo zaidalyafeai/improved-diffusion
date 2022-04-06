@@ -109,7 +109,7 @@ class SamplingModel(nn.Module):
         if isinstance(text, str):
             batch_text = batch_size * [text]
         else:
-            if len(text) != batch_size:
+            if text is not None and len(text) != batch_size:
                 raise ValueError(f"got {len(text)} texts for bs {batch_size}")
             batch_text = text
 
@@ -158,9 +158,10 @@ class SamplingModel(nn.Module):
             sample_fn_kwargs['ddim_first_n'] = plms_ddim_first_n
             sample_fn_kwargs['ddim_last_n'] = plms_ddim_last_n
 
-        txt = tokenize(self.tokenizer, batch_text)
-        txt = th.as_tensor(txt).to(dist_util.dev())
-        model_kwargs["txt"] = txt
+        if batch_text is not None:
+            txt = tokenize(self.tokenizer, batch_text)
+            txt = th.as_tensor(txt).to(dist_util.dev())
+            model_kwargs["txt"] = txt
 
         if batch_capt is not None:
             capt = clip.tokenize(batch_capt, truncate=True).to(dist_util.dev())
