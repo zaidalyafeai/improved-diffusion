@@ -113,6 +113,9 @@ class SamplingModel(nn.Module):
                 raise ValueError(f"got {len(text)} texts for bs {batch_size}")
             batch_text = text
 
+        if text is None and self.model.txt:
+            batch_text = batch_size * ['']
+
         if isinstance(capt, str):
             batch_capt = batch_size * [capt]
         else:
