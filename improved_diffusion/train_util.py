@@ -375,7 +375,7 @@ class TrainLoop:
 
                 incompatible_keys = self.model.load_state_dict(
                     newsd,
-                    strict = (not self.model.txt)
+                    strict = False
                 )
                 print(incompatible_keys)
 
