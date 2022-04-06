@@ -297,10 +297,11 @@ class SamplingPipeline(nn.Module):
         guidance_after_step_base=100000,
         verbose=True,
     ):
-        if isinstance(text, list):
-            text = [_strip_space(s) for s in text]
-        else:
-            text = _strip_space(text)
+        if strip_space:
+            if isinstance(text, list):
+                text = [_strip_space(s) for s in text]
+            else:
+                text = _strip_space(text)
 
         batch_size_sres = batch_size_sres or batch_size
         n_samples_sres = n_samples_sres or n_samples
