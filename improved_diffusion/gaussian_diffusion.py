@@ -177,6 +177,10 @@ class GaussianDiffusion:
 
         self.one_minus_alphas_cumprod = 1.0 - self.alphas_cumprod
 
+        #  1/(snr + 1) = 1 - alpha_cumprod, percept paper eqn 4 comment
+        self.recip_snrp1_clipped = np.clip(self.one_minus_alphas_cumprod, a_min=1e-2, a_max=None)
+        self.recip_snrp1_clipped_normalizer = self.recip_snrp1_clipped.mean()
+
         # calculations for posterior q(x_{t-1} | x_t, x_0)
         self.posterior_variance = (
             betas * (1.0 - self.alphas_cumprod_prev) / (1.0 - self.alphas_cumprod)
@@ -1168,11 +1172,9 @@ class GaussianDiffusion:
 
                 ## NEW VERSION: 1 / (snr + 1)
                 #  1/(snr + 1) = 1 - alpha_cumprod, percept paper eqn 4 comment
-                recip_snrp1_np = self.one_minus_alphas_cumprod
-                recip_snrp1_clipped_np = np.clip(recip_snrp1_np, a_min=1e-2, a_max=None)
-                recip_snrp1_clipped = self._extract_into_tensor(recip_snrp1_clipped_np, t, model_output.shape)
+                recip_snrp1_clipped = self._extract_into_tensor(self.recip_snrp1_clipped, t, model_output.shape)
                 ratio = recip_snrp1_clipped
-                normalizer = recip_snrp1_clipped_np.mean()
+                normalizer = self.recip_snrp1_clipped_normalizer
                 # normalizer = 1.
 
                 target = noise
