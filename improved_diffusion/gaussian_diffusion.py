@@ -1168,9 +1168,11 @@ class GaussianDiffusion:
 
                 ## NEW VERSION: 1 / (snr + 1)
                 #  1/(snr + 1) = 1 - alpha_cumprod, percept paper eqn 4 comment
-                recip_snrp1 = self._extract_into_tensor(self.one_minus_alphas_cumprod, t, model_output.shape)
-                ratio = recip_snrp1
-                normalizer = self.one_minus_alphas_cumprod.mean()
+                recip_snrp1_np = self.one_minus_alphas_cumprod
+                recip_snrp1_clipped_np = np.clip(recip_snrp1_np, a_min=1e-2, a_max=None)
+                recip_snrp1_clipped = self._extract_into_tensor(recip_snrp1_clipped_np, t, model_output.shape)
+                ratio = recip_snrp1_clipped
+                normalizer = recip_snrp1_clipped_np.mean()
                 # normalizer = 1.
 
                 target = noise
