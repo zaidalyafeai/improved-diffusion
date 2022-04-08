@@ -137,7 +137,7 @@ def load_data(
     if class_cond:
         # Assume classes are the first part of the filename,
         # before an underscore.
-        class_names = [bf.basename(path).split("_")[0] for vpath in all_files]
+        class_names = [bf.basename(path).split("_")[0] for path in all_files]
         if class_map is not None:
             classes = [class_map.get(x, 0) for x in class_names]
         else:
