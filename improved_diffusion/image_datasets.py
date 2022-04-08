@@ -60,6 +60,7 @@ def load_data(
     capt_pdrop=0.1,
     require_capts=False,
     all_pdrop=0.1,
+    class_map_path=None,
     debug=False,
 ):
     """
@@ -99,6 +100,12 @@ def load_data(
         with open(capt_path, 'r') as f:
             capts = json.load(f)
 
+    class_map = None
+    if class_map_path and os.path.exists(class_map_path):
+        print('using class_map_path')
+        with open(class_map_path, 'r') as f:
+            class_map = json.load(f)
+
     all_files, image_file_to_text_file, file_sizes, image_file_to_safebox, image_file_to_px_scales, image_file_to_capt = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize, min_imagesize=min_imagesize, safeboxes=safeboxes, px_scales=px_scales, capts=capts, require_capts=require_capts)
     print(f"found {len(all_files)} images, {len(image_file_to_text_file)} texts, {len(image_file_to_capt)} capts")
     all_files = all_files[offset:]
@@ -131,8 +138,11 @@ def load_data(
         # Assume classes are the first part of the filename,
         # before an underscore.
         class_names = [bf.basename(path).split("_")[0] for vpath in all_files]
-        sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
-        classes = [sorted_classes[x] for x in class_names]
+        if class_map is not None:
+            classes = [class_map.get(x, 0) for x in class_names]
+        else:
+            sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
+            classes = [sorted_classes[x] for x in class_names]
 
     pre_resize_transform = None
     pre_resize_transform_for_empty_string = []

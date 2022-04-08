@@ -121,6 +121,7 @@ def main():
         capt_pdrop=args.capt_pdrop,
         require_capts=args.require_capts,
         all_pdrop=args.all_pdrop,
+        class_map_path=args.class_map_path,
     )
 
     if args.save_first_batch:
@@ -239,6 +240,7 @@ def create_argparser():
         capt_pdrop=0.1,
         all_pdrop=0.1,
         require_capts=False,
+        class_map_path=""
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

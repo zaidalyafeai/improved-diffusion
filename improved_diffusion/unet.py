@@ -722,6 +722,7 @@ class UNetModel(nn.Module):
         glide_style_capt_emb=False,
         glide_style_capt_emb_init_scale=0.1,
         glide_style_capt_emb_nonlin=False,
+        label_emb_init_scale=0.,
     ):
         super().__init__()
 
@@ -825,7 +826,7 @@ class UNetModel(nn.Module):
                 self.capt_embed = scale_module(linear(self.capt_embd_dim, time_embed_dim), glide_style_capt_emb_init_scale)
 
         if self.num_classes is not None:
-            self.label_emb = nn.Embedding(num_classes, time_embed_dim)
+            self.label_emb = scale_module(nn.Embedding(num_classes, time_embed_dim), label_emb_init_scale)
 
         if monochrome_adapter:
             self.mono_to_rgb = MonochromeAdapter(to_mono=False, needs_var=False)
