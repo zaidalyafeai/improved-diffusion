@@ -442,6 +442,8 @@ class ImageDataset(Dataset):
         if not self.txt:
             if self.pre_resize_transform_for_empty_string is not None:
                 pil_image = self.pre_resize_transform_for_empty_string(pil_image)
+            elif self.pre_resize_transform is not None:
+                pil_image = self.pre_resize_transform(pil_image)
 
         if self.txt and len(text) == 0:
             if self.pre_resize_transform_for_empty_string is not None:
