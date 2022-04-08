@@ -531,21 +531,24 @@ def save_first_batch(dataloader, path):
     batch = to_visible(batch)
     txts = cond.get('txt')
     capts = cond.get('capt')
+    y = cond.get('y')
+
+    y_segment = '_' + str(y) if y is not None else ''
 
     for i in trange(len(batch)):
         img = batch[i]
 
         a = img.cpu().numpy()
         im = Image.fromarray(a)
-        im.save(os.path.join(path, f'{i:04d}.jpg'))
+        im.save(os.path.join(path, f'{i:04d}{y_segment}.jpg'))
 
         if txts is not None:
             txt = txts[i]
 
-            with open(os.path.join(path, f'{i:04d}.txt'), 'w') as f:
+            with open(os.path.join(path, f'{i:04d}{y_segment}.txt'), 'w') as f:
                 f.write(txt)
 
         if capts is not None:
             capt = capts[i]
-            with open(os.path.join(path, f'{i:04d}_capt.txt'), 'w') as f:
+            with open(os.path.join(path, f'{i:04d}{y_segment}_capt.txt'), 'w') as f:
                 f.write(capt)
