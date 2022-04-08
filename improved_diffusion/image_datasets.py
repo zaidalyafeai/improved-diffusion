@@ -439,6 +439,10 @@ class ImageDataset(Dataset):
             with bf.BlobFile(path_txt, "r") as f:
                 text = f.read()
 
+        if not self.txt:
+            if self.pre_resize_transform_for_empty_string is not None:
+                pil_image = self.pre_resize_transform_for_empty_string(pil_image)
+
         if self.txt and len(text) == 0:
             if self.pre_resize_transform_for_empty_string is not None:
                 # eg lr flip -- this stacks on top of random safebox crop
@@ -455,8 +459,6 @@ class ImageDataset(Dataset):
                     pil_image = self.pre_resize_transform(pil_image, safebox, px_scale)
             elif self.pre_resize_transform is not None:
                 pil_image = self.pre_resize_transform(pil_image)
-            elif self.pre_resize_transform_for_empty_string is not None:
-                pil_image = self.pre_resize_transform_for_empty_string(pil_image)
 
         # We are not on a new enough PIL to support the `reducing_gap`
         # argument, which uses BOX downsampling at powers of two first.
