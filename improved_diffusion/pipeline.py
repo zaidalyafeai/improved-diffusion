@@ -44,12 +44,14 @@ class SamplingModel(nn.Module):
         tokenizer,
         timestep_respacing,
         is_super_res=False,
+        class_map=None,
     ):
         super().__init__()
         self.model = model
         self.diffusion_factory = diffusion_factory
         self.tokenizer = tokenizer
         self.is_super_res = is_super_res
+        self.class_map = class_map
 
         self.set_timestep_respacing(timestep_respacing)
 
@@ -57,7 +59,7 @@ class SamplingModel(nn.Module):
         self.diffusion = self.diffusion_factory(timestep_respacing)
 
     @staticmethod
-    def from_config(checkpoint_path, config_path, timestep_respacing=""):
+    def from_config(checkpoint_path, config_path, timestep_respacing="", class_map=None):
         model, diffusion_factory, tokenizer, is_super_res = load_config_to_model(
             config_path,
         )
@@ -73,6 +75,7 @@ class SamplingModel(nn.Module):
             tokenizer=tokenizer,
             is_super_res=is_super_res,
             timestep_respacing=timestep_respacing,
+            class_map=class_map,
         )
 
     def sample(
@@ -99,6 +102,7 @@ class SamplingModel(nn.Module):
         capt: Optional[Union[str, List[str]]]=None,
         yield_intermediates=False,
         guidance_after_step=100000,
+        y=None,
         verbose=True,
     ):
         # dist_util.setup_dist()
@@ -116,7 +120,17 @@ class SamplingModel(nn.Module):
         if text is None and self.model.txt:
             batch_text = batch_size * ['']
 
-        if isinstance(capt, str):
+        if isinstance(y, str):
+            print(f'in class_map? {y in self.class_map}')
+            batch_y = batch_size * [self.class_map.get(y, 0)]
+        else:
+            if y is not None and len(y) != batch_size:
+                raise ValueError(f"got {len(y)} ys for bs {batch_size}")
+            if y is not None:
+                print(f'in class_map? {[yy in self.class_map for yy in y]}')
+            batch_y = y
+
+        if isinstance(cls, str):
             batch_capt = batch_size * [capt]
         else:
             if capt is not None and len(capt) != batch_size:
@@ -169,6 +183,9 @@ class SamplingModel(nn.Module):
         if batch_capt is not None:
             capt = clip.tokenize(batch_capt, truncate=True).to(dist_util.dev())
             model_kwargs["capt"] = capt
+
+        if batch_y is not None:
+            model_kwargs["y"] = batch_y
 
         if clf_free_guidance and (guidance_scale > 0):
             txt_uncon = batch_size * tokenize(self.tokenizer, [txt_drop_string])
@@ -298,6 +315,7 @@ class SamplingPipeline(nn.Module):
         capt: Optional[Union[str, List[str]]]=None,
         yield_intermediates=False,
         guidance_after_step_base=100000,
+        y=None,
         verbose=True,
     ):
         if strip_space:
@@ -325,6 +343,7 @@ class SamplingPipeline(nn.Module):
                 guidance_after_step=guidance_after_step_base,
                 verbose=verbose,
                 capt=capt,
+                y=y,
             )
 
         def high_res_sample(low_res):
@@ -381,6 +400,7 @@ class SamplingPipeline(nn.Module):
         plms_ddim_last_n_sres=None,
         capt=None,
         guidance_after_step_base=100000,
+        y=None,
         verbose=True,
     ):
         if strip_space:
@@ -407,6 +427,7 @@ class SamplingPipeline(nn.Module):
             plms_ddim_last_n=plms_ddim_last_n,
             capt=capt,
             guidance_after_step=guidance_after_step_base,
+            y=y,
             verbose=verbose
         )
         low_res_pruned, text_pruned = prune_fn(low_res, text)
