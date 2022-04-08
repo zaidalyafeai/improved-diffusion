@@ -120,6 +120,13 @@ class SamplingModel(nn.Module):
         if text is None and self.model.txt:
             batch_text = batch_size * ['']
 
+        if isinstance(capt, str):
+            batch_capt = batch_size * [capt]
+        else:
+            if capt is not None and len(capt) != batch_size:
+                raise ValueError(f"got {len(capt)} capts for bs {batch_size}")
+            batch_capt = capt
+
         if isinstance(y, str):
             print(f'in class_map? {y in self.class_map}')
             batch_y = batch_size * [self.class_map.get(y, 0)]
@@ -129,13 +136,6 @@ class SamplingModel(nn.Module):
             if y is not None:
                 print(f'in class_map? {[yy in self.class_map for yy in y]}')
             batch_y = y
-
-        if isinstance(cls, str):
-            batch_capt = batch_size * [capt]
-        else:
-            if capt is not None and len(capt) != batch_size:
-                raise ValueError(f"got {len(capt)} capts for bs {batch_size}")
-            batch_capt = capt
 
         n_batches = n_samples // batch_size
 
