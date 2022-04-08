@@ -533,6 +533,11 @@ def save_first_batch(dataloader, path):
     capts = cond.get('capt')
     ys = cond.get('y')
 
+    if txts is not None and all(s == '' for s in txts):
+        txts = None
+
+    if capts is not None and all(s == '' for s in capts):
+        capts = None
 
     for i in trange(len(batch)):
         img = batch[i]
