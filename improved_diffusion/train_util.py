@@ -287,26 +287,30 @@ class TrainLoop:
                 betas=(beta1, beta2)
             )
         else:
+            param_groups = [
+                {"params": params, "lr": lr, "weight_decay": wd}
+                for params, lr, wd in zip(
+                    self.master_params,
+                    [*[self.text_lr for _ in self.text_mods],
+                     *[self.text_lr for _ in self.xattn_mods],
+                     *[self.text_lr for _ in self.itot_mods],
+                      self.gain_lr, self.bread_lr, self.lr, self.capt_lr],
+                    [*[0. for _ in self.text_mods],
+                     *[0. for _ in self.xattn_mods],
+                     *[0. for _ in self.itot_mods],
+                      0., 0., self.weight_decay, 0.]
+                )
+                if len(params) != 0
+            ]
             self.opt = AdamW(
-                [
-                    {"params": params, "lr": lr, "weight_decay": wd}
-                    for params, lr, wd in zip(
-                        self.master_params,
-                        [*[self.text_lr for _ in self.text_mods],
-                         *[self.text_lr for _ in self.xattn_mods],
-                         *[self.text_lr for _ in self.itot_mods],
-                          self.gain_lr, self.bread_lr, self.lr, self.capt_lr],
-                        [*[0. for _ in self.text_mods],
-                         *[0. for _ in self.xattn_mods],
-                         *[0. for _ in self.itot_mods],
-                          0., 0., self.weight_decay, 0.]
-                    )
-                    if len(params) != 0
-                ],
+                param_groups,
                 lr=self.lr,
                 weight_decay=self.weight_decay,
                 betas=(beta1, beta2)
             )
+            print(param_groups)
+            print(len(self.model.parameters()))
+            print(sum(len(pg['params'] for pg in param_groups)))
 
         if not gain_ff_setup_step and not self.only_optimize_bread:
             self.opt.add_param_group({"params": ff_gain_params, "lr": self.gain_lr, "weight_decay": 0.})
