@@ -308,10 +308,18 @@ class TrainLoop:
                 weight_decay=self.weight_decay,
                 betas=(beta1, beta2)
             )
+            print('groups')
             for pg in param_groups:
                 print(f'\t {len(pg["params"])} params, lr {pg["lr"]}, wd {pg["weight_decay"]}')
-            print(len(list(self.model.parameters())))
+
+            print('groups')
             print(sum(len(pg['params']) for pg in param_groups))
+
+            print('model params')
+            print(len(list(self.model.parameters())))
+
+            print('master params')
+            print(len(self.master_params))
 
         if not gain_ff_setup_step and not self.only_optimize_bread:
             self.opt.add_param_group({"params": ff_gain_params, "lr": self.gain_lr, "weight_decay": 0.})
