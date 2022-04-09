@@ -256,10 +256,10 @@ class TrainLoop:
             if name in self.itot_mods:
                 itot_nparams += nparams
                 prefix += '\t'
-            print(f"{prefix}{nparams/1e6:.1f}M {name} params")
-        print(f"\t{text_nparams/1e6:.1f}M text params")
-        print(f"\t{xattn_nparams/1e6:.1f}M xattn params")
-        print(f"\t{itot_nparams/1e6:.1f}M itot params")
+            print(f"{prefix}{nparams/1e6:.2f}M {name} params")
+        print(f"\t{text_nparams/1e6:.2f}M text params")
+        print(f"\t{xattn_nparams/1e6:.2f}M xattn params")
+        print(f"\t{itot_nparams/1e6:.2f}M itot params")
 
         if self.only_optimize_bread:
             self.opt = AdamW(
