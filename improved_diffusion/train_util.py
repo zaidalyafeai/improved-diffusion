@@ -319,9 +319,9 @@ class TrainLoop:
             print(len(list(self.model.parameters())))
 
             print('master params')
-            print(len(self.master_params[0]))
+            print(len(self.master_params))
 
-        if not gain_ff_setup_step and not self.only_optimize_bread:
+        if not gain_ff_setup_step and not self.only_optimize_bread and len(ff_gain_params) > 0:
             self.opt.add_param_group({"params": ff_gain_params, "lr": self.gain_lr, "weight_decay": 0.})
 
         if self.resume_step:
