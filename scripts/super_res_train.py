@@ -105,6 +105,7 @@ def main():
         pin_memory=args.perf_pin_memory,
         prefetch_factor=args.perf_prefetch_factor,
         min_imagesize=args.min_imagesize,
+        blur_width=args.blur_width,
     )
 
     logger.log("training...")
@@ -173,6 +174,7 @@ def create_argparser():
         blur_prob=0.,
         blur_sigma_min=0.4,
         blur_sigma_max=0.6,
+        blur_width=5,
         up_interp_mode='bilinear',
         verbose=False,
         state_dict_sandwich=0,
