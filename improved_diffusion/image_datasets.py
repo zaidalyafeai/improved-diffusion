@@ -533,6 +533,10 @@ def save_first_batch(dataloader, path):
     capts = cond.get('capt')
     ys = cond.get('y')
 
+    low_ress = cond.get('low_res')
+    if low_ress is not None:
+        low_ress = to_visible(low_ress)
+
     if txts is not None and all(s == '' for s in txts):
         txts = None
 
@@ -541,6 +545,8 @@ def save_first_batch(dataloader, path):
 
     for i in trange(len(batch)):
         img = batch[i]
+        a = img.cpu().numpy()
+        im = Image.fromarray(a)
 
         y = None
         if ys is not None:
@@ -548,10 +554,14 @@ def save_first_batch(dataloader, path):
             y = y.cpu().numpy()
         y_segment = '_' + str(y) if y is not None else ''
 
-        a = img.cpu().numpy()
-        im = Image.fromarray(a)
-
         im.save(os.path.join(path, f'{i:04d}{y_segment}.png'))
+
+        if low_ress is not None:
+            low_res = low_ress[i]
+
+            a = low_res.cpu().numpy()
+            im = Image.fromarray(a)
+            im.save(os.path.join(path, f'{i:04d}{y_segment}_lowres.png'))
 
         if txts is not None:
             txt = txts[i]
