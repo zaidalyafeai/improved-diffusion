@@ -167,7 +167,7 @@ def main():
         resize_mult=args.resize_mult,
         use_bf16=args.use_bf16,
         perf_no_ddl=args.perf_no_ddl,
-        capt_lr=args.capt_lr
+        capt_lr=args.capt_lr,
     ).run_loop()
 
 
@@ -240,7 +240,7 @@ def create_argparser():
         capt_pdrop=0.1,
         all_pdrop=0.1,
         require_capts=False,
-        class_map_path=""
+        class_map_path="",
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

@@ -150,7 +150,7 @@ class TrainLoop:
         bread_params, self.bread_param_names = [], []
         capt_params, self.capt_param_names = [], []
         for n, p in model.named_parameters():
-            if (n.startswith('capt') or n.endswith('encoder_kv') or n.endswith('encoder_norm')) and (not n.startswith('capt_embed.')):
+            if n.startswith('clipmod.'):
                 self.capt_param_names.append(n)
                 capt_params.append(p)
             elif 'text_encoder' in n:

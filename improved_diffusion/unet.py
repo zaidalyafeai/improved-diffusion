@@ -796,15 +796,11 @@ class UNetModel(nn.Module):
         if self.using_capt:
             clipmod, _ = clip.load(name='RN50')
             clipmod.float()
-            self.capt_embedding = clipmod.token_embedding
-            self.capt_positional_embedding = clipmod.positional_embedding
-            self.capt_encoder = clipmod.transformer
+            del clipmod.visual
+            self.clipmod = clipmod
+            self.clipmod.positional_embedding = clipmod.positional_embedding
+            self.clipmod.transformer = clipmod.transformer
             self.capt_embd_dim = clipmod.ln_final.weight.shape[0]
-            if self.glide_style_capt_attn or self.glide_style_capt_emb:
-                self.capt_ln_final = clipmod.ln_final
-                # self.capt_ln_final = normalization(self.capt_embd_dim)
-            else:
-                self.capt_ln_final = None
 
         self.tgt_pos_embs = nn.ModuleDict({})
 
@@ -1078,7 +1074,7 @@ class UNetModel(nn.Module):
                             image_base_channels=expand_timestep_base_dim * ch // model_channels,
                             silu_impl=silu_impl,
                             use_capt=use_capt,
-                            txt_already_normed=use_capt and (self.capt_ln_final is not None)
+                            txt_already_normed=use_capt and (self.clipmod.ln_final is not None)
                         )
                         if weave_attn:
                             caa_args['image_dim'] = caa_args.pop('dim')
@@ -1224,9 +1220,9 @@ class UNetModel(nn.Module):
             capt_toks = capt
             capt_attn_mask = capt_toks != 0
             capt = clip_encode_text_nopool(
-                self.capt_embedding, self.capt_positional_embedding, self.capt_encoder,
+                self.clipmod.token_embedding, self.clipmod.positional_embedding, self.clipmod.transformer,
                 capt_toks,
-                ln_final=self.capt_ln_final if self.glide_style_capt_attn else None,
+                ln_final=self.clipmod.ln_final if self.glide_style_capt_attn else None,
                 out_format='ndl' if self.glide_style_capt_attn else 'nld',
                 dtype = self.inner_dtype
                 )
