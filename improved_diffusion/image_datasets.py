@@ -293,7 +293,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         if colorize:
             model_kwargs["low_res"] = model_kwargs["low_res"].mean(dim=1, keepdim=True)
         if blur_prob > 0:
-            model_kwargs["low_res"] = blurrer(model_kwargs["low_res"])
+            model_kwargs["low_res"] = th.stack([blurrer(im) for im in model_kwargs["low_res"]], dim=0)
 
         yield large_batch, model_kwargs
 
