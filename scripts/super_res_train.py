@@ -108,6 +108,9 @@ def main():
         blur_width=args.blur_width,
     )
 
+    if args.save_first_batch:
+        save_first_batch(data, 'first_batch/')
+
     logger.log("training...")
     TrainLoop(
         model=model,
@@ -202,6 +205,7 @@ def create_argparser():
         perf_prefetch_factor=2,
         param_sandwich=0,
         min_imagesize=0,
+        save_first_batch=False,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
