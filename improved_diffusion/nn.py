@@ -483,8 +483,12 @@ def expanded_timestep_embedding(timesteps, dim, base_dim, max_period=10000):
     base_logfreqs = -math.log(max_period) * th.arange(start=0, end=base_half, dtype=th.float32) / base_half
 
     step = base_dim//(dim-base_dim)
-    left = base_logfreqs[step//2::step]
-    right = base_logfreqs[step//2+1::step]
+    if step <= 2:
+        left = base_logfreqs[0::step]
+        right = base_logfreqs[1::step]
+    else:
+        left = base_logfreqs[step//2::step]
+        right = base_logfreqs[step//2+1::step]
 
     xtra_logfreqs = (right + left)/2
 
