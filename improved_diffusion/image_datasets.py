@@ -41,6 +41,10 @@ def tokenize(tokenizer, txt):
     return [t.ids for t in tokenizer.encode_batch(txt)]
 
 
+def clip_pkeep(probs):
+    return probs[2] + 0.5 * probs[1]
+
+
 def load_data(
     *, data_dir, batch_size, image_size, class_cond=False, deterministic=False,
     txt=False, monochrome=False, offset=0, min_filesize=0,
@@ -138,10 +142,10 @@ def load_data(
         print(f"of {n_texts} texts, {n_with_px_scale} have px scales (all px scales: {len(image_file_to_px_scales)})")
 
     n_images_with_capts = len(set(image_file_to_text_file.keys()).intersection(image_file_to_capt.keys()))
-    print(f"of {len(image_file_to_text_file)} images, {n_images_with_capts} have capts (all capts: {len(image_file_to_capt)})")
+    print(f"of {len(image_file_to_text_file)} txt images, {n_images_with_capts} have capts (all capts: {len(image_file_to_capt)})")
 
     n_images_with_clip_probs = len(set(all_files).intersection(clip_probs.keys()))
-    print(f"of {len(image_file_to_text_file)} images, {n_images_with_clip_probs} have clip_probs (all clip_probs: {len(clip_probs)})")
+    print(f"of {len(all_files)} images, {n_images_with_clip_probs} have clip_probs (all clip_probs: {len(clip_probs)})")
 
     classes = None
     if class_cond:
@@ -240,6 +244,9 @@ def load_data(
             if p in clip_probs
         }
         print(f"len(clip_probs_by_idxs): {len(clip_probs_by_idxs)}")
+        avg_pkeep = np.mean([clip_pkeep(p) for p in clip_probs_by_idxs.values()])
+        eff_len = avg_pkeep * len(dataset)
+        print(f"avg_pkeep {avg_pkeep:.3f} | effective data size {eff_len.1f}")
     return _dataloader_gen(dataset, batch_size=batch_size, deterministic=deterministic, pin_memory=pin_memory,
                            prefetch_factor=prefetch_factor, clip_probs_by_idxs=clip_probs_by_idxs)
 
@@ -254,7 +261,7 @@ class DropSampler(BatchSampler):
         for idx in self.sampler:
             if idx in self.clip_probs_by_idxs:
                 this_probs = self.clip_probs_by_idxs[idx]
-                pkeep = this_probs[2] + 0.5 * this_probs[1]
+                pkeep = clip_pkeep(this_probs)
                 if random.random() > pkeep:
                     continue
 
