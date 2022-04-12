@@ -234,7 +234,11 @@ def load_data(
         return dataset
     clip_probs_by_idxs = None
     if clip_probs is not None:
-        clip_probs_by_idxs = {i: clip_probs.get(dataset.local_images[i]) if dataset.local_images[i] in clip_probs}
+        clip_probs_by_idxs = {
+            i: clip_probs.get(p)
+            for i, p in enumerate(dataset.local_images)
+            if p in clip_probs
+        }
         print(f"len(clip_probs_by_idxs): {len(clip_probs_by_idxs)}")
     return _dataloader_gen(dataset, batch_size=batch_size, deterministic=deterministic, pin_memory=pin_memory,
                            prefetch_factor=prefetch_factor, clip_probs_by_idxs=clip_probs_by_idxs)
