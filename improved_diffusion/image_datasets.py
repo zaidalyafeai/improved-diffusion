@@ -140,7 +140,7 @@ def load_data(
     n_images_with_capts = len(set(image_file_to_text_file.keys()).intersection(image_file_to_capt.keys()))
     print(f"of {len(image_file_to_text_file)} images, {n_images_with_capts} have capts (all capts: {len(image_file_to_capt)})")
 
-    n_images_with_clip_probs = len(set(image_file_to_text_file.keys()).intersection(clip_probs.keys()))
+    n_images_with_clip_probs = len(set(all_files).intersection(clip_probs.keys()))
     print(f"of {len(image_file_to_text_file)} images, {n_images_with_clip_probs} have clip_probs (all clip_probs: {len(clip_probs)})")
 
     classes = None
