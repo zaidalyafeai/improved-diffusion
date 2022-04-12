@@ -246,7 +246,7 @@ def load_data(
 
 class DropSampler(BatchSampler):
     def __init__(self, sampler, batch_size: int, drop_last: bool, clip_probs_by_idxs: dict):
-        super().__init(sampler, batch_size, drop_last)
+        super().__init__(sampler, batch_size, drop_last)
         self.clip_probs_by_idxs = clip_probs_by_idxs
 
     def __iter__(self):
