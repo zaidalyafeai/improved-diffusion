@@ -106,6 +106,7 @@ def main():
         prefetch_factor=args.perf_prefetch_factor,
         min_imagesize=args.min_imagesize,
         blur_width=args.blur_width,
+        clip_prob_path=args.clip_prob_path,
     )
 
     if args.save_first_batch:
@@ -206,6 +207,7 @@ def create_argparser():
         param_sandwich=0,
         min_imagesize=0,
         save_first_batch=False,
+        clip_prob_path="",
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
