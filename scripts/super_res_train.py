@@ -146,6 +146,7 @@ def main():
         gain_ff_setup_step=args.gain_ff_setup_step,
         perf_no_ddl=args.perf_no_ddl,
         param_sandwich=args.param_sandwich,
+        resize_mult=args.resize_mult,
     ).run_loop()
 
 
@@ -208,6 +209,7 @@ def create_argparser():
         min_imagesize=0,
         save_first_batch=False,
         clip_prob_path="",
+        resize_mult=1.,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
