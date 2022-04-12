@@ -269,7 +269,7 @@ class DropSampler(BatchSampler):
 def _dataloader_gen(dataset, batch_size, deterministic, pin_memory, prefetch_factor, clip_probs_by_idxs=None):
     kwargs = dict(batch_size=batch_size, drop_last=True, shuffle=deterministic, )
     if clip_probs_by_idxs is not None:
-        if shuffle:
+        if not deterministic:
             sampler = RandomSampler(dataset, generator=None)
         else:
             sampler = SequentialSampler(dataset)
