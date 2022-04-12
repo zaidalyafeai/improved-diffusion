@@ -273,7 +273,7 @@ def _dataloader_gen(dataset, batch_size, deterministic, pin_memory, prefetch_fac
             sampler = RandomSampler(dataset, generator=None)
         else:
             sampler = SequentialSampler(dataset)
-        batch_sampler = DropSampler(batch_size=batch_size, drop_last=True, clip_probs_by_idxs=clip_probs_by_idxs)
+        batch_sampler = DropSampler(sampler=sampler, batch_size=batch_size, drop_last=True, clip_probs_by_idxs=clip_probs_by_idxs)
         kwargs = dict(batch_sampler=batch_sampler)
 
     loader = DataLoader(
