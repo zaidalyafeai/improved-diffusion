@@ -256,9 +256,7 @@ class DropSampler(BatchSampler):
                 this_probs = self.clip_probs_by_idxs[idx]
                 pkeep = this_probs[2] + 0.5 * this_probs[1]
                 if random.random() > pkeep:
-                    print('skipping')
                     continue
-                print('keeping')
 
             batch.append(idx)
             if len(batch) == self.batch_size:
