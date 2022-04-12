@@ -3,7 +3,7 @@ from PIL import Image
 import blobfile as bf
 # from mpi4py import MPI
 import numpy as np
-from torch.utils.data import DataLoader, Dataset, BatchSampler
+from torch.utils.data import DataLoader, Dataset, BatchSampler, RandomSampler, SequentialSampler
 import torch as th
 import torch.nn.functional as F
 import torchvision.transforms as T
@@ -267,19 +267,19 @@ class DropSampler(BatchSampler):
 
 
 def _dataloader_gen(dataset, batch_size, deterministic, pin_memory, prefetch_factor, clip_probs_by_idxs=None):
-    kwargs = dict(batch_size=batch_size, drop_last=True,)
+    kwargs = dict(batch_size=batch_size, drop_last=True, shuffle=deterministic, )
     if clip_probs_by_idxs is not None:
-        kwargs = dict(batch_sampler=DropSampler(batch_size=batch_size, drop_last=True, clip_probs_by_idxs=clip_probs_by_idxs))
-    if deterministic:
-        loader = DataLoader(
-            dataset, shuffle=False, num_workers=1, pin_memory=pin_memory,
-            prefetch_factor=prefetch_factor, **kwargs
-        )
-    else:
-        loader = DataLoader(
-            dataset, batch_size=batch_size, shuffle=True, num_workers=1, drop_last=True, pin_memory=pin_memory,
-            prefetch_factor=prefetch_factor, **kwargs
-        )
+        if shuffle:
+            sampler = RandomSampler(dataset, generator=None)
+        else:
+            sampler = SequentialSampler(dataset)
+        batch_sampler = DropSampler(batch_size=batch_size, drop_last=True, clip_probs_by_idxs=clip_probs_by_idxs)
+        kwargs = dict(batch_sampler=batch_sampler)
+
+    loader = DataLoader(
+        dataset, num_workers=1, pin_memory=pin_memory,
+        prefetch_factor=prefetch_factor, **kwargs
+    )
     while True:
         yield from loader
 
