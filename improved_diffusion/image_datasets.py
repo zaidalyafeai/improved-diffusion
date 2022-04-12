@@ -246,7 +246,7 @@ def load_data(
         print(f"len(clip_probs_by_idxs): {len(clip_probs_by_idxs)}")
         avg_pkeep = np.mean([clip_pkeep(p) for p in clip_probs_by_idxs.values()])
         eff_len = avg_pkeep * len(dataset)
-        print(f"avg_pkeep {avg_pkeep:.3f} | effective data size {eff_len.:1f}")
+        print(f"avg_pkeep {avg_pkeep:.3f} | effective data size {eff_len:.1f}")
     return _dataloader_gen(dataset, batch_size=batch_size, deterministic=deterministic, pin_memory=pin_memory,
                            prefetch_factor=prefetch_factor, clip_probs_by_idxs=clip_probs_by_idxs)
 
