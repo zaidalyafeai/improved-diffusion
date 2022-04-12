@@ -3,7 +3,7 @@ from PIL import Image
 import blobfile as bf
 # from mpi4py import MPI
 import numpy as np
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, BatchSampler
 import torch as th
 import torch.nn.functional as F
 import torchvision.transforms as T
@@ -61,6 +61,7 @@ def load_data(
     require_capts=False,
     all_pdrop=0.1,
     class_map_path=None,
+    clip_prob_path=None,
     debug=False,
 ):
     """
@@ -106,6 +107,12 @@ def load_data(
         with open(class_map_path, 'r') as f:
             class_map = json.load(f)
 
+    clip_probs = None
+    if clip_prob_path and os.path.exists(clip_prob_path):
+        print('using clip_prob_path')
+        with open(clip_prob_path, 'r') as f:
+            clip_probs = json.load(f)
+
     all_files, image_file_to_text_file, file_sizes, image_file_to_safebox, image_file_to_px_scales, image_file_to_capt = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize, min_imagesize=min_imagesize, safeboxes=safeboxes, px_scales=px_scales, capts=capts, require_capts=require_capts)
     print(f"found {len(all_files)} images, {len(image_file_to_text_file)} texts, {len(image_file_to_capt)} capts")
     all_files = all_files[offset:]
@@ -132,6 +139,9 @@ def load_data(
 
     n_images_with_capts = len(set(image_file_to_text_file.keys()).intersection(image_file_to_capt.keys()))
     print(f"of {len(image_file_to_text_file)} images, {n_images_with_capts} have capts (all capts: {len(image_file_to_capt)})")
+
+    n_images_with_clip_probs = len(set(image_file_to_text_file.keys()).intersection(clip_probs.keys()))
+    print(f"of {len(image_file_to_text_file)} images, {n_images_with_clip_probs} have clip_probs (all clip_probs: {len(clip_probs)})")
 
     classes = None
     if class_cond:
@@ -222,20 +232,49 @@ def load_data(
     )
     if return_dataset:
         return dataset
+    clip_probs_by_idxs = None
+    if clip_probs is not None:
+        clip_probs_by_idxs = {i: clip_probs.get(dataset.local_images[i]) if dataset.local_images[i] in clip_probs}
+        print(f"len(clip_probs_by_idxs): {len(clip_probs_by_idxs)}")
     return _dataloader_gen(dataset, batch_size=batch_size, deterministic=deterministic, pin_memory=pin_memory,
-                           prefetch_factor=prefetch_factor)
+                           prefetch_factor=prefetch_factor, clip_probs_by_idxs=clip_probs_by_idxs)
 
 
-def _dataloader_gen(dataset, batch_size, deterministic, pin_memory, prefetch_factor):
+class DropSampler(BatchSampler):
+    def __init__(self, sampler, batch_size: int, drop_last: bool, clip_probs_by_idxs: dict):
+        super().__init(sampler, batch_size, drop_last)
+        self.clip_probs_by_idxs = clip_probs_by_idxs
+
+    def __iter__(self):
+        batch = []
+        for idx in self.sampler:
+            if idx in self.clip_probs_by_idxs:
+                this_probs = self.clip_probs_by_idxs[idx]
+                pkeep = this_probs[2] + 0.5 * this_probs[1]
+                if random.random() > pkeep:
+                    continue
+
+            batch.append(idx)
+            if len(batch) == self.batch_size:
+                yield batch
+                batch = []
+        if len(batch) > 0 and not self.drop_last:
+            yield batch
+
+
+def _dataloader_gen(dataset, batch_size, deterministic, pin_memory, prefetch_factor, clip_probs_by_idxs=None):
+    kwargs = dict(batch_size=batch_size, drop_last=True,)
+    if clip_probs_by_idxs is not None:
+        kwargs = dict(batch_sampler=DropSampler(batch_size=batch_size, drop_last=True, clip_probs_by_idxs=clip_probs_by_idxs))
     if deterministic:
         loader = DataLoader(
-            dataset, batch_size=batch_size, shuffle=False, num_workers=1, drop_last=True, pin_memory=pin_memory,
-            prefetch_factor=prefetch_factor
+            dataset, shuffle=False, num_workers=1, pin_memory=pin_memory,
+            prefetch_factor=prefetch_factor, **kwargs
         )
     else:
         loader = DataLoader(
             dataset, batch_size=batch_size, shuffle=True, num_workers=1, drop_last=True, pin_memory=pin_memory,
-            prefetch_factor=prefetch_factor
+            prefetch_factor=prefetch_factor, **kwargs
         )
     while True:
         yield from loader
@@ -257,6 +296,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
                        pin_memory=False,
                        prefetch_factor=2,
                        min_imagesize=0,
+                       clip_prob_path=None
                        ):
     data = load_data(
         data_dir=data_dir,
@@ -284,6 +324,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         pin_memory=pin_memory,
         prefetch_factor=prefetch_factor,
         min_imagesize=min_imagesize,
+        clip_prob_path=clip_prob_path,
     )
 
     blurrer = T.RandomApply(transforms=[T.GaussianBlur(blur_width, sigma=(blur_sigma_min, blur_sigma_max))], p=blur_prob)
@@ -515,6 +556,7 @@ class ImageDataset(Dataset):
             if drop_capt:
                 capt = self.capt_drop_string
             out_dict['capt'] = capt
+
         return np.transpose(arr, [2, 0, 1]), out_dict
 
 
