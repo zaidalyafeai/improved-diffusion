@@ -84,6 +84,11 @@ def groupnorm_silu_24(x, w, b):
 
 
 @th.jit.script
+def groupnorm_silu_20(x, w, b):
+    return F.silu(th.group_norm(x.float(), 20, w, b).type(x.dtype))
+
+
+@th.jit.script
 def groupnorm_silu_8(x, w, b):
     return F.silu(th.group_norm(x.float(), 8, w, b).type(x.dtype))
 
@@ -115,6 +120,8 @@ class GroupNorm32(nn.GroupNorm):
                 return groupnorm_silu_32(x, self.weight, self.bias)
             elif self.num_groups == 24:
                 return groupnorm_silu_24(x, self.weight, self.bias)
+            elif num_groups == 20:
+                return groupnorm_silu_20(x, self.weight, self.bias)
             else:
                 raise ValueError(self.num_groups)
         return super().forward(x.float()).type(x.dtype)
@@ -432,6 +439,8 @@ class GroupNormExtended(GroupNorm32):
                 xtra_out = groupnorm_silu_32(xtra, self.weight_xtra, self.bias_xtra)
             elif self.num_groups_xtra == 24:
                 xtra_out = groupnorm_silu_24(xtra, self.weight_xtra, self.bias_xtra)
+            elif self.num_groups_xtra == 20:
+                xtra_out = groupnorm_silu_20(xtra, self.weight_xtra, self.bias_xtra)
             elif self.num_groups_xtra == 8:
                 xtra_out = groupnorm_silu_8(xtra, self.weight_xtra, self.bias_xtra)
             elif self.num_groups_xtra == 6:
