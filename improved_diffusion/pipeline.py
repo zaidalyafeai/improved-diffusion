@@ -324,6 +324,8 @@ class SamplingPipeline(nn.Module):
         verbose=True,
         noise=None,
         noise_sres=None,
+        plms_ddim_first_n=0,
+        plms_ddim_first_n_sres=0,
     ):
         if strip_space:
             if isinstance(text, list):
@@ -354,6 +356,7 @@ class SamplingPipeline(nn.Module):
                 y=y,
                 use_plms=use_plms,
                 noise=noise,
+                plms_ddim_first_n=plms_ddim_first_n,
             )
 
         def high_res_sample(low_res):
@@ -374,6 +377,7 @@ class SamplingPipeline(nn.Module):
                 verbose=verbose,
                 use_plms=use_plms_sres,
                 noise=noise_sres,
+                plms_ddim_first_n=plms_ddim_first_n_sres,
             )
         if yield_intermediates:
             return _yield_intermediates(base_sample, high_res_sample)
