@@ -628,6 +628,7 @@ def sr_create_model_and_diffusion(
         glide_style_capt_emb_init_scale=glide_style_capt_emb_init_scale,
         glide_style_capt_emb_nonlin=glide_style_capt_emb_nonlin,
         expand_timestep_base_dim=expand_timestep_base_dim,
+        verbose=verbose,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
