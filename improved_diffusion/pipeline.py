@@ -415,6 +415,8 @@ class SamplingPipeline(nn.Module):
         guidance_after_step_base=100000,
         y=None,
         verbose=True,
+        plms_ddim_first_n=0,
+        plms_ddim_first_n_sres=0,
     ):
         if strip_space:
             if isinstance(text, list):
@@ -438,10 +440,11 @@ class SamplingPipeline(nn.Module):
             use_plms=use_plms,
             to_visible=True,
             plms_ddim_last_n=plms_ddim_last_n,
+            plms_ddim_first_n=plms_ddim_first_n,
             capt=capt,
             guidance_after_step=guidance_after_step_base,
             y=y,
-            verbose=verbose
+            verbose=verbose,
         )
         low_res_pruned, text_pruned = prune_fn(low_res, text)
         if len(low_res_pruned) == 0:
@@ -478,6 +481,7 @@ class SamplingPipeline(nn.Module):
             seed=seed,
             use_plms=use_plms_sres,
             plms_ddim_last_n=plms_ddim_last_n_sres,
+            plms_ddim_first_n=plms_ddim_first_n_sres,
             from_visible=True,
             verbose=verbose
         )
