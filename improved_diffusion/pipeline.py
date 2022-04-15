@@ -104,6 +104,7 @@ class SamplingModel(nn.Module):
         guidance_after_step=100000,
         y=None,
         verbose=True,
+        noise=None,
     ):
         # dist_util.setup_dist()
 
@@ -244,6 +245,7 @@ class SamplingModel(nn.Module):
                 ),
                 clip_denoised=clip_denoised,
                 model_kwargs=model_kwargs,
+                noise=noise,
                 **sample_fn_kwargs
             )
 
@@ -320,6 +322,8 @@ class SamplingPipeline(nn.Module):
         guidance_after_step_base=100000,
         y=None,
         verbose=True,
+        noise=None,
+        noise_sres=None,
     ):
         if strip_space:
             if isinstance(text, list):
@@ -349,6 +353,7 @@ class SamplingPipeline(nn.Module):
                 capt=capt,
                 y=y,
                 use_plms=use_plms,
+                noise=noise,
             )
 
         def high_res_sample(low_res):
@@ -368,6 +373,7 @@ class SamplingPipeline(nn.Module):
                 yield_intermediates=yield_intermediates,
                 verbose=verbose,
                 use_plms=use_plms_sres,
+                noise=noise_sres,
             )
         if yield_intermediates:
             return _yield_intermediates(base_sample, high_res_sample)
