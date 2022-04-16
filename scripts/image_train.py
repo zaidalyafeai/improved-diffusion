@@ -123,6 +123,7 @@ def main():
         all_pdrop=args.all_pdrop,
         class_map_path=args.class_map_path,
         clip_prob_path=args.clip_prob_path,
+        num_workers=args.perf_num_workers,
     )
 
     if args.save_first_batch:
@@ -236,6 +237,7 @@ def create_argparser():
         perf_no_ddl=False,
         perf_pin_memory=False,
         perf_prefetch_factor=2,
+        perf_num_workers=1,
         min_imagesize=0,
         capt_path="",
         capt_pdrop=0.1,

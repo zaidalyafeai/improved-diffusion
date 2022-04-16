@@ -59,6 +59,7 @@ def load_data(
     return_dataset=False,
     pin_memory=False,
     prefetch_factor=2,
+    num_workers=1,
     min_imagesize=0,
     capt_path="",
     capt_pdrop=0.1,
@@ -249,7 +250,8 @@ def load_data(
         eff_steps_per = eff_len / batch_size
         print(f"avg_pkeep {avg_pkeep:.3f} | effective data size {eff_len:.1f} | effective steps/epoch {eff_steps_per:.1f}")
     return _dataloader_gen(dataset, batch_size=batch_size, deterministic=deterministic, pin_memory=pin_memory,
-                           prefetch_factor=prefetch_factor, clip_probs_by_idxs=clip_probs_by_idxs)
+                           prefetch_factor=prefetch_factor, clip_probs_by_idxs=clip_probs_by_idxs,
+                           num_workers=num_workers)
 
 
 class DropSampler(BatchSampler):
@@ -274,7 +276,8 @@ class DropSampler(BatchSampler):
             yield batch
 
 
-def _dataloader_gen(dataset, batch_size, deterministic, pin_memory, prefetch_factor, clip_probs_by_idxs=None):
+def _dataloader_gen(dataset, batch_size, deterministic, pin_memory, prefetch_factor, clip_probs_by_idxs=None,
+                    num_workers=1):
     kwargs = dict(batch_size=batch_size, drop_last=True, shuffle=deterministic, )
     if clip_probs_by_idxs is not None:
         if not deterministic:
@@ -285,7 +288,7 @@ def _dataloader_gen(dataset, batch_size, deterministic, pin_memory, prefetch_fac
         kwargs = dict(batch_sampler=batch_sampler)
 
     loader = DataLoader(
-        dataset, num_workers=1, pin_memory=pin_memory,
+        dataset, num_workers=num_workers, pin_memory=pin_memory,
         prefetch_factor=prefetch_factor, **kwargs
     )
     while True:
