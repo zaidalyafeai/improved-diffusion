@@ -310,6 +310,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
                        px_scales_path="",
                        pin_memory=False,
                        prefetch_factor=2,
+                       num_workers=1,
                        min_imagesize=0,
                        clip_prob_path=None
                        ):
@@ -338,6 +339,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         px_scales_path=px_scales_path,
         pin_memory=pin_memory,
         prefetch_factor=prefetch_factor,
+        num_workers=num_workers,
         min_imagesize=min_imagesize,
         clip_prob_path=clip_prob_path,
     )
