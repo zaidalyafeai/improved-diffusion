@@ -319,7 +319,8 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
                        prefetch_factor=2,
                        num_workers=1,
                        min_imagesize=0,
-                       clip_prob_path=None
+                       clip_prob_path=None,
+                       clip_prob_middle_pkeep=0.5,
                        ):
     data = load_data(
         data_dir=data_dir,
@@ -349,6 +350,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         num_workers=num_workers,
         min_imagesize=min_imagesize,
         clip_prob_path=clip_prob_path,
+        clip_prob_middle_pkeep=clip_prob_middle_pkeep,
     )
 
     blurrer = T.RandomApply(transforms=[T.GaussianBlur(blur_width, sigma=(blur_sigma_min, blur_sigma_max))], p=blur_prob)
