@@ -247,7 +247,7 @@ def load_data(
             if p in clip_probs
         }
         print(f"len(clip_probs_by_idxs): {len(clip_probs_by_idxs)}")
-        avg_pkeep = np.mean([clip_pkeep(p, middle_pkeep=middle_pkeep) for p in clip_probs_by_idxs.values()])
+        avg_pkeep = np.mean([clip_pkeep(p, middle_pkeep=clip_prob_middle_pkeep) for p in clip_probs_by_idxs.values()])
         eff_len = avg_pkeep * len(dataset)
         eff_steps_per = eff_len / batch_size
         print(f"avg_pkeep {avg_pkeep:.3f} | effective data size {eff_len:.1f} | effective steps/epoch {eff_steps_per:.1f}")
