@@ -41,8 +41,8 @@ def tokenize(tokenizer, txt):
     return [t.ids for t in tokenizer.encode_batch(txt)]
 
 
-def clip_pkeep(probs):
-    return probs[2] + 0.5 * probs[1]
+def clip_pkeep(probs, middle_pkeep=0.5):
+    return probs[2] + middle_pkeep * probs[1]
 
 
 def load_data(
@@ -67,6 +67,7 @@ def load_data(
     all_pdrop=0.1,
     class_map_path=None,
     clip_prob_path=None,
+    clip_prob_middle_pkeep=0.5,
     debug=False,
 ):
     """
@@ -246,17 +247,19 @@ def load_data(
             if p in clip_probs
         }
         print(f"len(clip_probs_by_idxs): {len(clip_probs_by_idxs)}")
-        avg_pkeep = np.mean([clip_pkeep(p) for p in clip_probs_by_idxs.values()])
+        avg_pkeep = np.mean([clip_pkeep(p, middle_pkeep=middle_pkeep) for p in clip_probs_by_idxs.values()])
         eff_len = avg_pkeep * len(dataset)
         eff_steps_per = eff_len / batch_size
         print(f"avg_pkeep {avg_pkeep:.3f} | effective data size {eff_len:.1f} | effective steps/epoch {eff_steps_per:.1f}")
     return _dataloader_gen(dataset, batch_size=batch_size, deterministic=deterministic, pin_memory=pin_memory,
-                           prefetch_factor=prefetch_factor, clip_probs_by_idxs=clip_probs_by_idxs,
+                           prefetch_factor=prefetch_factor,
+                           clip_probs_by_idxs=clip_probs_by_idxs,
+                           clip_prob_middle_pkeep=clip_prob_middle_pkeep,
                            num_workers=num_workers)
 
 
 class DropSampler(BatchSampler):
-    def __init__(self, sampler, batch_size: int, drop_last: bool, clip_probs_by_idxs: dict):
+    def __init__(self, sampler, batch_size: int, drop_last: bool, clip_probs_by_idxs: dict, clip_prob_middle_pkeep=0.5):
         super().__init__(sampler, batch_size, drop_last)
         self.clip_probs_by_idxs = clip_probs_by_idxs
 
@@ -265,7 +268,7 @@ class DropSampler(BatchSampler):
         for idx in self.sampler:
             if idx in self.clip_probs_by_idxs:
                 this_probs = self.clip_probs_by_idxs[idx]
-                pkeep = clip_pkeep(this_probs)
+                pkeep = clip_pkeep(this_probs, middle_pkeep=clip_prob_middle_pkeep)
                 if random.random() > pkeep:
                     continue
 

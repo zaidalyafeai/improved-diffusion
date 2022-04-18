@@ -108,6 +108,7 @@ def main():
         min_imagesize=args.min_imagesize,
         blur_width=args.blur_width,
         clip_prob_path=args.clip_prob_path,
+        clip_prob_middle_pkeep=args.clip_prob_middle_pkeep,
     )
 
     if args.save_first_batch:
@@ -211,6 +212,7 @@ def create_argparser():
         min_imagesize=0,
         save_first_batch=False,
         clip_prob_path="",
+        clip_prob_middle_pkeep=0.5,
         resize_mult=1.,
     )
     defaults.update(sr_model_and_diffusion_defaults())

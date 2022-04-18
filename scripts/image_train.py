@@ -123,6 +123,7 @@ def main():
         all_pdrop=args.all_pdrop,
         class_map_path=args.class_map_path,
         clip_prob_path=args.clip_prob_path,
+        clip_prob_middle_pkeep=args.clip_prob_middle_pkeep,
         num_workers=args.perf_num_workers,
     )
 
@@ -244,7 +245,8 @@ def create_argparser():
         all_pdrop=0.1,
         require_capts=False,
         class_map_path="",
-        clip_prob_path=""
+        clip_prob_path="",
+        clip_prob_middle_pkeep=0.5,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
