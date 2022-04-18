@@ -280,7 +280,9 @@ class DropSampler(BatchSampler):
             yield batch
 
 
-def _dataloader_gen(dataset, batch_size, deterministic, pin_memory, prefetch_factor, clip_probs_by_idxs=None,
+def _dataloader_gen(dataset, batch_size, deterministic, pin_memory, prefetch_factor,
+                    clip_probs_by_idxs=None,
+                    clip_prob_middle_pkeep=0.5,
                     num_workers=1):
     kwargs = dict(batch_size=batch_size, drop_last=True, shuffle=deterministic, )
     if clip_probs_by_idxs is not None:
@@ -288,7 +290,7 @@ def _dataloader_gen(dataset, batch_size, deterministic, pin_memory, prefetch_fac
             sampler = RandomSampler(dataset, generator=None)
         else:
             sampler = SequentialSampler(dataset)
-        batch_sampler = DropSampler(sampler=sampler, batch_size=batch_size, drop_last=True, clip_probs_by_idxs=clip_probs_by_idxs)
+        batch_sampler = DropSampler(sampler=sampler, batch_size=batch_size, drop_last=True, clip_probs_by_idxs=clip_probs_by_idxs, clip_prob_middle_pkeep=clip_prob_middle_pkeep)
         kwargs = dict(batch_sampler=batch_sampler)
 
     loader = DataLoader(
