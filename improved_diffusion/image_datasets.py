@@ -262,13 +262,14 @@ class DropSampler(BatchSampler):
     def __init__(self, sampler, batch_size: int, drop_last: bool, clip_probs_by_idxs: dict, clip_prob_middle_pkeep=0.5):
         super().__init__(sampler, batch_size, drop_last)
         self.clip_probs_by_idxs = clip_probs_by_idxs
+        self.clip_prob_middle_pkeep = clip_prob_middle_pkeep
 
     def __iter__(self):
         batch = []
         for idx in self.sampler:
             if idx in self.clip_probs_by_idxs:
                 this_probs = self.clip_probs_by_idxs[idx]
-                pkeep = clip_pkeep(this_probs, middle_pkeep=clip_prob_middle_pkeep)
+                pkeep = clip_pkeep(this_probs, middle_pkeep=self.clip_prob_middle_pkeep)
                 if random.random() > pkeep:
                     continue
 
