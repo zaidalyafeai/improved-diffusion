@@ -273,6 +273,17 @@ def adagn_extended_32_1(h, h2, emb_out, emb_out2, w, b, w2, b2):
     return h
 
 
+class Conv2D(nn.Conv2D):
+    def __init__(self, *args, use_checkpoint=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.use_checkpoint = use_checkpoint
+
+    def forward(self, x):
+        return checkpoint(
+            super().forward, (x,), self.parameters(), self.use_checkpoint
+        )
+
+
 def conv_nd(dims, *args, **kwargs):
     """
     Create a 1D, 2D, or 3D convolution module.
@@ -280,7 +291,7 @@ def conv_nd(dims, *args, **kwargs):
     if dims == 1:
         return nn.Conv1d(*args, **kwargs)
     elif dims == 2:
-        return nn.Conv2d(*args, **kwargs)
+        return Conv2D(*args, **kwargs)
     elif dims == 3:
         return nn.Conv3d(*args, **kwargs)
     raise ValueError(f"unsupported dimensions: {dims}")

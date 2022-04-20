@@ -303,7 +303,6 @@ class ResBlock(TimestepBlock):
         self.use_scale_shift_norm = use_scale_shift_norm
         if use_checkpoint:
             use_checkpoint_lowcost = False
-        print(("use_checkpoint", use_checkpoint))
 
         self.fused = silu_impl=="fused"
 
@@ -848,7 +847,7 @@ class UNetModel(nn.Module):
         self.input_blocks = nn.ModuleList(
             [
                 TimestepEmbedSequential(
-                    mapper(conv_nd(dims, in_channels, model_channels, 3, padding=1))
+                    mapper(conv_nd(dims, in_channels, model_channels, 3, padding=1, use_checkpoint=image_size >= use_checkpoint_above_res))
                 )
             ]
         )
@@ -1141,7 +1140,7 @@ class UNetModel(nn.Module):
         self.out = nn.Sequential(
             normalization(ch, base_channels=self.expand_timestep_base_dim, fused=silu_impl=="fused"),
             silu(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
-            zero_module(conv_nd(dims, channel_mult[0] * model_channels, out_channels, 3, padding=1)),
+            zero_module(conv_nd(dims, channel_mult[0] * model_channels, out_channels, 3, padding=1, use_checkpoint=image_size >= use_checkpoint_above_res)),
         )
 
         if monochrome_adapter:
