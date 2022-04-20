@@ -561,10 +561,10 @@ class CheckpointFunction(th.autograd.Function):
             ctx.input_tensors = [x.detach().requires_grad_(True) for x in ctx.input_tensors[:-ctx.final_nograd]] + ctx.input_tensors[-ctx.final_nograd:]
             grad_input_tensors = ctx.input_tensors[:-ctx.final_nograd]
         else:
-            print(ctx.input_tensors)
             print(len(ctx.input_tensors))
             print([t is None for t in ctx.input_tensors])
-            ctx.input_tensors = [x.detach().requires_grad_(True) for x in ctx.input_tensors]
+            isnone = [t is None for t in ctx.input_tensors]
+            ctx.input_tensors = [x.detach().requires_grad_(True) for x in ctx.input_tensors if x is not None]
             grad_input_tensors = ctx.input_tensors
         with th.enable_grad():
             # Fixes a bug where the first op in run_function modifies the
@@ -585,4 +585,14 @@ class CheckpointFunction(th.autograd.Function):
         del output_tensors
         if ctx.final_nograd:
             return (None, None, None) + input_grads[:ng] + (ctx.final_nograd * (None,)) + input_grads[ng:]
-        return (None, None, None) + input_grads
+
+        ct = 0
+        input_grads_with_nones = []
+        for val in isnone:
+            if val:
+                input_grads_with_nones.append(None)
+            else:
+                input_grads_with_nones.append(input_grads[ct])
+                ct += 1
+        return (None, None, None) + tuple(input_grads_with_nones)
+        # return (None, None, None) + input_grads
