@@ -563,7 +563,7 @@ class CheckpointFunction(th.autograd.Function):
         else:
             print(len(ctx.input_tensors))
             print([t is None for t in ctx.input_tensors])
-            isnone = [t is None for t in ctx.input_tensors]
+            isnone = [t is None for t in ctx.input_tensors] + [False for _ in ctx.input_params]
             ctx.input_tensors = [x.detach().requires_grad_(True) for x in ctx.input_tensors if x is not None]
             grad_input_tensors = ctx.input_tensors
         with th.enable_grad():
