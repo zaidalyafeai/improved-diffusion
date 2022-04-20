@@ -771,6 +771,7 @@ class UNetModel(nn.Module):
         self.use_checkpoint_above_res = use_checkpoint_above_res
         if use_checkpoint_above_res < 0:
             self.use_checkpoint_above_res = self.image_size * 2
+        print(("self.use_checkpoint_above_res", self.use_checkpoint_above_res))
 
         if monochrome_adapter and rgb_adapter:
             print("using both monochrome_adapter and rgb_adapter, make sure this is intentional!")
