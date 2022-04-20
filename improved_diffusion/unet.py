@@ -768,6 +768,8 @@ class UNetModel(nn.Module):
         self.glide_style_capt_attn = glide_style_capt_attn
         self.glide_style_capt_emb = glide_style_capt_emb
 
+        self.use_checkpoint_above_res = use_checkpoint_above_res
+
         if monochrome_adapter and rgb_adapter:
             print("using both monochrome_adapter and rgb_adapter, make sure this is intentional!")
         self.monochrome_adapter = monochrome_adapter
@@ -1138,9 +1140,9 @@ class UNetModel(nn.Module):
                 #     self.output_blocks[-1].bread_adapter_out_pt = True
 
         self.out = nn.Sequential(
-            normalization(ch, base_channels=self.expand_timestep_base_dim, fused=silu_impl=="fused", use_checkpoint=image_size >= use_checkpoint_above_res),
-            silu(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost or (image_size >= use_checkpoint_above_res)),
-            zero_module(conv_nd(dims, channel_mult[0] * model_channels, out_channels, 3, padding=1, use_checkpoint=image_size >= use_checkpoint_above_res)),
+            normalization(ch, base_channels=self.expand_timestep_base_dim, fused=silu_impl=="fused"),
+            silu(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
+            zero_module(conv_nd(dims, channel_mult[0] * model_channels, out_channels, 3, padding=1)),
         )
 
         if monochrome_adapter:
@@ -1294,7 +1296,8 @@ class UNetModel(nn.Module):
                 h_bread_out = self.bread_adapter_out(h)
                 skip_pop = True
         h = h.type(x.dtype)
-        h = self.out(h)
+
+        h = checkpoint(self.out.forward, (h,), self.out.parameters(), self.image_size >= self.use_checkpoint_above_res)
 
         if self.using_bread_adapter:
             if self.bread_adapter_only:
