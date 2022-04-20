@@ -769,8 +769,6 @@ class UNetModel(nn.Module):
         self.glide_style_capt_emb = glide_style_capt_emb
 
         self.use_checkpoint_above_res = use_checkpoint_above_res
-        if use_checkpoint_above_res < 0:
-            self.use_checkpoint_above_res = self.image_size * 2
         print(("self.use_checkpoint_above_res", self.use_checkpoint_above_res))
 
         if monochrome_adapter and rgb_adapter:
