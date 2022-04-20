@@ -99,6 +99,7 @@ def model_and_diffusion_defaults():
         glide_style_capt_emb=False,
         glide_style_capt_emb_init_scale=0.1,
         glide_style_capt_emb_nonlin=False,
+        use_checkpoint_above_res=-1,
     )
 
 
@@ -184,6 +185,7 @@ def create_model_and_diffusion(
     glide_style_capt_emb=False,
     glide_style_capt_emb_init_scale=0.1,
     glide_style_capt_emb_nonlin=False,
+    use_checkpoint_above_res=-1,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     print(f"create_model_and_diffusion: use_checkpoint={use_checkpoint}")
@@ -257,6 +259,7 @@ def create_model_and_diffusion(
         glide_style_capt_emb=glide_style_capt_emb,
         glide_style_capt_emb_init_scale=glide_style_capt_emb_init_scale,
         glide_style_capt_emb_nonlin=glide_style_capt_emb_nonlin,
+        use_checkpoint_above_res=use_checkpoint_above_res,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -354,6 +357,7 @@ def create_model(
     glide_style_capt_emb=False,
     glide_style_capt_emb_init_scale=0.1,
     glide_style_capt_emb_nonlin=False,
+    use_checkpoint_above_res=-1,
 ):
     text_lr_mult = 1.
     print(
@@ -466,6 +470,7 @@ def create_model(
         glide_style_capt_emb=glide_style_capt_emb,
         glide_style_capt_emb_init_scale=glide_style_capt_emb_init_scale,
         glide_style_capt_emb_nonlin=glide_style_capt_emb_nonlin,
+        use_checkpoint_above_res=use_checkpoint_above_res,
     )
 
 
@@ -562,6 +567,7 @@ def sr_create_model_and_diffusion(
     glide_style_capt_emb_init_scale=0.1,
     glide_style_capt_emb_nonlin=False,
     expand_timestep_base_dim=-1,
+    use_checkpoint_above_res=-1,
 ):
     model = sr_create_model(
         large_size,
@@ -628,6 +634,7 @@ def sr_create_model_and_diffusion(
         glide_style_capt_emb_init_scale=glide_style_capt_emb_init_scale,
         glide_style_capt_emb_nonlin=glide_style_capt_emb_nonlin,
         expand_timestep_base_dim=expand_timestep_base_dim,
+        use_checkpoint_above_res=use_checkpoint_above_res,
         verbose=verbose,
     )
     diffusion = create_gaussian_diffusion(

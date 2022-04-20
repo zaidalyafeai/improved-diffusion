@@ -723,6 +723,7 @@ class UNetModel(nn.Module):
         glide_style_capt_emb_init_scale=0.1,
         glide_style_capt_emb_nonlin=False,
         label_emb_init_scale=0.,
+        use_checkpoint_above_res=-1,
     ):
         super().__init__()
 
@@ -863,7 +864,7 @@ class UNetModel(nn.Module):
                         dropout,
                         out_channels=mult * model_channels,
                         dims=dims,
-                        use_checkpoint=use_checkpoint or use_checkpoint_down,
+                        use_checkpoint=use_checkpoint or use_checkpoint_down or ((image_size // ds) >= use_checkpoint_above_res),
                         use_scale_shift_norm=use_scale_shift_norm,
                         use_checkpoint_lowcost=use_checkpoint_lowcost,
                         base_channels=expand_timestep_base_dim * ch // model_channels,
@@ -951,7 +952,7 @@ class UNetModel(nn.Module):
                             dropout,
                             out_channels=ch,
                             dims=dims,
-                            use_checkpoint=use_checkpoint or use_checkpoint_down,
+                            use_checkpoint=use_checkpoint or use_checkpoint_down or ((image_size // ds) >= use_checkpoint_above_res),
                             use_scale_shift_norm=use_scale_shift_norm,
                             down=True,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
@@ -1017,7 +1018,7 @@ class UNetModel(nn.Module):
                         dropout,
                         out_channels=model_channels * mult,
                         dims=dims,
-                        use_checkpoint=use_checkpoint or use_checkpoint_up,
+                        use_checkpoint=use_checkpoint or use_checkpoint_up or ((image_size // ds) >= use_checkpoint_above_res),
                         use_scale_shift_norm=use_scale_shift_norm,
                         use_checkpoint_lowcost=use_checkpoint_lowcost,
                         base_channels=expand_timestep_base_dim * this_ch // model_channels,
@@ -1117,7 +1118,7 @@ class UNetModel(nn.Module):
                             dropout,
                             out_channels=ch,
                             dims=dims,
-                            use_checkpoint=use_checkpoint or use_checkpoint_up,
+                            use_checkpoint=use_checkpoint or use_checkpoint_up or ((image_size // ds) >= use_checkpoint_above_res),
                             use_scale_shift_norm=use_scale_shift_norm,
                             up=True,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
