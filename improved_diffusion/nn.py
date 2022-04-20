@@ -273,7 +273,7 @@ def adagn_extended_32_1(h, h2, emb_out, emb_out2, w, b, w2, b2):
     return h
 
 
-class Conv2D(nn.Conv2D):
+class Conv2D(nn.Conv2d):
     def __init__(self, *args, use_checkpoint=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.use_checkpoint = use_checkpoint
