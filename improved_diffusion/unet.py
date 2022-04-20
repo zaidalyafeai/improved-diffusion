@@ -724,7 +724,7 @@ class UNetModel(nn.Module):
         glide_style_capt_emb_init_scale=0.1,
         glide_style_capt_emb_nonlin=False,
         label_emb_init_scale=0.,
-        use_checkpoint_above_res=-1,
+        use_checkpoint_below_res=-1,
     ):
         super().__init__()
 
@@ -769,10 +769,10 @@ class UNetModel(nn.Module):
         self.glide_style_capt_attn = glide_style_capt_attn
         self.glide_style_capt_emb = glide_style_capt_emb
 
-        if use_checkpoint_above_res < 0:
-            use_checkpoint_above_res = self.image_size * 2
-        self.use_checkpoint_above_res = use_checkpoint_above_res
-        print(("self.use_checkpoint_above_res", self.use_checkpoint_above_res))
+        # if use_checkpoint_below_res < 0:
+        #     use_checkpoint_below_res = self.image_size * 2
+        self.use_checkpoint_below_res = use_checkpoint_below_res
+        print(("self.use_checkpoint_below_res", self.use_checkpoint_below_res))
 
         if monochrome_adapter and rgb_adapter:
             print("using both monochrome_adapter and rgb_adapter, make sure this is intentional!")
@@ -853,7 +853,7 @@ class UNetModel(nn.Module):
         self.input_blocks = nn.ModuleList(
             [
                 TimestepEmbedSequential(
-                    mapper(conv_nd(dims, in_channels, model_channels, 3, padding=1, use_checkpoint=image_size >= use_checkpoint_above_res))
+                    mapper(conv_nd(dims, in_channels, model_channels, 3, padding=1, use_checkpoint=image_size <= use_checkpoint_below_res))
                 )
             ]
         )
@@ -870,7 +870,7 @@ class UNetModel(nn.Module):
                         dropout,
                         out_channels=mult * model_channels,
                         dims=dims,
-                        use_checkpoint=use_checkpoint or use_checkpoint_down or ((image_size // ds) >= use_checkpoint_above_res),
+                        use_checkpoint=use_checkpoint or use_checkpoint_down or ((image_size // ds) <= use_checkpoint_below_res),
                         use_scale_shift_norm=use_scale_shift_norm,
                         use_checkpoint_lowcost=use_checkpoint_lowcost,
                         base_channels=expand_timestep_base_dim * ch // model_channels,
@@ -884,7 +884,8 @@ class UNetModel(nn.Module):
                         num_heads_here = ch // channels_per_head
                     layers.append(
                         AttentionBlock(
-                            ch, use_checkpoint=use_checkpoint or use_checkpoint_down, num_heads=num_heads_here,
+                            ch, use_checkpoint=use_checkpoint or use_checkpoint_down or ((image_size // ds) <= use_checkpoint_below_res),
+                            num_heads=num_heads_here,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
                             base_channels=expand_timestep_base_dim * ch // model_channels,
                             encoder_channels=self.capt_embd_dim if self.glide_style_capt_attn else None
@@ -958,7 +959,7 @@ class UNetModel(nn.Module):
                             dropout,
                             out_channels=ch,
                             dims=dims,
-                            use_checkpoint=use_checkpoint or use_checkpoint_down or ((image_size // ds) >= use_checkpoint_above_res),
+                            use_checkpoint=use_checkpoint or use_checkpoint_down or ((image_size // ds) <= use_checkpoint_below_res),
                             use_scale_shift_norm=use_scale_shift_norm,
                             down=True,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
@@ -990,13 +991,13 @@ class UNetModel(nn.Module):
                 time_embed_dim,
                 dropout,
                 dims=dims,
-                use_checkpoint=use_checkpoint or use_checkpoint_middle,
+                use_checkpoint=use_checkpoint or use_checkpoint_middle or ((image_size // ds) <= use_checkpoint_below_res),
                 use_scale_shift_norm=use_scale_shift_norm,
                 use_checkpoint_lowcost=use_checkpoint_lowcost,
                 base_channels=expand_timestep_base_dim * ch // model_channels,
                 silu_impl=silu_impl,
             ),
-            AttentionBlock(ch, use_checkpoint=use_checkpoint or use_checkpoint_middle, num_heads=num_heads,
+            AttentionBlock(ch, use_checkpoint=use_checkpoint or use_checkpoint_middle or ((image_size // ds) <= use_checkpoint_below_res), num_heads=num_heads,
                            use_checkpoint_lowcost=use_checkpoint_lowcost,
                            base_channels=expand_timestep_base_dim * ch // model_channels,
                            encoder_channels=self.capt_embd_dim if self.glide_style_capt_attn else None),
@@ -1005,7 +1006,7 @@ class UNetModel(nn.Module):
                 time_embed_dim,
                 dropout,
                 dims=dims,
-                use_checkpoint=use_checkpoint or use_checkpoint_middle,
+                use_checkpoint=use_checkpoint or use_checkpoint_middle or ((image_size // ds) <= use_checkpoint_below_res),
                 use_scale_shift_norm=use_scale_shift_norm,
                 use_checkpoint_lowcost=use_checkpoint_lowcost,
                 base_channels=expand_timestep_base_dim * ch // model_channels,
@@ -1024,7 +1025,7 @@ class UNetModel(nn.Module):
                         dropout,
                         out_channels=model_channels * mult,
                         dims=dims,
-                        use_checkpoint=use_checkpoint or use_checkpoint_up or ((image_size // ds) >= use_checkpoint_above_res),
+                        use_checkpoint=use_checkpoint or use_checkpoint_up or ((image_size // ds) <= use_checkpoint_below_res),
                         use_scale_shift_norm=use_scale_shift_norm,
                         use_checkpoint_lowcost=use_checkpoint_lowcost,
                         base_channels=expand_timestep_base_dim * this_ch // model_channels,
@@ -1039,7 +1040,7 @@ class UNetModel(nn.Module):
                     layers.append(
                         AttentionBlock(
                             ch,
-                            use_checkpoint=use_checkpoint or use_checkpoint_up,
+                            use_checkpoint=use_checkpoint or use_checkpoint_up or ((image_size // ds) <= use_checkpoint_below_res),
                             num_heads=num_heads_here,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
                             base_channels=expand_timestep_base_dim * ch // model_channels,
@@ -1124,7 +1125,7 @@ class UNetModel(nn.Module):
                             dropout,
                             out_channels=ch,
                             dims=dims,
-                            use_checkpoint=use_checkpoint or use_checkpoint_up or ((image_size // ds) >= use_checkpoint_above_res),
+                            use_checkpoint=use_checkpoint or use_checkpoint_up or ((image_size // ds) <= use_checkpoint_below_res),
                             use_scale_shift_norm=use_scale_shift_norm,
                             up=True,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
@@ -1301,7 +1302,7 @@ class UNetModel(nn.Module):
                 skip_pop = True
         h = h.type(x.dtype)
 
-        h = checkpoint(self.out.forward, (h,), self.out.parameters(), self.image_size >= self.use_checkpoint_above_res)
+        h = checkpoint(self.out.forward, (h,), self.out.parameters(), self.image_size <= self.use_checkpoint_below_res)
 
         if self.using_bread_adapter:
             if self.bread_adapter_only:
