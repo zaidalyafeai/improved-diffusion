@@ -1138,8 +1138,8 @@ class UNetModel(nn.Module):
                 #     self.output_blocks[-1].bread_adapter_out_pt = True
 
         self.out = nn.Sequential(
-            normalization(ch, base_channels=self.expand_timestep_base_dim, fused=silu_impl=="fused"),
-            silu(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
+            normalization(ch, base_channels=self.expand_timestep_base_dim, fused=silu_impl=="fused", use_checkpoint=image_size >= use_checkpoint_above_res),
+            silu(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost or (image_size >= use_checkpoint_above_res)),
             zero_module(conv_nd(dims, channel_mult[0] * model_channels, out_channels, 3, padding=1, use_checkpoint=image_size >= use_checkpoint_above_res)),
         )
 
