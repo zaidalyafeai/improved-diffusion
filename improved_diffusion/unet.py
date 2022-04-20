@@ -303,7 +303,6 @@ class ResBlock(TimestepBlock):
         self.use_scale_shift_norm = use_scale_shift_norm
         if use_checkpoint:
             use_checkpoint_lowcost = False
-        print(("use_checkpoint", use_checkpoint))
 
         self.fused = silu_impl=="fused"
 
