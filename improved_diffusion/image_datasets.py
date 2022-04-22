@@ -285,6 +285,7 @@ def _dataloader_gen(dataset, batch_size, deterministic, pin_memory, prefetch_fac
                     clip_probs_by_idxs=None,
                     clip_prob_middle_pkeep=0.5,
                     num_workers=1):
+    print(f'_dataloader_gen: deterministic={deterministic}')
     kwargs = dict(batch_size=batch_size, drop_last=True, shuffle=not deterministic, )
     if clip_probs_by_idxs is not None:
         if not deterministic:
@@ -322,6 +323,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
                        clip_prob_path=None,
                        clip_prob_middle_pkeep=0.5,
                        ):
+    print(f'load_superres_data: deterministic={deterministic}')
     data = load_data(
         data_dir=data_dir,
         batch_size=batch_size,
