@@ -54,6 +54,7 @@ class TrainLoop:
         weight_decay=0.0,
         lr_anneal_steps=0,
         lr_warmup_steps=0,
+        lr_warmup_shift=0,
         tokenizer=None,
         text_lr=None,
         gain_lr=None,
@@ -104,6 +105,7 @@ class TrainLoop:
         self.weight_decay = weight_decay
         self.lr_anneal_steps = lr_anneal_steps
         self.lr_warmup_steps = lr_warmup_steps
+        self.lr_warmup_shift = lr_warmup_shift
         self.tokenizer = tokenizer
         self.state_dict_sandwich = state_dict_sandwich
         self.state_dict_sandwich_manual_remaps = {kv.split(":")[0]: kv.split(":")[1]
@@ -723,7 +725,7 @@ class TrainLoop:
             frac_warmup_done = 1.
         else:
             # +1 so we don't use zero lr on first step
-            frac_warmup_done = min(1., (self.step + self.resume_step + 1) / self.lr_warmup_steps)
+            frac_warmup_done = min(1., (self.step + self.resume_step + 1 - self.lr_warmup_shift) / self.lr_warmup_steps)
 
         if self.only_optimize_bread:
             lr_variants = [self.bread_lr]
