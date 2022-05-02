@@ -99,6 +99,7 @@ def model_and_diffusion_defaults():
         glide_style_capt_emb=False,
         glide_style_capt_emb_init_scale=0.1,
         glide_style_capt_emb_nonlin=False,
+        clipname='RN50',
     )
 
 
@@ -184,6 +185,7 @@ def create_model_and_diffusion(
     glide_style_capt_emb=False,
     glide_style_capt_emb_init_scale=0.1,
     glide_style_capt_emb_nonlin=False,
+    clipname='RN50',
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     print(f"create_model_and_diffusion: use_checkpoint={use_checkpoint}")
@@ -257,6 +259,7 @@ def create_model_and_diffusion(
         glide_style_capt_emb=glide_style_capt_emb,
         glide_style_capt_emb_init_scale=glide_style_capt_emb_init_scale,
         glide_style_capt_emb_nonlin=glide_style_capt_emb_nonlin,
+        clipname=clipname,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -354,6 +357,7 @@ def create_model(
     glide_style_capt_emb=False,
     glide_style_capt_emb_init_scale=0.1,
     glide_style_capt_emb_nonlin=False,
+    clipname='RN50',
 ):
     text_lr_mult = 1.
     print(
@@ -466,6 +470,7 @@ def create_model(
         glide_style_capt_emb=glide_style_capt_emb,
         glide_style_capt_emb_init_scale=glide_style_capt_emb_init_scale,
         glide_style_capt_emb_nonlin=glide_style_capt_emb_nonlin,
+        clipname=clipname,
     )
 
 

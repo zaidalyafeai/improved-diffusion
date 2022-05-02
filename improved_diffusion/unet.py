@@ -723,6 +723,7 @@ class UNetModel(nn.Module):
         glide_style_capt_emb_init_scale=0.1,
         glide_style_capt_emb_nonlin=False,
         label_emb_init_scale=0.,
+        clipname='RN50',
     ):
         super().__init__()
 
@@ -794,7 +795,7 @@ class UNetModel(nn.Module):
             )
 
         if self.using_capt:
-            clipmod, _ = clip.load(name='RN50')
+            clipmod, _ = clip.load(name=clipname)
             clipmod.float()
             del clipmod.visual
             self.clipmod = clipmod
