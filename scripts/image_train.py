@@ -168,6 +168,7 @@ def main():
         use_bf16=args.use_bf16,
         perf_no_ddl=args.perf_no_ddl,
         capt_lr=args.capt_lr,
+        freeze_capt_encoder=args.freeze_capt_encoder,
     ).run_loop()
 
 
@@ -241,6 +242,7 @@ def create_argparser():
         all_pdrop=0.1,
         require_capts=False,
         class_map_path="",
+        freeze_capt_encoder=False,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

@@ -78,6 +78,7 @@ class TrainLoop:
         param_sandwich=-1,
         resize_mult=1.,
         perf_no_ddl=False,
+        freeze_capt_encoder=False,
     ):
         self.model = model
         self.diffusion = diffusion
@@ -130,6 +131,8 @@ class TrainLoop:
             else [float(x) for x in arithmetic_avg_extra_shift.split(",") if len(x) > 0]
         )
         self.only_optimize_bread = only_optimize_bread
+        if self.only_optimize_bread:
+            raise ValueError('only_optimize_bread no longer supported')
         self.resize_mult = resize_mult
 
         print(f"TrainLoop self.master_device: {self.master_device}, use_amp={use_amp}, autosave={self.autosave}")
@@ -151,8 +154,11 @@ class TrainLoop:
         capt_params, self.capt_param_names = [], []
         for n, p in model.named_parameters():
             if n.startswith('clipmod.'):
-                self.capt_param_names.append(n)
-                capt_params.append(p)
+                if freeze_capt_encoder:
+                    p.requires_grad_(False)
+                else:
+                    self.capt_param_names.append(n)
+                    capt_params.append(p)
             elif 'text_encoder' in n:
                 # subname = 'text'
                 if 'text_encoder.model.layers.' in n:
@@ -261,65 +267,39 @@ class TrainLoop:
         print(f"\t{xattn_nparams/1e6:.2f}M xattn params")
         print(f"\t{itot_nparams/1e6:.2f}M itot params")
 
-        if self.only_optimize_bread:
-            self.opt = AdamW(
-                [
-                    {"params": params, "lr": lr, "weight_decay": wd}
-                    for params, is_bread, lr, wd in zip(
-                        self.master_params,
-                        [*[False for _ in self.text_mods],
-                         *[False for _ in self.xattn_mods],
-                         *[False for _ in self.itot_mods],
-                          False, True, False, False],
-                        [*[self.text_lr for _ in self.text_mods],
-                         *[self.text_lr for _ in self.xattn_mods],
-                         *[self.text_lr for _ in self.itot_mods],
-                          self.gain_lr, self.bread_lr, self.lr, self.capt_lr],
-                        [*[0. for _ in self.text_mods],
-                         *[0. for _ in self.xattn_mods],
-                         *[0. for _ in self.itot_mods],
-                          0., 0., self.weight_decay, 0.]
-                    )
-                    if is_bread and len(params) != 0
-                ],
-                lr=self.lr,
-                weight_decay=self.weight_decay,
-                betas=(beta1, beta2)
+        param_groups = [
+            {"params": params, "lr": lr, "weight_decay": wd}
+            for params, lr, wd in zip(
+                self.master_params,
+                [*[self.text_lr for _ in self.text_mods],
+                 *[self.text_lr for _ in self.xattn_mods],
+                 *[self.text_lr for _ in self.itot_mods],
+                  self.gain_lr, self.bread_lr, self.lr, self.capt_lr],
+                [*[0. for _ in self.text_mods],
+                 *[0. for _ in self.xattn_mods],
+                 *[0. for _ in self.itot_mods],
+                  0., 0., self.weight_decay, 0.]
             )
-        else:
-            param_groups = [
-                {"params": params, "lr": lr, "weight_decay": wd}
-                for params, lr, wd in zip(
-                    self.master_params,
-                    [*[self.text_lr for _ in self.text_mods],
-                     *[self.text_lr for _ in self.xattn_mods],
-                     *[self.text_lr for _ in self.itot_mods],
-                      self.gain_lr, self.bread_lr, self.lr, self.capt_lr],
-                    [*[0. for _ in self.text_mods],
-                     *[0. for _ in self.xattn_mods],
-                     *[0. for _ in self.itot_mods],
-                      0., 0., self.weight_decay, 0.]
-                )
-                if len(params) != 0
-            ]
-            self.opt = AdamW(
-                param_groups,
-                lr=self.lr,
-                weight_decay=self.weight_decay,
-                betas=(beta1, beta2)
-            )
-            print('groups')
-            for pg in param_groups:
-                print(f'\t {len(pg["params"])} params, lr {pg["lr"]}, wd {pg["weight_decay"]}')
+            if len(params) != 0
+        ]
+        self.opt = AdamW(
+            param_groups,
+            lr=self.lr,
+            weight_decay=self.weight_decay,
+            betas=(beta1, beta2)
+        )
+        print('groups')
+        for pg in param_groups:
+            print(f'\t {len(pg["params"])} params, lr {pg["lr"]}, wd {pg["weight_decay"]}')
 
-            print('groups')
-            print(sum(len(pg['params']) for pg in param_groups))
+        print('groups')
+        print(sum(len(pg['params']) for pg in param_groups))
 
-            print('model params')
-            print(len(list(self.model.parameters())))
+        print('model params')
+        print(len(list(self.model.parameters())))
 
-            print('master params')
-            print(len(self.master_params))
+        print('master params')
+        print(len(self.master_params))
 
         if not gain_ff_setup_step and not self.only_optimize_bread and len(ff_gain_params) > 0:
             self.opt.add_param_group({"params": ff_gain_params, "lr": self.gain_lr, "weight_decay": 0.})
