@@ -238,6 +238,7 @@ class TrainLoop:
         self.group_lrs = []
         for gn, n, p, glr in zip(group_names, param_name_groups, model_params, group_lrs):
             if isinstance(p, list) and len(p) == 0:
+                print(f"skipping empty {gn} with lr {glr}, names {n}")
                 continue
             self.group_names.append(gn)
             self.param_name_groups.append(n)
