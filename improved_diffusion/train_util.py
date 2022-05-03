@@ -134,6 +134,7 @@ class TrainLoop:
         if self.only_optimize_bread:
             raise ValueError('only_optimize_bread no longer supported')
         self.resize_mult = resize_mult
+        self.freeze_capt_encoder = freeze_capt_encoder
 
         print(f"TrainLoop self.master_device: {self.master_device}, use_amp={use_amp}, autosave={self.autosave}")
         print(f"TrainLoop self.arithmetic_avg_from_step: {self.arithmetic_avg_from_step}, self.arithmetic_avg_extra_shift={self.arithmetic_avg_extra_shift}")
@@ -154,7 +155,7 @@ class TrainLoop:
         capt_params, self.capt_param_names = [], []
         for n, p in model.named_parameters():
             if n.startswith('clipmod.'):
-                if freeze_capt_encoder:
+                if self.freeze_capt_encoder:
                     p.requires_grad_(False)
                 else:
                     self.capt_param_names.append(n)
@@ -750,6 +751,8 @@ class TrainLoop:
     def save(self):
         def save_checkpoint(rate, params):
             state_dict = self._master_params_to_state_dict(params)
+            if self.freeze_capt_encoder:
+                state_dict = {k: v for k, v in state_dict.items() if not k.startswith('clipmod')}
             if True: # dist.get_rank() == 0:
                 logger.log(f"saving model {rate}...")
                 if not rate:
