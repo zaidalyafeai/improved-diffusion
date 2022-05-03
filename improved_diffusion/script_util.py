@@ -100,6 +100,7 @@ def model_and_diffusion_defaults():
         glide_style_capt_emb_init_scale=0.1,
         glide_style_capt_emb_nonlin=False,
         use_checkpoint_below_res=-1,
+        vb_loss_ratio=1000.,
     )
 
 
