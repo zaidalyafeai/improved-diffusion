@@ -64,7 +64,8 @@ class SamplingModel(nn.Module):
             config_path,
         )
         model.load_state_dict(
-            dist_util.load_state_dict(checkpoint_path, map_location="cpu")
+            dist_util.load_state_dict(checkpoint_path, map_location="cpu"),
+            strict=False
         )
         model.to(dist_util.dev())
         model.eval()
