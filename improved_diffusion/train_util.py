@@ -222,14 +222,31 @@ class TrainLoop:
         itot_params = [itot_params[n] for n in self.itot_mods]
         self.itot_param_names = [itot_param_names[n] for n in self.itot_mods]
 
-        self.param_name_groups = [*self.text_param_names, *self.xattn_param_names, *self.itot_param_names, self.gain_param_names, self.bread_param_names, self.other_param_names, self.capt_param_names, self.ff_gain_param_names]
+        group_names = [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'capt', 'xgainff']
+        names = [*self.text_param_names, *self.xattn_param_names, *self.itot_param_names, self.gain_param_names, self.bread_param_names, self.other_param_names, self.capt_param_names, self.ff_gain_param_names]
+        params = [*text_params, *xattn_params, *itot_params, gain_params, bread_params, other_params, capt_params, ff_gain_params]
+        group_lrs =  [
+            *[self.text_lr for _ in self.text_mods],
+            *[self.text_lr for _ in self.xattn_mods],
+            *[self.text_lr for _ in self.itot_mods],
+            self.gain_lr, self.bread_lr, self.lr, self.capt_lr, self.gain_lr
+        ]
 
-        # self.model_params = list(self.model.parameters())
-        self.model_params = [*text_params, *xattn_params, *itot_params, gain_params, bread_params, other_params, capt_params, ff_gain_params]
+        self.group_names = []
+        self.param_name_groups = []
+        self.model_params = []
+        self.group_lrs = []
+        for gn, n, p, glr in zip(group_names, param_name_groups, model_params, group_lrs):
+            if isinstance(p, list) and len(p) == 0:
+                continue
+            self.group_names.append(gn)
+            self.param_name_groups.append(n)
+            self.model_params.append(p)
+            self.group_lrs.append(glr)
 
-        # if len(gain_params) == 0:
-        #     self.param_name_groups = [self.other_param_names]
-        #     self.model_params = [other_params]
+        # self.param_name_groups = [*self.text_param_names, *self.xattn_param_names, *self.itot_param_names, self.gain_param_names, self.bread_param_names, self.other_param_names, self.capt_param_names, self.ff_gain_param_names]
+        #
+        # self.model_params = [*text_params, *xattn_params, *itot_params, gain_params, bread_params, other_params, capt_params, ff_gain_params]
 
         self.master_params = self.model_params
         self.lg_loss_scale = lg_loss_scale
@@ -248,7 +265,7 @@ class TrainLoop:
         text_nparams = 0
         xattn_nparams = 0
         itot_nparams = 0
-        for p, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other',  'capt', 'xgainff']):
+        for p, name in zip(self.master_params, self.group_names):
             if isinstance(p, list):
                 nparams = sum(np.product(pp.shape) for pp in p)
             else:
@@ -269,19 +286,11 @@ class TrainLoop:
         print(f"\t{itot_nparams/1e6:.2f}M itot params")
 
         param_groups = [
-            {"params": params, "lr": lr, "weight_decay": wd}
-            for params, lr, wd in zip(
+            {"params": params, "lr": lr, "weight_decay": 0.}
+            for params, lr in zip(
                 self.master_params,
-                [*[self.text_lr for _ in self.text_mods],
-                 *[self.text_lr for _ in self.xattn_mods],
-                 *[self.text_lr for _ in self.itot_mods],
-                  self.gain_lr, self.bread_lr, self.lr, self.capt_lr],
-                [*[0. for _ in self.text_mods],
-                 *[0. for _ in self.xattn_mods],
-                 *[0. for _ in self.itot_mods],
-                  0., 0., self.weight_decay, 0.]
+                self.group_lrs,
             )
-            if len(params) != 0
         ]
         self.opt = AdamW(
             param_groups,
@@ -302,8 +311,8 @@ class TrainLoop:
         print('master params')
         print(len(self.master_params))
 
-        if not gain_ff_setup_step and not self.only_optimize_bread and len(ff_gain_params) > 0:
-            self.opt.add_param_group({"params": ff_gain_params, "lr": self.gain_lr, "weight_decay": 0.})
+        # if not gain_ff_setup_step and not self.only_optimize_bread and len(ff_gain_params) > 0:
+        #     self.opt.add_param_group({"params": ff_gain_params, "lr": self.gain_lr, "weight_decay": 0.})
 
         if self.resume_step:
             try:
@@ -643,7 +652,7 @@ class TrainLoop:
         # for n in sorted(name_to_norm.keys(), key=lambda n_: name_to_norm[n_]):
         #     print(f"{name_to_norm[n]:.4e}\t | {name_to_nparam[n]:08d}\t | {n}")
 
-        for p_, name in zip(self.master_params, [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'capt', 'xgainff']):
+        for p_, name in zip(self.master_params, self.group_names):
             if isinstance(p_, list):
                 pp = p_
             else:
