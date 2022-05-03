@@ -146,11 +146,13 @@ class GaussianDiffusion:
         loss_type,
         rescale_timesteps=False,
         schedule_fn=None,
+        vb_loss_ratio=1000.,
     ):
         self.model_mean_type = model_mean_type
         self.model_var_type = model_var_type
         self.loss_type = loss_type
         self.rescale_timesteps = rescale_timesteps
+        self.vb_loss_ratio = vb_loss_ratio
 
         # Use float64 for accuracy.
         betas = np.array(betas, dtype=np.float64)
@@ -1161,7 +1163,7 @@ class GaussianDiffusion:
                 if self.loss_type == LossType.RESCALED_MSE or self.loss_type == LossType.RESCALED_MSE_BALANCED:
                     # Divide by 1000 for equivalence with initial implementation.
                     # Without a factor of 1/1000, the VB term hurts the MSE term.
-                    terms["vb"] *= self.num_timesteps / 1000.0
+                    terms["vb"] *= self.num_timesteps / self.vb_loss_ratio
 
             if self.loss_type == LossType.RESCALED_MSE_SNR_PLUS_ONE:
                 ## OLD VERSION: (snr + 1) / snr

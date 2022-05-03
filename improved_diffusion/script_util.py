@@ -186,6 +186,7 @@ def create_model_and_diffusion(
     glide_style_capt_emb_init_scale=0.1,
     glide_style_capt_emb_nonlin=False,
     use_checkpoint_below_res=-1,
+    vb_loss_ratio=1000.,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     print(f"create_model_and_diffusion: use_checkpoint={use_checkpoint}")
@@ -275,6 +276,7 @@ def create_model_and_diffusion(
         use_balanced_loss=use_balanced_loss,
         use_v_loss=use_v_loss,
         use_snr_plus_one_loss=use_snr_plus_one_loss,
+        vb_loss_ratio=vb_loss_ratio,
     )
     if verbose:
         print(model)
@@ -568,6 +570,7 @@ def sr_create_model_and_diffusion(
     glide_style_capt_emb_nonlin=False,
     expand_timestep_base_dim=-1,
     use_checkpoint_below_res=-1,
+    vb_loss_ratio=1000.,
 ):
     model = sr_create_model(
         large_size,
@@ -650,6 +653,7 @@ def sr_create_model_and_diffusion(
         use_balanced_loss=use_balanced_loss,
         use_v_loss=use_v_loss,
         use_snr_plus_one_loss=use_snr_plus_one_loss,
+        vb_loss_ratio=vb_loss_ratio,
     )
     if verbose:
         print(model)
@@ -719,7 +723,8 @@ def create_gaussian_diffusion(
     return_diffusion_factory=False,
     use_balanced_loss=False,
     use_v_loss=False,
-    use_snr_plus_one_loss=False
+    use_snr_plus_one_loss=False,
+    vb_loss_ratio=1000.,
 ):
     betas = gd.get_named_beta_schedule(noise_schedule, steps)
     if use_snr_plus_one_loss:
@@ -757,6 +762,7 @@ def create_gaussian_diffusion(
             ),
             loss_type=loss_type,
             rescale_timesteps=rescale_timesteps,
+            vb_loss_ratio=vb_loss_ratio,
             **kwargs
         )
     if return_diffusion_factory:
