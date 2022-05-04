@@ -716,10 +716,8 @@ class TrainLoop:
             # +1 so we don't use zero lr on first step
             frac_warmup_done = min(1., (self.step + self.resume_step + 1) / self.lr_warmup_steps)
 
-        if self.only_optimize_bread:
-            lr_variants = [self.bread_lr]
-        else:
-            lr_variants = (len(self.opt.param_groups)-5) * [self.text_lr] + [self.gain_lr, self.bread_lr, self.lr, self.capt_lr, self.gain_lr]
+        lr_variants = self.group_lrs
+        # lr_variants = (len(self.opt.param_groups)-5) * [self.text_lr] + [self.gain_lr, self.bread_lr, self.lr, self.capt_lr, self.gain_lr]
 
         mult = frac_warmup_done if frac_warmup_done < 1 else (1 - frac_done)
         logger.logkv("learning_rate", self.lr * mult)
