@@ -1160,7 +1160,7 @@ class GaussianDiffusion:
                     clip_denoised=False,
                 )
                 terms["vb"] = vb_out["output"]
-                if self.loss_type == LossType.RESCALED_MSE or self.loss_type == LossType.RESCALED_MSE_BALANCED:
+                if self.loss_type == LossType.RESCALED_MSE or self.loss_type == LossType.RESCALED_MSE_BALANCED or self.loss_type == LossType.RESCALED_MSE_SNR_PLUS_ONE:
                     # Divide by 1000 for equivalence with initial implementation.
                     # Without a factor of 1/1000, the VB term hurts the MSE term.
                     terms["vb"] *= self.num_timesteps / self.vb_loss_ratio
