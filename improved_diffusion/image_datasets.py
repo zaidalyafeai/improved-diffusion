@@ -322,6 +322,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
                        min_imagesize=0,
                        clip_prob_path=None,
                        clip_prob_middle_pkeep=0.5,
+                       antialias=False,
                        ):
     print(f'load_superres_data: deterministic={deterministic}')
     data = load_data(
@@ -366,9 +367,14 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
 
     print(f"is_power_of_2: {is_power_of_2}")
     mode = "area" if is_power_of_2 else "bilinear"
+    use_antialias = False
+
+    if antialias:
+        use_antialias = True
+        mode = "bilinear"
 
     for large_batch, model_kwargs in data:
-        model_kwargs["low_res"] = F.interpolate(large_batch, small_size, mode=mode)
+        model_kwargs["low_res"] = F.interpolate(large_batch, small_size, mode=mode, antialias=use_antialias)
         if colorize:
             model_kwargs["low_res"] = model_kwargs["low_res"].mean(dim=1, keepdim=True)
         if blur_prob > 0:
