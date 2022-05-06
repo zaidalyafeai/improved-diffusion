@@ -110,6 +110,7 @@ def main():
         clip_prob_path=args.clip_prob_path,
         clip_prob_middle_pkeep=args.clip_prob_middle_pkeep,
         antialias=args.antialias,
+        bicubic_down=args.bicubic_down,
     )
 
     if args.save_first_batch:
@@ -218,6 +219,7 @@ def create_argparser():
         clip_prob_middle_pkeep=0.5,
         resize_mult=1.,
         antialias=False,
+        bicubic_down=False,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

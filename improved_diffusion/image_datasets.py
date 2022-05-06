@@ -323,6 +323,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
                        clip_prob_path=None,
                        clip_prob_middle_pkeep=0.5,
                        antialias=False,
+                       bicubic_down=False,
                        ):
     print(f'load_superres_data: deterministic={deterministic}')
     data = load_data(
@@ -372,6 +373,9 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
     if antialias:
         use_antialias = True
         mode = "bilinear"
+
+    if bicubic_down:
+        mode = 'bicubic'
 
     for large_batch, model_kwargs in data:
         model_kwargs["low_res"] = F.interpolate(large_batch, small_size, mode=mode, antialias=use_antialias)
