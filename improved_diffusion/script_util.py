@@ -577,6 +577,7 @@ def sr_create_model_and_diffusion(
     expand_timestep_base_dim=-1,
     use_checkpoint_below_res=-1,
     vb_loss_ratio=1000.,
+    no_attn=False,
 ):
     model = sr_create_model(
         large_size,
@@ -645,6 +646,7 @@ def sr_create_model_and_diffusion(
         expand_timestep_base_dim=expand_timestep_base_dim,
         use_checkpoint_below_res=use_checkpoint_below_res,
         verbose=verbose,
+        no_attn=no_attn,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
