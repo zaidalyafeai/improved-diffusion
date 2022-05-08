@@ -52,6 +52,7 @@ def load_data(
     crop_prob=0., crop_min_scale=0.75, crop_max_scale=1.,
     use_special_crop_for_empty_string=False,
     crop_prob_es=0., crop_min_scale_es=0.25, crop_max_scale_es=1.,
+    crop_without_resize=False,
     safebox_path="",
     use_random_safebox_for_empty_string=False,
     flip_lr_prob_es=0.,
@@ -166,7 +167,7 @@ def load_data(
 
     if crop_prob > 0:
         print("using crop")
-        if safeboxes is not None:
+        if safeboxes is not None and (not crop_without_resize):
             print('using safebox crop')
             imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
             def safebox_crop(img, safebox, pre_applied_rescale_factor):
@@ -182,9 +183,15 @@ def load_data(
                 crop_max_scale_es = crop_max_scale
         else:
             imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
+            if crop_without_resize:
+                cropper = T.RandomCrop(size=tsize)
+            else:
+                cropper = T.RandomResizedCrop(
+                    size=tsize, ratio=(1, 1), scale=(crop_min_scale, crop_max_scale), interpolation=imode
+                )
             pre_resize_transform = T.RandomApply(
                 transforms=[
-                    T.RandomResizedCrop(size=tsize, ratio=(1, 1), scale=(crop_min_scale, crop_max_scale), interpolation=imode),
+                    cropper,
                 ],
                 p=crop_prob
             )
@@ -198,10 +205,16 @@ def load_data(
     if use_es_regular_crop:
         print("using es regular crop")
         imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
+        if crop_without_resize:
+            cropper = T.RandomCrop(size=tsize)
+        else:
+            cropper = T.RandomResizedCrop(
+                size=tsize, ratio=(1, 1), scale=(crop_min_scale_es, crop_max_scale_es), interpolation=imode
+            )
         pre_resize_transform_for_empty_string.append(
             T.RandomApply(
                 transforms=[
-                    T.RandomResizedCrop(size=tsize, ratio=(1, 1), scale=(crop_min_scale_es, crop_max_scale_es), interpolation=imode),
+                    cropper,
                 ],
                 p=crop_prob_es
             )
@@ -312,6 +325,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
                        crop_prob=0., crop_min_scale=0.75, crop_max_scale=1.,
                        use_special_crop_for_empty_string=False,
                        crop_prob_es=0., crop_min_scale_es=0.25, crop_max_scale_es=1.,
+                       crop_without_resize=False,
                        safebox_path="",
                        use_random_safebox_for_empty_string=False,
                        flip_lr_prob_es=0.,
@@ -345,6 +359,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         crop_prob_es=crop_prob_es,
         crop_min_scale_es=crop_min_scale_es,
         crop_max_scale_es=crop_max_scale_es,
+        crop_without_resize=crop_without_resize,
         safebox_path=safebox_path,
         use_random_safebox_for_empty_string=use_random_safebox_for_empty_string,
         flip_lr_prob_es=flip_lr_prob_es,
