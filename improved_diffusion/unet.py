@@ -724,6 +724,7 @@ class UNetModel(nn.Module):
         glide_style_capt_emb_nonlin=False,
         label_emb_init_scale=0.,
         use_checkpoint_below_res=-1,
+        no_attn=False,
     ):
         super().__init__()
 
@@ -745,6 +746,8 @@ class UNetModel(nn.Module):
 
         if channels_per_head_upsample == -1:
             channels_per_head_upsample = channels_per_head
+
+        use_attn = not no_attn
 
         self.in_channels = in_channels
         self.model_channels = model_channels
@@ -888,7 +891,7 @@ class UNetModel(nn.Module):
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
                             base_channels=expand_timestep_base_dim * ch // model_channels,
                             encoder_channels=self.capt_embd_dim if self.glide_style_capt_attn else None
-                        )
+                        ) if use_attn else nn.Identity()
                     )
                 if self.txt and ds in self.txt_resolutions and (not txt_output_layers_only):
                     num_heads_here = num_heads
@@ -937,9 +940,9 @@ class UNetModel(nn.Module):
                             weave_v2=weave_v2,
                             use_ff_gain=weave_use_ff_gain,
                         ))
-                        caa = WeaveAttentionAdapter(**caa_args)
+                        caa = WeaveAttentionAdapter(**caa_args) if use_attn else nn.Identity()
                     else:
-                        caa = CrossAttentionAdapter(**caa_args)
+                        caa = CrossAttentionAdapter(**caa_args) if use_attn else nn.Identity()
                     if txt_attn_before_attn and (ds in attention_resolutions):
                         layers.insert(-1, caa)
                     else:
@@ -999,7 +1002,8 @@ class UNetModel(nn.Module):
             AttentionBlock(ch, use_checkpoint=use_checkpoint or use_checkpoint_middle or ((image_size // ds) <= use_checkpoint_below_res), num_heads=num_heads,
                            use_checkpoint_lowcost=use_checkpoint_lowcost,
                            base_channels=expand_timestep_base_dim * ch // model_channels,
-                           encoder_channels=self.capt_embd_dim if self.glide_style_capt_attn else None),
+                           encoder_channels=self.capt_embd_dim if self.glide_style_capt_attn else None
+                           ) if use_attn else nn.Identity(),
             ResBlock(
                 ch,
                 time_embed_dim,
@@ -1044,7 +1048,7 @@ class UNetModel(nn.Module):
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
                             base_channels=expand_timestep_base_dim * ch // model_channels,
                             encoder_channels=self.capt_embd_dim if self.glide_style_capt_attn else None
-                        )
+                        ) if use_attn else nn.Identity()
                     )
                 if self.txt and ds in self.txt_resolutions:
                     use_capts = [False, True] if (self.using_capt and self.xattn_capt) else [False]
@@ -1100,9 +1104,9 @@ class UNetModel(nn.Module):
                                 use_ff_gain=weave_use_ff_gain,
                                 no_itot=use_capt and (not weave_capt),
                             ))
-                            caa = WeaveAttentionAdapter(**caa_args)
+                            caa = WeaveAttentionAdapter(**caa_args) if use_attn else nn.Identity()
                         else:
-                            caa = CrossAttentionAdapter(**caa_args)
+                            caa = CrossAttentionAdapter(**caa_args) if use_attn else nn.Identity()
                         if txt_attn_before_attn and (ds in attention_resolutions):
                             layers.insert(-1, caa)
                         else:

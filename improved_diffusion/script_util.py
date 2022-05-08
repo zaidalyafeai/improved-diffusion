@@ -101,6 +101,7 @@ def model_and_diffusion_defaults():
         glide_style_capt_emb_nonlin=False,
         use_checkpoint_below_res=-1,
         vb_loss_ratio=1000.,
+        no_attn=False,
     )
 
 
@@ -188,6 +189,7 @@ def create_model_and_diffusion(
     glide_style_capt_emb_nonlin=False,
     use_checkpoint_below_res=-1,
     vb_loss_ratio=1000.,
+    no_attn=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     print(f"create_model_and_diffusion: use_checkpoint={use_checkpoint}")
@@ -262,6 +264,7 @@ def create_model_and_diffusion(
         glide_style_capt_emb_init_scale=glide_style_capt_emb_init_scale,
         glide_style_capt_emb_nonlin=glide_style_capt_emb_nonlin,
         use_checkpoint_below_res=use_checkpoint_below_res,
+        no_attn=no_attn,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -361,6 +364,7 @@ def create_model(
     glide_style_capt_emb_init_scale=0.1,
     glide_style_capt_emb_nonlin=False,
     use_checkpoint_below_res=-1,
+    no_attn=False,
 ):
     text_lr_mult = 1.
     print(
@@ -474,6 +478,7 @@ def create_model(
         glide_style_capt_emb_init_scale=glide_style_capt_emb_init_scale,
         glide_style_capt_emb_nonlin=glide_style_capt_emb_nonlin,
         use_checkpoint_below_res=use_checkpoint_below_res,
+        no_attn=no_attn,
     )
 
 
