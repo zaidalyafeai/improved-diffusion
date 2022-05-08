@@ -567,7 +567,7 @@ class ImageDataset(Dataset):
                 safebox = self.image_file_to_safebox[random.choice(self.safebox_keys)]
                 px_scale = self.image_file_to_px_scales.get(path)
                 pil_image = self.pre_resize_transform(pil_image, safebox, px_scale)
-        else:
+        elif self.txt:
             if self.image_file_to_safebox is not None:
                 if path in self.image_file_to_safebox:
                     safebox = self.image_file_to_safebox[path]
