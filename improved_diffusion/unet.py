@@ -1039,9 +1039,6 @@ class UNetModel(nn.Module):
 
         self.output_blocks = nn.ModuleList([])
         for level, mult in list(enumerate(channel_mult))[::-1]:
-            nres = num_res_blocks + 1
-            if no_attn_substitute_resblock and (ds in attention_resolutions):
-                nres += 1
             for i in range(num_res_blocks + 1):
                 this_ch = ch + input_block_chans.pop()
                 layers = [
@@ -1063,7 +1060,7 @@ class UNetModel(nn.Module):
                     if no_attn_substitute_resblock:
                         layers.append(
                             ResBlock(
-                                this_ch,
+                                ch,
                                 time_embed_dim,
                                 dropout,
                                 out_channels=model_channels * mult,
