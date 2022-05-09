@@ -725,6 +725,7 @@ class UNetModel(nn.Module):
         label_emb_init_scale=0.,
         use_checkpoint_below_res=-1,
         no_attn=False,
+        no_attn_substitute_resblock=False,
     ):
         super().__init__()
 
@@ -748,6 +749,8 @@ class UNetModel(nn.Module):
             channels_per_head_upsample = channels_per_head
 
         use_attn = not no_attn
+        if use_attn:
+            no_attn_substitute_resblock = False
 
         self.in_channels = in_channels
         self.model_channels = model_channels
@@ -864,7 +867,10 @@ class UNetModel(nn.Module):
         ch = model_channels
         ds = 1
         for level, mult in enumerate(channel_mult):
-            for _ in range(num_res_blocks):
+            nres = num_res_blocks
+            if no_attn_substitute_resblock and (ds in attention_resolutions):
+                nres += 1
+            for _ in range(nres):
                 layers = [
                     ResBlock(
                         ch,
@@ -880,7 +886,7 @@ class UNetModel(nn.Module):
                     )
                 ]
                 ch = mult * model_channels
-                if ds in attention_resolutions:
+                if (ds in attention_resolutions) and (not no_attn_substitute_resblock):
                     num_heads_here = num_heads
                     if channels_per_head > 0:
                         num_heads_here = ch // channels_per_head
@@ -987,39 +993,41 @@ class UNetModel(nn.Module):
 
         vprint(f"input_block_chans: {input_block_chans}")
 
+        def _middle_resblock():
+            return ResBlock(
+                ch,
+                time_embed_dim,
+                dropout,
+                dims=dims,
+                use_checkpoint=use_checkpoint or use_checkpoint_middle or ((image_size // ds) <= use_checkpoint_below_res),
+                use_scale_shift_norm=use_scale_shift_norm,
+                use_checkpoint_lowcost=use_checkpoint_lowcost,
+                base_channels=expand_timestep_base_dim * ch // model_channels,
+                silu_impl=silu_impl,
+            )
+
+        def _middle_attnblock():
+            return AttentionBlock(
+                ch,
+                use_checkpoint=use_checkpoint or use_checkpoint_middle or ((image_size // ds) <= use_checkpoint_below_res),
+                num_heads=num_heads,
+                use_checkpoint_lowcost=use_checkpoint_lowcost,
+                base_channels=expand_timestep_base_dim * ch // model_channels,
+                encoder_channels=self.capt_embd_dim if self.glide_style_capt_attn else None
+            )
+
         self.middle_block = TimestepEmbedSequential(
-            ResBlock(
-                ch,
-                time_embed_dim,
-                dropout,
-                dims=dims,
-                use_checkpoint=use_checkpoint or use_checkpoint_middle or ((image_size // ds) <= use_checkpoint_below_res),
-                use_scale_shift_norm=use_scale_shift_norm,
-                use_checkpoint_lowcost=use_checkpoint_lowcost,
-                base_channels=expand_timestep_base_dim * ch // model_channels,
-                silu_impl=silu_impl,
-            ),
-            AttentionBlock(ch, use_checkpoint=use_checkpoint or use_checkpoint_middle or ((image_size // ds) <= use_checkpoint_below_res), num_heads=num_heads,
-                           use_checkpoint_lowcost=use_checkpoint_lowcost,
-                           base_channels=expand_timestep_base_dim * ch // model_channels,
-                           encoder_channels=self.capt_embd_dim if self.glide_style_capt_attn else None
-                           ) if use_attn else nn.Identity(),
-            ResBlock(
-                ch,
-                time_embed_dim,
-                dropout,
-                dims=dims,
-                use_checkpoint=use_checkpoint or use_checkpoint_middle or ((image_size // ds) <= use_checkpoint_below_res),
-                use_scale_shift_norm=use_scale_shift_norm,
-                use_checkpoint_lowcost=use_checkpoint_lowcost,
-                base_channels=expand_timestep_base_dim * ch // model_channels,
-                silu_impl=silu_impl,
-            ),
+            _middle_resblock(),
+            _middle_resblock() if no_attn_substitute_resblock else (_middle_attnblock() if use_attn else nn.Identity()),
+            _middle_resblock(),
         )
 
         self.output_blocks = nn.ModuleList([])
         for level, mult in list(enumerate(channel_mult))[::-1]:
-            for i in range(num_res_blocks + 1):
+            nres = num_res_blocks + 1
+            if no_attn_substitute_resblock and (ds in attention_resolutions):
+                nres += 1
+            for i in range(nres):
                 this_ch = ch + input_block_chans.pop()
                 layers = [
                     ResBlock(
@@ -1112,7 +1120,7 @@ class UNetModel(nn.Module):
                         else:
                             layers.append(caa)
                 vprint(f"down | {level} of {len(channel_mult)} | ch {ch} | ds {ds}")
-                if level and i == num_res_blocks:
+                if level and i == nres - 1:
                     if (bread_adapter_at_ds == ds) and (not bread_adapter_out_added):
                         vprint(f"adding bread_adapter_out at {ds}")
                         self.bread_adapter_out = BreadAdapterOut(silu_impl=silu_impl, out_channels=out_channels, model_channels=ch)

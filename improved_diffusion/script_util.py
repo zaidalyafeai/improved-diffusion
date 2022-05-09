@@ -102,6 +102,7 @@ def model_and_diffusion_defaults():
         use_checkpoint_below_res=-1,
         vb_loss_ratio=1000.,
         no_attn=False,
+        no_attn_substitute_resblock=False,
     )
 
 
@@ -190,6 +191,7 @@ def create_model_and_diffusion(
     use_checkpoint_below_res=-1,
     vb_loss_ratio=1000.,
     no_attn=False,
+    no_attn_substitute_resblock=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     print(f"create_model_and_diffusion: use_checkpoint={use_checkpoint}")
@@ -265,6 +267,7 @@ def create_model_and_diffusion(
         glide_style_capt_emb_nonlin=glide_style_capt_emb_nonlin,
         use_checkpoint_below_res=use_checkpoint_below_res,
         no_attn=no_attn,
+        no_attn_substitute_resblock=no_attn_substitute_resblock,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -365,6 +368,7 @@ def create_model(
     glide_style_capt_emb_nonlin=False,
     use_checkpoint_below_res=-1,
     no_attn=False,
+    no_attn_substitute_resblock=False,
 ):
     text_lr_mult = 1.
     print(
@@ -479,6 +483,7 @@ def create_model(
         glide_style_capt_emb_nonlin=glide_style_capt_emb_nonlin,
         use_checkpoint_below_res=use_checkpoint_below_res,
         no_attn=no_attn,
+        no_attn_substitute_resblock=no_attn_substitute_resblock,
     )
 
 
@@ -578,6 +583,7 @@ def sr_create_model_and_diffusion(
     use_checkpoint_below_res=-1,
     vb_loss_ratio=1000.,
     no_attn=False,
+    no_attn_substitute_resblock=False,
 ):
     model = sr_create_model(
         large_size,
@@ -647,6 +653,7 @@ def sr_create_model_and_diffusion(
         use_checkpoint_below_res=use_checkpoint_below_res,
         verbose=verbose,
         no_attn=no_attn,
+        no_attn_substitute_resblock=no_attn_substitute_resblock,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
