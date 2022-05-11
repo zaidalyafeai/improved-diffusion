@@ -513,7 +513,7 @@ class TrainLoop:
                 else v[i : i + self.microbatch]
                 for k, v in cond.items()
             }
-            if 'txt' in micro_cond:
+            if (self.model.txt) and ('txt' in micro_cond):
                 # micro_cond['txt'] = th.as_tensor(tokenize(self.tokenizer, micro_cond['txt']), device=dist_util.dev())
 
                 txt = th.as_tensor(tokenize(self.tokenizer, micro_cond['txt']), device=dist_util.dev())
