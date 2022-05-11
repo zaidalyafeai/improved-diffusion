@@ -83,7 +83,7 @@ def main():
         large_size=args.large_size,
         small_size=args.small_size,
         class_cond=args.class_cond,
-        txt=args.txt,
+        txt=args.txt or args.use_txt_in_dataload,
         monochrome=args.monochrome,
         colorize=args.colorize,
         blur_prob=args.blur_prob,
@@ -222,6 +222,7 @@ def create_argparser():
         resize_mult=1.,
         antialias=False,
         bicubic_down=False,
+        use_txt_in_dataload=False,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
