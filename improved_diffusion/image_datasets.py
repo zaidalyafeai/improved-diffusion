@@ -207,18 +207,26 @@ def load_data(
         imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
         if crop_without_resize:
             cropper = T.RandomCrop(size=tsize)
+            pre_resize_transform_for_empty_string.append(
+                T.RandomApply(
+                    transforms=[
+                        cropper,
+                    ],
+                    p=crop_prob_es
+                )
+            )
         else:
-            cropper = T.RandomResizedCrop(
-                size=tsize, ratio=(1, 1), scale=(crop_min_scale_es, crop_max_scale_es), interpolation=imode
-            )
-        pre_resize_transform_for_empty_string.append(
-            T.RandomApply(
-                transforms=[
-                    cropper,
-                ],
-                p=crop_prob_es
-            )
-        )
+            # experiment - should be equivalent but lets us ensure stuff like antialias
+            fake_safebox = (-2, -2, -1, -1)  # (left_s, top_s, right_s, bottom_s)
+            def fake_safebox_crop(img):
+                tform = RandomResizedProtectedCropLazy(size=tsize, min_area=crop_min_scale_es, max_area=crop_max_scale_es, interpolation=imode, debug=debug)
+                if random.random() < crop_prob_es:
+                    return tform(img, fake_safebox)
+                return img
+            pre_resize_transform_for_empty_string.append(fake_safebox_crop)
+            # cropper = T.RandomResizedCrop(
+            #     size=tsize, ratio=(1, 1), scale=(crop_min_scale_es, crop_max_scale_es), interpolation=imode
+            # )
 
     if flip_lr_prob_es > 0:
         print("using flip")
