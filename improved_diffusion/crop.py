@@ -142,4 +142,4 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
         i, j = cropbox[1], cropbox[0]
         h, w = cropbox[2] - j, cropbox[3] - i
         # display(img.crop(cropbox).resize((self.size, self.size)))
-        return TF.resized_crop(img, i, j, h, w, self.size, self.interpolation)
+        return TF.resized_crop(img, i, j, h, w, self.size, self.interpolation, antialias=True)
