@@ -199,7 +199,7 @@ def load_data(
                     if random.random() < crop_prob:
                         return tform(img, fake_safebox)
                     return img
-                pre_resize_transform_for_empty_string.append(fake_safebox_crop)
+                pre_resize_transform = fake_safebox_crop
 
                 # cropper = T.RandomResizedCrop(
                 #     size=tsize, ratio=(1, 1), scale=(crop_min_scale, crop_max_scale), interpolation=imode
@@ -227,12 +227,12 @@ def load_data(
         else:
             # experiment - should be equivalent but lets us ensure stuff like antialias
             fake_safebox = (-2, -2, -1, -1)  # (left_s, top_s, right_s, bottom_s)
-            def fake_safebox_crop(img):
+            def fake_safebox_crop_es(img):
                 tform = RandomResizedProtectedCropLazy(size=tsize, min_area=crop_min_scale_es, max_area=crop_max_scale_es, interpolation=imode, debug=debug)
                 if random.random() < crop_prob_es:
                     return tform(img, fake_safebox)
                 return img
-            pre_resize_transform_for_empty_string.append(fake_safebox_crop)
+            pre_resize_transform_for_empty_string.append(fake_safebox_crop_es)
             # cropper = T.RandomResizedCrop(
             #     size=tsize, ratio=(1, 1), scale=(crop_min_scale_es, crop_max_scale_es), interpolation=imode
             # )
