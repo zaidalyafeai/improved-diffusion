@@ -343,7 +343,8 @@ class GaussianDiffusion:
             assert model_output.shape == (B, C * 2, *x.shape[2:])
             model_output, model_var_values = th.split(model_output, C, dim=1)
             if is_guided:
-                unconditional_model_output, _ = th.split(unconditional_model_output, C, dim=1)
+                # don't guide variance
+                _, model_var_values = th.split(unconditional_model_output, C, dim=1)
             if self.model_var_type == ModelVarType.LEARNED:
                 model_log_variance = model_var_values
                 model_variance = th.exp(model_log_variance)
