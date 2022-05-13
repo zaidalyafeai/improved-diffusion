@@ -116,7 +116,7 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
 
             n+=1
 
-            if n > 10000:
+            if n > 100:
                 print('struggling w/ image, returning uncropped')
                 print(f"safebox: {safebox}")
                 print(f"attempt: {(cropbox_left, cropbox_top, cropbox_right, cropbox_bottom)}")
