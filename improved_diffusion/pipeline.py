@@ -265,6 +265,7 @@ class SamplingModel(nn.Module):
                     self.model.image_size,
                 ),
                 clip_denoised=clip_denoised,
+                denoised_fn=denoised_fn,
                 model_kwargs=model_kwargs,
                 noise=noise,
                 **sample_fn_kwargs
