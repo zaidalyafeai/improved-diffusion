@@ -121,11 +121,13 @@ class SamplingModel(nn.Module):
         verbose=True,
         noise=None,
         dynamic_threshold_p=0,
+        denoised_fn=None,
     ):
         # dist_util.setup_dist()
 
-        denoised_fn = None
-        if dynamic_threshold_p > 0:
+        if denoised_fn is not None:
+            pass  # defer to use
+        elif dynamic_threshold_p > 0:
             clip_denoised = False
             denoised_fn = make_dynamic_threshold_denoised_fn(dynamic_threshold_p)
 
