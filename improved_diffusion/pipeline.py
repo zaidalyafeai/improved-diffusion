@@ -36,6 +36,21 @@ def _to_visible(img):
     return img
 
 
+def make_dynamic_threshold_denoised_fn(p):
+    def dynamic_threshold_denoised_fn(pred_xstart):
+        batch_elems = th.split(pred_xstart, 1, dim=0)
+        batch_elems_threshed = []
+
+        for b in batch_elems:
+            s = th.quantile(b.abs(), p, dim=None).clamp(min=1)
+            bt = b.clamp(min=-s, max=s) / s
+            batch_elems_threshed.append(bt)
+
+        pred_xstart_threshed = th.cat(batch_elems_threshed, dim=0)
+        return pred_xstart_threshed
+    return dynamic_threshold_denoised_fn
+
+
 class SamplingModel(nn.Module):
     def __init__(
         self,
@@ -105,8 +120,14 @@ class SamplingModel(nn.Module):
         y=None,
         verbose=True,
         noise=None,
+        dynamic_threshold_p=0,
     ):
         # dist_util.setup_dist()
+
+        denoised_fn = None
+        if dynamic_threshold_p > 0:
+            clip_denoised = False
+            denoised_fn = make_dynamic_threshold_denoised_fn(dynamic_threshold_p)
 
         if self.is_super_res and low_res is None:
             raise ValueError("must pass low_res for super res")
@@ -326,6 +347,8 @@ class SamplingPipeline(nn.Module):
         noise_sres=None,
         plms_ddim_first_n=0,
         plms_ddim_first_n_sres=0,
+        dynamic_threshold_p=0,
+        dynamic_threshold_p_sres=0,
     ):
         if strip_space:
             if isinstance(text, list):
@@ -357,6 +380,7 @@ class SamplingPipeline(nn.Module):
                 use_plms=use_plms,
                 noise=noise,
                 plms_ddim_first_n=plms_ddim_first_n,
+                dynamic_threshold_p=dynamic_threshold_p,
             )
 
         def high_res_sample(low_res):
@@ -378,6 +402,7 @@ class SamplingPipeline(nn.Module):
                 use_plms=use_plms_sres,
                 noise=noise_sres,
                 plms_ddim_first_n=plms_ddim_first_n_sres,
+                dynamic_threshold_p=dynamic_threshold_p_sres,
             )
         if yield_intermediates:
             return _yield_intermediates(base_sample, high_res_sample)
@@ -421,6 +446,8 @@ class SamplingPipeline(nn.Module):
         verbose=True,
         plms_ddim_first_n=0,
         plms_ddim_first_n_sres=0,
+        dynamic_threshold_p=0,
+        dynamic_threshold_p_sres=0,
     ):
         if strip_space:
             if isinstance(text, list):
@@ -449,6 +476,7 @@ class SamplingPipeline(nn.Module):
             guidance_after_step=guidance_after_step_base,
             y=y,
             verbose=verbose,
+            dynamic_threshold_p=dynamic_threshold_p,
         )
         low_res_pruned, text_pruned = prune_fn(low_res, text)
         if len(low_res_pruned) == 0:
@@ -487,7 +515,8 @@ class SamplingPipeline(nn.Module):
             plms_ddim_last_n=plms_ddim_last_n_sres,
             plms_ddim_first_n=plms_ddim_first_n_sres,
             from_visible=True,
-            verbose=verbose
+            verbose=verbose,
+            dynamic_threshold_p=dynamic_threshold_p_sres,
         )
         if return_both_resolutions:
             return high_res, low_res
