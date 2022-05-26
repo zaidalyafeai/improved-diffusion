@@ -369,7 +369,7 @@ def create_model(
     use_checkpoint_below_res=-1,
     no_attn=False,
     no_attn_substitute_resblock=False,
-    noise_cond=noise_cond,
+    noise_cond=False,
 ):
     text_lr_mult = 1.
     print(
