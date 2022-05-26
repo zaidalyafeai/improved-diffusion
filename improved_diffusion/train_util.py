@@ -22,7 +22,7 @@ from .fp16_util import (
     zero_grad,
 )
 from .nn import update_ema, update_arithmetic_average, scale_module
-from .resample import LossAwareSampler, UniformSampler
+from .resample import LossAwareSampler, UniformSampler, EarlyOnlySampler
 from .gaussian_diffusion import SimpleForwardDiffusion, get_named_beta_schedule
 
 from .image_datasets import tokenize
