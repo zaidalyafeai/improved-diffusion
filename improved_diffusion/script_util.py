@@ -369,12 +369,13 @@ def create_model(
     use_checkpoint_below_res=-1,
     no_attn=False,
     no_attn_substitute_resblock=False,
+    noise_cond=noise_cond,
 ):
     text_lr_mult = 1.
     print(
         f"create_model: got txt={txt}, num_heads={num_heads}, channels_per_head={channels_per_head}, cross_attn_channels_per_head={cross_attn_channels_per_head}, text_lr_mult={text_lr_mult}"
     )
-    print(f"create_model: use_checkpoint={use_checkpoint}, use_checkpoint_lowcost={use_checkpoint_lowcost}")
+    print(f"create_model: noise_cond={noise_cond}, use_checkpoint={use_checkpoint}, use_checkpoint_lowcost={use_checkpoint_lowcost}")
     if channel_mult != "":
         print(f"got channel_mult: {channel_mult}")
         try:
@@ -484,6 +485,7 @@ def create_model(
         use_checkpoint_below_res=use_checkpoint_below_res,
         no_attn=no_attn,
         no_attn_substitute_resblock=no_attn_substitute_resblock,
+        noise_cond=noise_cond,
     )
 
 
@@ -585,6 +587,7 @@ def sr_create_model_and_diffusion(
     vb_loss_ratio=1000.,
     no_attn=False,
     no_attn_substitute_resblock=False,
+    noise_cond=False,
 ):
     model = sr_create_model(
         large_size,
@@ -655,6 +658,7 @@ def sr_create_model_and_diffusion(
         verbose=verbose,
         no_attn=no_attn,
         no_attn_substitute_resblock=no_attn_substitute_resblock,
+        noise_cond=noise_cond,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
