@@ -67,6 +67,16 @@ class UniformSampler(ScheduleSampler):
         return self._weights
 
 
+class EarlyOnlySampler(ScheduleSampler):
+    def __init__(self, diffusion, max_ts):
+        self.diffusion = diffusion
+        self._weights = np.ones([diffusion.num_timesteps])
+        self._weights[max_ts:] = 0.0
+
+    def weights(self):
+        return self._weights
+
+
 class LossAwareSampler(ScheduleSampler):
     def update_with_local_losses(self, local_ts, local_losses):
         """

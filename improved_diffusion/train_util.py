@@ -83,6 +83,7 @@ class TrainLoop:
         noise_cond=False,
         noise_cond_schedule='cosine',
         noise_cond_steps=1000,
+        noise_cond_max_step=-1,
     ):
         self.model = model
         self.diffusion = diffusion
@@ -144,8 +145,9 @@ class TrainLoop:
             betas = get_named_beta_schedule(noise_cond_schedule, noise_cond_steps)
             self.noise_cond_diffusion = SimpleForwardDiffusion(betas)
             # todo: other schedules
-            self.noise_cond_schedule_sampler = UniformSampler(self.noise_cond_diffusion)
-
+            if noise_cond_max_step < 0:
+                noise_cond_max_step = noise_cond_steps
+            self.noise_cond_schedule_sampler = EarlyOnlySampler(self.noise_cond_diffusion, noise_cond_max_step)
 
         print(f"TrainLoop self.master_device: {self.master_device}, use_amp={use_amp}, autosave={self.autosave}")
         print(f"TrainLoop self.arithmetic_avg_from_step: {self.arithmetic_avg_from_step}, self.arithmetic_avg_extra_shift={self.arithmetic_avg_extra_shift}")

@@ -156,6 +156,7 @@ def main():
         noise_cond=args.noise_cond,
         noise_cond_schedule=args.noise_cond_schedule,
         noise_cond_steps=args.noise_cond_steps,
+        noise_cond_max_step=args.noise_cond_max_step,
     ).run_loop()
 
 
@@ -229,6 +230,7 @@ def create_argparser():
         noise_cond=False,
         noise_cond_schedule='cosine',
         noise_cond_steps=1000,
+        noise_cond_max_step=-1,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
