@@ -153,6 +153,9 @@ def main():
         perf_no_ddl=args.perf_no_ddl,
         param_sandwich=args.param_sandwich,
         resize_mult=args.resize_mult,
+        noise_cond=args.noise_cond,
+        noise_cond_schedule=args.noise_cond_schedule,
+        noise_cond_steps=args.noise_cond_steps,
     ).run_loop()
 
 
@@ -223,6 +226,9 @@ def create_argparser():
         antialias=False,
         bicubic_down=False,
         use_txt_in_dataload=False,
+        noise_cond=False,
+        noise_cond_schedule='cosine',
+        noise_cond_steps=1000,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

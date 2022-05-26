@@ -493,6 +493,7 @@ def sr_model_and_diffusion_defaults():
     res["small_size"] = 64
     res["colorize"] = False
     res["up_interp_mode"] = "bilinear"
+    res["noise_cond"] = False
     arg_names = inspect.getfullargspec(sr_create_model_and_diffusion)[0]
     for k in res.copy().keys():
         if k not in arg_names:

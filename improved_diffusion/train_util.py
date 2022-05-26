@@ -142,9 +142,9 @@ class TrainLoop:
         self.noise_cond_diffusion = None
         if self.noise_cond:
             betas = get_named_beta_schedule(noise_cond_schedule, noise_cond_steps)
-            self.noise_cond_diffusion = SimpleForwardDiffusion()
-            noise_cond_schedule='cosine',
-        noise_cond_steps=1000,
+            self.noise_cond_diffusion = SimpleForwardDiffusion(betas)
+            # todo: other schedules
+            self.noise_cond_schedule_sampler = UniformSampler(self.noise_cond_diffusion)
 
 
         print(f"TrainLoop self.master_device: {self.master_device}, use_amp={use_amp}, autosave={self.autosave}")
@@ -537,6 +537,11 @@ class TrainLoop:
                 micro_cond['capt'] = capt
             last_batch = (i + self.microbatch) >= batch.shape[0]
             t, weights = self.schedule_sampler.sample(micro.shape[0], dist_util.dev())
+
+            if self.noise_cond:
+                t_noise_cond, _, = self.noise_cond_schedule_sampler.sample(micro.shape[0], dist_util.dev())
+                micro = self.noise_cond_diffusion.q_sample(micro, t_noise_cond)
+                model_kwargs['cond_timesteps'] = t_noise_cond
 
             with th.cuda.amp.autocast(enabled=self.use_amp, dtype=th.bfloat16 if self.use_bf16 else th.float16):
                 compute_losses = functools.partial(
