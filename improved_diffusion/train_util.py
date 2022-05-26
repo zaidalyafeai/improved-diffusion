@@ -543,7 +543,7 @@ class TrainLoop:
             if self.noise_cond:
                 t_noise_cond, _, = self.noise_cond_schedule_sampler.sample(micro.shape[0], dist_util.dev())
                 micro = self.noise_cond_diffusion.q_sample(micro, t_noise_cond)
-                model_kwargs['cond_timesteps'] = t_noise_cond
+                micro_cond['cond_timesteps'] = t_noise_cond
 
             with th.cuda.amp.autocast(enabled=self.use_amp, dtype=th.bfloat16 if self.use_bf16 else th.float16):
                 compute_losses = functools.partial(
