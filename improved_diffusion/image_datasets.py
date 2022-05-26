@@ -9,6 +9,7 @@ import torch.nn.functional as F
 import torchvision.transforms as T
 from .crop import RandomResizedProtectedCropLazy
 from .dist_util import FakeMPI
+from .gaussian_diffusion import SimpleForwardDiffusion
 MPI = FakeMPI()
 
 import tokenizers

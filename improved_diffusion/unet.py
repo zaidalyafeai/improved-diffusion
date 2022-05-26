@@ -726,6 +726,7 @@ class UNetModel(nn.Module):
         use_checkpoint_below_res=-1,
         no_attn=False,
         no_attn_substitute_resblock=False,
+        noise_cond=False,
     ):
         super().__init__()
 
@@ -773,6 +774,8 @@ class UNetModel(nn.Module):
         self.xattn_capt = xattn_capt
         self.glide_style_capt_attn = glide_style_capt_attn
         self.glide_style_capt_emb = glide_style_capt_emb
+
+        self.noise_cond = noise_cond
 
         # if use_checkpoint_below_res < 0:
         #     use_checkpoint_below_res = self.image_size * 2
@@ -826,6 +829,15 @@ class UNetModel(nn.Module):
             silu(impl="torch" if silu_impl == "fused" else silu_impl, use_checkpoint=use_checkpoint_lowcost),
             linear(time_embed_dim, time_embed_dim),
         )
+
+        if self.noise_cond:
+            self.time_embed_noise_cond = nn.Sequential(
+                linear(model_channels, time_embed_dim),
+                silu(impl="torch" if silu_impl == "fused" else silu_impl, use_checkpoint=use_checkpoint_lowcost),
+                linear(time_embed_dim, time_embed_dim),
+            )
+        else:
+            self.time_embed_noise_cond = None
 
         if self.glide_style_capt_emb:
             if glide_style_capt_emb_nonlin:
@@ -1235,7 +1247,7 @@ class UNetModel(nn.Module):
         """
         return next(self.input_blocks.parameters()).dtype
 
-    def forward(self, x, timesteps, y=None, txt=None, capt=None):
+    def forward(self, x, timesteps, y=None, txt=None, capt=None, cond_timesteps=None):
         """
         Apply the model to an input batch.
 
@@ -1256,8 +1268,16 @@ class UNetModel(nn.Module):
             self.txt
         ), "must specify txt if and only if the model is text-conditional"
 
+        assert (cond_timesteps is not None) == (
+            self.noise_cond
+        ), "must specify noise_cond if and only if the model uses noise cond"
+
+
         hs = []
         emb = self.time_embed(self.timestep_embedding(timesteps))
+
+        if cond_timesteps is not None:
+            emb = emb + self.time_embed_noise_cond(self.timestep_embedding(cond_timesteps))
 
         if self.num_classes is not None:
             assert y.shape == (x.shape[0],)

@@ -23,6 +23,7 @@ from .fp16_util import (
 )
 from .nn import update_ema, update_arithmetic_average, scale_module
 from .resample import LossAwareSampler, UniformSampler
+from .gaussian_diffusion import SimpleForwardDiffusion, get_named_beta_schedule
 
 from .image_datasets import tokenize
 
@@ -79,6 +80,9 @@ class TrainLoop:
         param_sandwich=-1,
         resize_mult=1.,
         perf_no_ddl=False,
+        noise_cond=False,
+        noise_cond_schedule='cosine',
+        noise_cond_steps=1000,
     ):
         self.model = model
         self.diffusion = diffusion
@@ -133,6 +137,15 @@ class TrainLoop:
         )
         self.only_optimize_bread = only_optimize_bread
         self.resize_mult = resize_mult
+
+        self.noise_cond = noise_cond
+        self.noise_cond_diffusion = None
+        if self.noise_cond:
+            betas = get_named_beta_schedule(noise_cond_schedule, noise_cond_steps)
+            self.noise_cond_diffusion = SimpleForwardDiffusion()
+            noise_cond_schedule='cosine',
+        noise_cond_steps=1000,
+
 
         print(f"TrainLoop self.master_device: {self.master_device}, use_amp={use_amp}, autosave={self.autosave}")
         print(f"TrainLoop self.arithmetic_avg_from_step: {self.arithmetic_avg_from_step}, self.arithmetic_avg_extra_shift={self.arithmetic_avg_extra_shift}")
