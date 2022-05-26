@@ -225,6 +225,10 @@ class SamplingModel(nn.Module):
                 capt_uncon = clip.tokenize(batch_size * [capt_drop_string], truncate=True).to(dist_util.dev())
                 model_kwargs["unconditional_model_kwargs"]["capt"] = capt_uncon
 
+        if self.model.noise_cond:
+            # todo: allow nonzero values
+            model_kwargs["cond_timesteps"] = th.zeros((batch_size,)).to(dist_util.dev())
+
         all_low_res = []
 
         if self.is_super_res:
