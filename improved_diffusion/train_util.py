@@ -541,8 +541,11 @@ class TrainLoop:
             t, weights = self.schedule_sampler.sample(micro.shape[0], dist_util.dev())
 
             if self.noise_cond:
+                if 'low_res' not in micro_cond:
+                    raise ValueError
+
                 t_noise_cond, _, = self.noise_cond_schedule_sampler.sample(micro.shape[0], dist_util.dev())
-                micro = self.noise_cond_diffusion.q_sample(micro, t_noise_cond)
+                micro_cond['low_res'] = self.noise_cond_diffusion.q_sample(micro_cond['low_res'], t_noise_cond)
                 micro_cond['cond_timesteps'] = t_noise_cond
 
             with th.cuda.amp.autocast(enabled=self.use_amp, dtype=th.bfloat16 if self.use_bf16 else th.float16):
