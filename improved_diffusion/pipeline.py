@@ -228,6 +228,8 @@ class SamplingModel(nn.Module):
 
         if self.model.noise_cond:
             model_kwargs["cond_timesteps"] = th.as_tensor(batch_size * [int(noise_cond_ts)]).to(dist_util.dev())
+            if "unconditional_model_kwargs" in model_kwargs:
+                model_kwargs["unconditional_model_kwargs"]["cond_timesteps"] = model_kwargs["cond_timesteps"]
 
         all_low_res = []
 
