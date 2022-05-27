@@ -248,6 +248,11 @@ class SamplingModel(nn.Module):
             #     f"batch_size: {batch_size} vs low_res kwarg shape {all_low_res.shape}"
             # )
 
+            if self.model.noise_cond and noise_cond_ts > 0:
+                betas = get_named_beta_schedule(noise_cond_schedule, noise_cond_steps)
+                noise_cond_diffusion = SimpleForwardDiffusion(betas)
+                all_low_res = noise_cond_diffusion.q_sample(all_low_res, model_kwargs["cond_timesteps"])
+
         image_channels = self.model.in_channels
         if self.is_super_res:
             image_channels -= all_low_res.shape[1]
