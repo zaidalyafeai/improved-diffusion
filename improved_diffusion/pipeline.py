@@ -22,6 +22,8 @@ from improved_diffusion.image_datasets import load_tokenizer, tokenize
 from improved_diffusion.unet import UNetModel
 from improved_diffusion.respace import SpacedDiffusion
 
+from improved_diffusion.gaussian_diffusion import SimpleForwardDiffusion, get_named_beta_schedule
+
 import clip
 
 
@@ -123,6 +125,8 @@ class SamplingModel(nn.Module):
         dynamic_threshold_p=0,
         denoised_fn=None,
         noise_cond_ts=0,
+        noise_cond_schedule='cosine',
+        noise_cond_steps=1000,
     ):
         # dist_util.setup_dist()
 
