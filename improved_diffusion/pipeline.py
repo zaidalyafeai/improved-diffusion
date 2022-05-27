@@ -122,6 +122,7 @@ class SamplingModel(nn.Module):
         noise=None,
         dynamic_threshold_p=0,
         denoised_fn=None,
+        noise_cond_ts=0,
     ):
         # dist_util.setup_dist()
 
@@ -226,8 +227,7 @@ class SamplingModel(nn.Module):
                 model_kwargs["unconditional_model_kwargs"]["capt"] = capt_uncon
 
         if self.model.noise_cond:
-            # todo: allow nonzero values
-            model_kwargs["cond_timesteps"] = th.zeros((batch_size,)).to(dist_util.dev())
+            model_kwargs["cond_timesteps"] = th.as_tensor(batch_size * [int(noise_cond_ts)]).to(dist_util.dev())
 
         all_low_res = []
 
@@ -356,6 +356,7 @@ class SamplingPipeline(nn.Module):
         plms_ddim_first_n_sres=0,
         dynamic_threshold_p=0,
         dynamic_threshold_p_sres=0,
+        noise_cond_ts_sres=0,
     ):
         if strip_space:
             if isinstance(text, list):
@@ -410,6 +411,7 @@ class SamplingPipeline(nn.Module):
                 noise=noise_sres,
                 plms_ddim_first_n=plms_ddim_first_n_sres,
                 dynamic_threshold_p=dynamic_threshold_p_sres,
+                noise_cond_ts=noise_cond_ts_sres,
             )
         if yield_intermediates:
             return _yield_intermediates(base_sample, high_res_sample)
@@ -455,6 +457,7 @@ class SamplingPipeline(nn.Module):
         plms_ddim_first_n_sres=0,
         dynamic_threshold_p=0,
         dynamic_threshold_p_sres=0,
+        noise_cond_ts_sres=0,
     ):
         if strip_space:
             if isinstance(text, list):
@@ -524,6 +527,7 @@ class SamplingPipeline(nn.Module):
             from_visible=True,
             verbose=verbose,
             dynamic_threshold_p=dynamic_threshold_p_sres,
+            noise_cond_ts=noise_cond_ts_sres,
         )
         if return_both_resolutions:
             return high_res, low_res
