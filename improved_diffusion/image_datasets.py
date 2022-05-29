@@ -415,6 +415,7 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_image
         px_scales = {}
     if capts is None:
         capts = {}
+    n_excluded_filesize = 0
     n_excluded_imagesize = 0
     for entry in sorted(bf.listdir(data_dir)):
         full_path = bf.join(data_dir, entry)
@@ -428,6 +429,7 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_image
             if min_filesize > 0:
                 filesize = os.path.getsize(full_path)
                 if filesize < min_filesize:
+                    n_excluded_filesize += 1
                     continue
                 file_sizes[full_path] = filesize
 
@@ -467,7 +469,7 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_image
             image_file_to_safebox.update(next_image_file_to_safebox)
             image_file_to_px_scales.update(next_image_file_to_px_scales)
             image_file_to_capt.update(next_image_file_to_capt)
-    print(f"_list_image_files_recursively: data_dir={data_dir}, n_excluded_imagesize={n_excluded_imagesize}")
+    print(f"_list_image_files_recursively: data_dir={data_dir}, n_excluded_filesize={n_excluded_filesize}, n_excluded_imagesize={n_excluded_imagesize}")
     image_file_to_safebox = {k: v for k, v in image_file_to_safebox.items() if v is not None}
     image_file_to_px_scales = {k: v for k, v in image_file_to_px_scales.items() if v is not None}
     image_file_to_capt = {k: v for k, v in image_file_to_capt.items() if v is not None}
