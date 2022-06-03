@@ -24,6 +24,9 @@ from improved_diffusion.train_util import TrainLoop
 def main():
     args = create_argparser().parse_args()
 
+    th.backends.cudnn.benchmark = args.cudnn_benchmark
+    print(f"using cudnn_benchmark: {th.backends.cudnn.benchmark}")
+
     if args.text_lr < 0:
         args.text_lr = None
 
@@ -231,6 +234,7 @@ def create_argparser():
         noise_cond_schedule='cosine',
         noise_cond_steps=1000,
         noise_cond_max_step=-1,
+        cudnn_benchmark=False,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

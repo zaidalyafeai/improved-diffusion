@@ -21,6 +21,10 @@ from improved_diffusion.train_util import TrainLoop
 
 def main():
     args = create_argparser().parse_args()
+
+    th.backends.cudnn.benchmark = args.cudnn_benchmark
+    print(f"using cudnn_benchmark: {th.backends.cudnn.benchmark}")
+
     print(f"args: got txt={args.txt}")
 
     dist_util.setup_dist()
@@ -251,6 +255,7 @@ def create_argparser():
         class_map_path="",
         clip_prob_path="",
         clip_prob_middle_pkeep=0.5,
+        cudnn_benchmark=False,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
