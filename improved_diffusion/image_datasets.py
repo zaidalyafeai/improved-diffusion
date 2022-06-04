@@ -67,6 +67,9 @@ def load_data(
     require_capts=False,
     all_pdrop=0.1,
     class_map_path=None,
+    class_ix_unk=0,
+    class_ix_drop=999,
+    class_pdrop=0.1,
     clip_prob_path=None,
     clip_prob_middle_pkeep=0.5,
     debug=False,
@@ -114,6 +117,12 @@ def load_data(
         with open(class_map_path, 'r') as f:
             class_map = json.load(f)
 
+        all_class_values = set(class_map.values())
+        if class_ix_unk in all_class_values:
+            raise ValueError(f"passed {class_ix_unk} as class_ix_unk, but it's used in class map")
+        if (class_pdrop > 0) and (class_ix_drop in all_class_values):
+            raise ValueError(f"passed {class_ix_drop} as class_ix_drop, but it's used in class map")
+
     clip_probs = None
     if clip_prob_path and os.path.exists(clip_prob_path):
         print('using clip_prob_path')
@@ -157,7 +166,7 @@ def load_data(
         # before an underscore.
         class_names = [bf.basename(path).split("_")[0] for path in all_files]
         if class_map is not None:
-            classes = [class_map.get(x, 0) for x in class_names]
+            classes = [class_map.get(x, class_ix_unk) for x in class_names]
         else:
             sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
             classes = [sorted_classes[x] for x in class_names]
@@ -249,6 +258,8 @@ def load_data(
         image_file_to_capt=image_file_to_capt,
         capt_pdrop=capt_pdrop,
         all_pdrop=all_pdrop,
+        class_ix_drop=class_ix_drop,
+        class_pdrop=class_pdrop,
     )
     if return_dataset:
         return dataset
@@ -496,6 +507,8 @@ class ImageDataset(Dataset):
                  capt_pdrop=0.1,
                  capt_drop_string='unknown',
                  all_pdrop=0.1,
+                 class_ix_drop=999,
+                 class_pdrop=0.1,
                  ):
         super().__init__()
         self.resolution = resolution
@@ -526,6 +539,8 @@ class ImageDataset(Dataset):
         self.capt_pdrop = capt_pdrop
         self.capt_drop_string = capt_drop_string
         self.all_pdrop = all_pdrop
+        self.class_ix_drop = class_ix_drop
+        self.class_pdrop = class_pdrop
 
         if (self.image_file_to_safebox is not None) and (self.pre_resize_transform is None):
             raise ValueError
@@ -602,7 +617,9 @@ class ImageDataset(Dataset):
 
         out_dict = {}
         if self.local_classes is not None:
-            out_dict["y"] = np.array(self.local_classes[idx], dtype=np.int64)
+            drop_class = (self.class_pdrop > 0) and (random.random() < self.class_pdrop)
+            this_class = self.class_ix_drop if drop_class else self.local_classes[idx]
+            out_dict["y"] = np.array(this_class, dtype=np.int64)
         if self.txt:
             drop_txt = (self.txt_pdrop > 0) and (random.random() < self.txt_pdrop)
             drop_capt = (self.capt_pdrop > 0) and (random.random() < self.capt_pdrop)
