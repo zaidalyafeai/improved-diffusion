@@ -170,6 +170,7 @@ class TrainLoop:
         ff_gain_params, self.ff_gain_param_names = [], []
         bread_params, self.bread_param_names = [], []
         capt_params, self.capt_param_names = [], []
+        cattn_params, self.cattn_param_names = [], []
         for n, p in model.named_parameters():
             if n.startswith('clipmod.'):
                 if self.freeze_capt_encoder:
@@ -177,6 +178,9 @@ class TrainLoop:
                 else:
                     self.capt_param_names.append(n)
                     capt_params.append(p)
+            elif '.encoder_kv' in n:
+                self.cattn_param_names.append(n)
+                cattn_params.append(p)
             elif 'text_encoder' in n:
                 # subname = 'text'
                 if 'text_encoder.model.layers.' in n:
@@ -239,14 +243,14 @@ class TrainLoop:
         itot_params = [itot_params[n] for n in self.itot_mods]
         self.itot_param_names = [itot_param_names[n] for n in self.itot_mods]
 
-        group_names = [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'capt', 'xgainff']
-        param_name_groups = [*self.text_param_names, *self.xattn_param_names, *self.itot_param_names, self.gain_param_names, self.bread_param_names, self.other_param_names, self.capt_param_names, self.ff_gain_param_names]
-        model_params = [*text_params, *xattn_params, *itot_params, gain_params, bread_params, other_params, capt_params, ff_gain_params]
+        group_names = [*self.text_mods, *self.xattn_mods, *self.itot_mods, 'xgain', 'bread', 'other', 'capt', 'cattn', 'xgainff']
+        param_name_groups = [*self.text_param_names, *self.xattn_param_names, *self.itot_param_names, self.gain_param_names, self.bread_param_names, self.other_param_names, self.capt_param_names, self.cattn_param_names, self.ff_gain_param_names]
+        model_params = [*text_params, *xattn_params, *itot_params, gain_params, bread_params, other_params, capt_params, cattn_params, ff_gain_params]
         group_lrs =  [
             *[self.text_lr for _ in self.text_mods],
             *[self.text_lr for _ in self.xattn_mods],
             *[self.text_lr for _ in self.itot_mods],
-            self.gain_lr, self.bread_lr, self.lr, self.capt_lr, self.gain_lr
+            self.gain_lr, self.bread_lr, self.lr, self.capt_lr, self.lr, self.gain_lr
         ]
 
         self.group_names = []
@@ -670,7 +674,7 @@ class TrainLoop:
                 sqsum += (p.grad ** 2).sum().item()
         logger.logkv_mean("grad_norm", np.sqrt(sqsum))
 
-        gn_xattn, gn_text, gn_itot, gn_capt = 0., 0., 0., 0.
+        gn_xattn, gn_text, gn_itot, gn_capt, gn_cattn = 0., 0., 0., 0., 0.
 
         # name_to_norm = {}
         # name_to_nparam = {}
@@ -709,8 +713,8 @@ class TrainLoop:
             # bottom = [np.sqrt(x) for x in vals[:3]]
             # print(f"grad_norm_{name}: {gn:.3f} for {len(pp)} params\n\ttop {top}\n\tbottom {bottom}")
             logger.logkv_mean(f"grad_norm_{name}", gn)
-            if name == 'capt':
-                gn_capt = gn
+            if name == 'cattn':
+                gn_cattn = gn
 
         gn_text = np.sqrt(gn_text)
         logger.logkv_mean(f"grad_norm_text", gn_text)
@@ -728,8 +732,8 @@ class TrainLoop:
         if gn_itot > 0:
             logger.logkv_mean(f"grad_norm_xi_ratio", gn_xattn / max(gn_itot, 1e-8))
 
-        if gn_capt > 0:
-            logger.logkv_mean(f"grad_norm_xxc_ratio", gn_xattn / max(gn_capt, 1e-8))
+        if gn_cattn > 0:
+            logger.logkv_mean(f"grad_norm_xxc_ratio", gn_xattn / max(gn_cattn, 1e-8))
 
     def _anneal_lr(self):
         if not self.lr_anneal_steps:
