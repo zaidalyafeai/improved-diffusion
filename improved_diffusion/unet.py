@@ -724,6 +724,10 @@ class UNetModel(nn.Module):
         glide_style_capt_emb_nonlin=False,
         label_emb_init_scale=0.,
         clipname='RN50',
+        use_checkpoint_below_res=-1,
+        no_attn=False,
+        no_attn_substitute_resblock=False,
+        noise_cond=False,
     ):
         super().__init__()
 
@@ -735,6 +739,7 @@ class UNetModel(nn.Module):
         print(f"unet: have text_lr_mult={text_lr_mult}")
         print(f"unet: got use_scale_shift_norm={use_scale_shift_norm}, resblock_updown={resblock_updown}")
         print(f"unet: got use_checkpoint={use_checkpoint}, use_checkpoint_up={use_checkpoint_up}, use_checkpoint_middle={use_checkpoint_middle}, use_checkpoint_down={use_checkpoint_down}, use_checkpoint_lowcost={use_checkpoint_lowcost}")
+        print(f"unet: have noise_cond={noise_cond}")
 
         def vprint(*args):
             if verbose:
@@ -745,6 +750,10 @@ class UNetModel(nn.Module):
 
         if channels_per_head_upsample == -1:
             channels_per_head_upsample = channels_per_head
+
+        use_attn = not no_attn
+        if use_attn:
+            no_attn_substitute_resblock = False
 
         self.in_channels = in_channels
         self.model_channels = model_channels
@@ -767,6 +776,13 @@ class UNetModel(nn.Module):
         self.xattn_capt = xattn_capt
         self.glide_style_capt_attn = glide_style_capt_attn
         self.glide_style_capt_emb = glide_style_capt_emb
+
+        self.noise_cond = noise_cond
+
+        # if use_checkpoint_below_res < 0:
+        #     use_checkpoint_below_res = self.image_size * 2
+        self.use_checkpoint_below_res = use_checkpoint_below_res
+        print(("self.use_checkpoint_below_res", self.use_checkpoint_below_res))
 
         if monochrome_adapter and rgb_adapter:
             print("using both monochrome_adapter and rgb_adapter, make sure this is intentional!")
@@ -812,6 +828,15 @@ class UNetModel(nn.Module):
             linear(time_embed_dim, time_embed_dim),
         )
 
+        if self.noise_cond:
+            self.time_embed_noise_cond = nn.Sequential(
+                linear(model_channels, time_embed_dim),
+                silu(impl="torch" if silu_impl == "fused" else silu_impl, use_checkpoint=use_checkpoint_lowcost),
+                linear(time_embed_dim, time_embed_dim),
+            )
+        else:
+            self.time_embed_noise_cond = None
+
         if self.glide_style_capt_emb:
             if glide_style_capt_emb_nonlin:
                 self.capt_embed = nn.Sequential(
@@ -843,7 +868,7 @@ class UNetModel(nn.Module):
         self.input_blocks = nn.ModuleList(
             [
                 TimestepEmbedSequential(
-                    mapper(conv_nd(dims, in_channels, model_channels, 3, padding=1))
+                    mapper(conv_nd(dims, in_channels, model_channels, 3, padding=1, use_checkpoint=image_size <= use_checkpoint_below_res))
                 )
             ]
         )
@@ -860,7 +885,7 @@ class UNetModel(nn.Module):
                         dropout,
                         out_channels=mult * model_channels,
                         dims=dims,
-                        use_checkpoint=use_checkpoint or use_checkpoint_down,
+                        use_checkpoint=use_checkpoint or use_checkpoint_down or ((image_size // ds) <= use_checkpoint_below_res),
                         use_scale_shift_norm=use_scale_shift_norm,
                         use_checkpoint_lowcost=use_checkpoint_lowcost,
                         base_channels=expand_timestep_base_dim * ch // model_channels,
@@ -868,18 +893,37 @@ class UNetModel(nn.Module):
                     )
                 ]
                 ch = mult * model_channels
-                if ds in attention_resolutions:
-                    num_heads_here = num_heads
-                    if channels_per_head > 0:
-                        num_heads_here = ch // channels_per_head
-                    layers.append(
-                        AttentionBlock(
-                            ch, use_checkpoint=use_checkpoint or use_checkpoint_down, num_heads=num_heads_here,
-                            use_checkpoint_lowcost=use_checkpoint_lowcost,
-                            base_channels=expand_timestep_base_dim * ch // model_channels,
-                            encoder_channels=self.capt_embd_dim if self.glide_style_capt_attn else None
+                if (ds in attention_resolutions):
+                    if no_attn_substitute_resblock:
+                        layers.append(
+                            ResBlock(
+                                ch,
+                                time_embed_dim,
+                                dropout,
+                                out_channels=mult * model_channels,
+                                dims=dims,
+                                use_checkpoint=use_checkpoint or use_checkpoint_down or ((image_size // ds) <= use_checkpoint_below_res),
+                                use_scale_shift_norm=use_scale_shift_norm,
+                                use_checkpoint_lowcost=use_checkpoint_lowcost,
+                                base_channels=expand_timestep_base_dim * ch // model_channels,
+                                silu_impl=silu_impl,
+                            )
                         )
-                    )
+                    elif use_attn:
+                        num_heads_here = num_heads
+                        if channels_per_head > 0:
+                            num_heads_here = ch // channels_per_head
+                        layers.append(
+                            AttentionBlock(
+                                ch, use_checkpoint=use_checkpoint or use_checkpoint_down or ((image_size // ds) <= use_checkpoint_below_res),
+                                num_heads=num_heads_here,
+                                use_checkpoint_lowcost=use_checkpoint_lowcost,
+                                base_channels=expand_timestep_base_dim * ch // model_channels,
+                                encoder_channels=self.capt_embd_dim if self.glide_style_capt_attn else None
+                            )
+                        )
+                    else:
+                        layers.append(nn.Identity())
                 if self.txt and ds in self.txt_resolutions and (not txt_output_layers_only):
                     num_heads_here = num_heads
                     if cross_attn_channels_per_head > 0:
@@ -927,9 +971,9 @@ class UNetModel(nn.Module):
                             weave_v2=weave_v2,
                             use_ff_gain=weave_use_ff_gain,
                         ))
-                        caa = WeaveAttentionAdapter(**caa_args)
+                        caa = WeaveAttentionAdapter(**caa_args) if use_attn else nn.Identity()
                     else:
-                        caa = CrossAttentionAdapter(**caa_args)
+                        caa = CrossAttentionAdapter(**caa_args) if use_attn else nn.Identity()
                     if txt_attn_before_attn and (ds in attention_resolutions):
                         layers.insert(-1, caa)
                     else:
@@ -948,7 +992,7 @@ class UNetModel(nn.Module):
                             dropout,
                             out_channels=ch,
                             dims=dims,
-                            use_checkpoint=use_checkpoint or use_checkpoint_down,
+                            use_checkpoint=use_checkpoint or use_checkpoint_down or ((image_size // ds) <= use_checkpoint_below_res),
                             use_scale_shift_norm=use_scale_shift_norm,
                             down=True,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
@@ -974,33 +1018,33 @@ class UNetModel(nn.Module):
 
         vprint(f"input_block_chans: {input_block_chans}")
 
+        def _middle_resblock():
+            return ResBlock(
+                ch,
+                time_embed_dim,
+                dropout,
+                dims=dims,
+                use_checkpoint=use_checkpoint or use_checkpoint_middle or ((image_size // ds) <= use_checkpoint_below_res),
+                use_scale_shift_norm=use_scale_shift_norm,
+                use_checkpoint_lowcost=use_checkpoint_lowcost,
+                base_channels=expand_timestep_base_dim * ch // model_channels,
+                silu_impl=silu_impl,
+            )
+
+        def _middle_attnblock():
+            return AttentionBlock(
+                ch,
+                use_checkpoint=use_checkpoint or use_checkpoint_middle or ((image_size // ds) <= use_checkpoint_below_res),
+                num_heads=num_heads,
+                use_checkpoint_lowcost=use_checkpoint_lowcost,
+                base_channels=expand_timestep_base_dim * ch // model_channels,
+                encoder_channels=self.capt_embd_dim if self.glide_style_capt_attn else None
+            )
+
         self.middle_block = TimestepEmbedSequential(
-            ResBlock(
-                ch,
-                time_embed_dim,
-                dropout,
-                dims=dims,
-                use_checkpoint=use_checkpoint or use_checkpoint_middle,
-                use_scale_shift_norm=use_scale_shift_norm,
-                use_checkpoint_lowcost=use_checkpoint_lowcost,
-                base_channels=expand_timestep_base_dim * ch // model_channels,
-                silu_impl=silu_impl,
-            ),
-            AttentionBlock(ch, use_checkpoint=use_checkpoint or use_checkpoint_middle, num_heads=num_heads,
-                           use_checkpoint_lowcost=use_checkpoint_lowcost,
-                           base_channels=expand_timestep_base_dim * ch // model_channels,
-                           encoder_channels=self.capt_embd_dim if self.glide_style_capt_attn else None),
-            ResBlock(
-                ch,
-                time_embed_dim,
-                dropout,
-                dims=dims,
-                use_checkpoint=use_checkpoint or use_checkpoint_middle,
-                use_scale_shift_norm=use_scale_shift_norm,
-                use_checkpoint_lowcost=use_checkpoint_lowcost,
-                base_channels=expand_timestep_base_dim * ch // model_channels,
-                silu_impl=silu_impl,
-            ),
+            _middle_resblock(),
+            _middle_resblock() if no_attn_substitute_resblock else (_middle_attnblock() if use_attn else nn.Identity()),
+            _middle_resblock(),
         )
 
         self.output_blocks = nn.ModuleList([])
@@ -1014,7 +1058,7 @@ class UNetModel(nn.Module):
                         dropout,
                         out_channels=model_channels * mult,
                         dims=dims,
-                        use_checkpoint=use_checkpoint or use_checkpoint_up,
+                        use_checkpoint=use_checkpoint or use_checkpoint_up or ((image_size // ds) <= use_checkpoint_below_res),
                         use_scale_shift_norm=use_scale_shift_norm,
                         use_checkpoint_lowcost=use_checkpoint_lowcost,
                         base_channels=expand_timestep_base_dim * this_ch // model_channels,
@@ -1023,19 +1067,37 @@ class UNetModel(nn.Module):
                 ]
                 ch = model_channels * mult
                 if ds in attention_resolutions:
-                    num_heads_here = num_heads_upsample
-                    if channels_per_head_upsample > 0:
-                        num_heads_here = ch // channels_per_head_upsample
-                    layers.append(
-                        AttentionBlock(
-                            ch,
-                            use_checkpoint=use_checkpoint or use_checkpoint_up,
-                            num_heads=num_heads_here,
-                            use_checkpoint_lowcost=use_checkpoint_lowcost,
-                            base_channels=expand_timestep_base_dim * ch // model_channels,
-                            encoder_channels=self.capt_embd_dim if self.glide_style_capt_attn else None
+                    if no_attn_substitute_resblock:
+                        layers.append(
+                            ResBlock(
+                                ch,
+                                time_embed_dim,
+                                dropout,
+                                out_channels=model_channels * mult,
+                                dims=dims,
+                                use_checkpoint=use_checkpoint or use_checkpoint_up or ((image_size // ds) <= use_checkpoint_below_res),
+                                use_scale_shift_norm=use_scale_shift_norm,
+                                use_checkpoint_lowcost=use_checkpoint_lowcost,
+                                base_channels=expand_timestep_base_dim * this_ch // model_channels,
+                                silu_impl=silu_impl,
+                            )
                         )
-                    )
+                    elif use_attn:
+                        num_heads_here = num_heads_upsample
+                        if channels_per_head_upsample > 0:
+                            num_heads_here = ch // channels_per_head_upsample
+                        layers.append(
+                            AttentionBlock(
+                                ch,
+                                use_checkpoint=use_checkpoint or use_checkpoint_up or ((image_size // ds) <= use_checkpoint_below_res),
+                                num_heads=num_heads_here,
+                                use_checkpoint_lowcost=use_checkpoint_lowcost,
+                                base_channels=expand_timestep_base_dim * ch // model_channels,
+                                encoder_channels=self.capt_embd_dim if self.glide_style_capt_attn else None
+                            )
+                        )
+                    else:
+                        layers.append(nn.Identity())
                 if self.txt and ds in self.txt_resolutions:
                     use_capts = [False, True] if (self.using_capt and self.xattn_capt) else [False]
                     if self.glide_style_capt_attn:
@@ -1090,9 +1152,9 @@ class UNetModel(nn.Module):
                                 use_ff_gain=weave_use_ff_gain,
                                 no_itot=use_capt and (not weave_capt),
                             ))
-                            caa = WeaveAttentionAdapter(**caa_args)
+                            caa = WeaveAttentionAdapter(**caa_args) if use_attn else nn.Identity()
                         else:
-                            caa = CrossAttentionAdapter(**caa_args)
+                            caa = CrossAttentionAdapter(**caa_args) if use_attn else nn.Identity()
                         if txt_attn_before_attn and (ds in attention_resolutions):
                             layers.insert(-1, caa)
                         else:
@@ -1114,7 +1176,7 @@ class UNetModel(nn.Module):
                             dropout,
                             out_channels=ch,
                             dims=dims,
-                            use_checkpoint=use_checkpoint or use_checkpoint_up,
+                            use_checkpoint=use_checkpoint or use_checkpoint_up or ((image_size // ds) <= use_checkpoint_below_res),
                             use_scale_shift_norm=use_scale_shift_norm,
                             up=True,
                             use_checkpoint_lowcost=use_checkpoint_lowcost,
@@ -1136,7 +1198,7 @@ class UNetModel(nn.Module):
         self.out = nn.Sequential(
             normalization(ch, base_channels=self.expand_timestep_base_dim, fused=silu_impl=="fused"),
             silu(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
-            zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
+            zero_module(conv_nd(dims, channel_mult[0] * model_channels, out_channels, 3, padding=1)),
         )
 
         if monochrome_adapter:
@@ -1183,7 +1245,7 @@ class UNetModel(nn.Module):
         """
         return next(self.input_blocks.parameters()).dtype
 
-    def forward(self, x, timesteps, y=None, txt=None, capt=None):
+    def forward(self, x, timesteps, y=None, txt=None, capt=None, cond_timesteps=None):
         """
         Apply the model to an input batch.
 
@@ -1204,8 +1266,16 @@ class UNetModel(nn.Module):
             self.txt
         ), "must specify txt if and only if the model is text-conditional"
 
+        assert (cond_timesteps is not None) == (
+            self.noise_cond
+        ), "must specify noise_cond if and only if the model uses noise cond"
+
+
         hs = []
         emb = self.time_embed(self.timestep_embedding(timesteps))
+
+        if cond_timesteps is not None:
+            emb = emb + self.time_embed_noise_cond(self.timestep_embedding(cond_timesteps))
 
         if self.num_classes is not None:
             assert y.shape == (x.shape[0],)
@@ -1239,7 +1309,9 @@ class UNetModel(nn.Module):
         if self.rgb_adapter:
             h = self.rgb_to_input(h)
 
-        h = h.type(self.inner_dtype)
+        # print(f'x type: {x.dtype}')
+        # h = h.type(self.inner_dtype)
+        # print(f'h type: {h.dtype}')
         if self.channels_last_mem:
             h = h.to(memory_format=th.channels_last)
         if self.using_bread_adapter:
@@ -1255,6 +1327,7 @@ class UNetModel(nn.Module):
                 else:
                     h = h + h_bread_in
             hs.append(h)
+            # print(f'\th type: {h.dtype}')
         h, txt, capt = self.middle_block((h, txt, capt), emb, attn_mask=attn_mask, tgt_pos_embs=self.tgt_pos_embs, capt_attn_mask=capt_attn_mask)
         skip_pop = False
         for module in self.output_blocks:
@@ -1289,8 +1362,13 @@ class UNetModel(nn.Module):
             if getattr(module, 'bread_adapter_out_pt', False):
                 h_bread_out = self.bread_adapter_out(h)
                 skip_pop = True
-        h = h.type(x.dtype)
-        h = self.out(h)
+            # print(f'\th type: {h.dtype}')
+        # h = h.type(x.dtype)
+        # print(f'h type: {h.dtype}')
+
+        h = checkpoint(self.out.forward, (h,), self.out.parameters(), self.image_size <= self.use_checkpoint_below_res)
+
+        # print(f'\th type: {h.dtype}')
 
         if self.using_bread_adapter:
             if self.bread_adapter_only:

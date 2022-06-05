@@ -3,7 +3,7 @@ from PIL import Image
 import blobfile as bf
 # from mpi4py import MPI
 import numpy as np
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, BatchSampler, RandomSampler, SequentialSampler
 import torch as th
 import torch.nn.functional as F
 import torchvision.transforms as T
@@ -41,6 +41,10 @@ def tokenize(tokenizer, txt):
     return [t.ids for t in tokenizer.encode_batch(txt)]
 
 
+def clip_pkeep(probs, middle_pkeep=0.5):
+    return probs[2] + middle_pkeep * probs[1]
+
+
 def load_data(
     *, data_dir, batch_size, image_size, class_cond=False, deterministic=False,
     txt=False, monochrome=False, offset=0, min_filesize=0,
@@ -48,6 +52,7 @@ def load_data(
     crop_prob=0., crop_min_scale=0.75, crop_max_scale=1.,
     use_special_crop_for_empty_string=False,
     crop_prob_es=0., crop_min_scale_es=0.25, crop_max_scale_es=1.,
+    crop_without_resize=False,
     safebox_path="",
     use_random_safebox_for_empty_string=False,
     flip_lr_prob_es=0.,
@@ -55,12 +60,18 @@ def load_data(
     return_dataset=False,
     pin_memory=False,
     prefetch_factor=2,
+    num_workers=1,
     min_imagesize=0,
     capt_path="",
     capt_pdrop=0.1,
     require_capts=False,
     all_pdrop=0.1,
     class_map_path=None,
+    class_ix_unk=0,
+    class_ix_drop=999,
+    class_pdrop=0.1,
+    clip_prob_path=None,
+    clip_prob_middle_pkeep=0.5,
     debug=False,
 ):
     """
@@ -106,6 +117,18 @@ def load_data(
         with open(class_map_path, 'r') as f:
             class_map = json.load(f)
 
+        all_class_values = set(class_map.values())
+        if class_ix_unk in all_class_values:
+            raise ValueError(f"passed {class_ix_unk} as class_ix_unk, but it's used in class map")
+        if (class_pdrop > 0) and (class_ix_drop in all_class_values):
+            raise ValueError(f"passed {class_ix_drop} as class_ix_drop, but it's used in class map")
+
+    clip_probs = None
+    if clip_prob_path and os.path.exists(clip_prob_path):
+        print('using clip_prob_path')
+        with open(clip_prob_path, 'r') as f:
+            clip_probs = json.load(f)
+
     all_files, image_file_to_text_file, file_sizes, image_file_to_safebox, image_file_to_px_scales, image_file_to_capt = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize, min_imagesize=min_imagesize, safeboxes=safeboxes, px_scales=px_scales, capts=capts, require_capts=require_capts)
     print(f"found {len(all_files)} images, {len(image_file_to_text_file)} texts, {len(image_file_to_capt)} capts")
     all_files = all_files[offset:]
@@ -131,7 +154,11 @@ def load_data(
         print(f"of {n_texts} texts, {n_with_px_scale} have px scales (all px scales: {len(image_file_to_px_scales)})")
 
     n_images_with_capts = len(set(image_file_to_text_file.keys()).intersection(image_file_to_capt.keys()))
-    print(f"of {len(image_file_to_text_file)} images, {n_images_with_capts} have capts (all capts: {len(image_file_to_capt)})")
+    print(f"of {len(image_file_to_text_file)} txt images, {n_images_with_capts} have capts (all capts: {len(image_file_to_capt)})")
+
+    if clip_probs is not None:
+        n_images_with_clip_probs = len(set(all_files).intersection(clip_probs.keys()))
+        print(f"of {len(all_files)} images, {n_images_with_clip_probs} have clip_probs (all clip_probs: {len(clip_probs)})")
 
     classes = None
     if class_cond:
@@ -139,7 +166,7 @@ def load_data(
         # before an underscore.
         class_names = [bf.basename(path).split("_")[0] for path in all_files]
         if class_map is not None:
-            classes = [class_map.get(x, 0) for x in class_names]
+            classes = [class_map.get(x, class_ix_unk) for x in class_names]
         else:
             sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
             classes = [sorted_classes[x] for x in class_names]
@@ -149,7 +176,7 @@ def load_data(
 
     if crop_prob > 0:
         print("using crop")
-        if safeboxes is not None:
+        if safeboxes is not None and (not crop_without_resize):
             print('using safebox crop')
             imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
             def safebox_crop(img, safebox, pre_applied_rescale_factor):
@@ -165,9 +192,15 @@ def load_data(
                 crop_max_scale_es = crop_max_scale
         else:
             imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
+            if crop_without_resize:
+                cropper = T.RandomCrop(size=tsize)
+            else:
+                cropper = T.RandomResizedCrop(
+                    size=tsize, ratio=(1, 1), scale=(crop_min_scale, crop_max_scale), interpolation=imode
+                )
             pre_resize_transform = T.RandomApply(
                 transforms=[
-                    T.RandomResizedCrop(size=tsize, ratio=(1, 1), scale=(crop_min_scale, crop_max_scale), interpolation=imode),
+                    cropper,
                 ],
                 p=crop_prob
             )
@@ -181,10 +214,16 @@ def load_data(
     if use_es_regular_crop:
         print("using es regular crop")
         imode, tsize = (T.functional.InterpolationMode.BICUBIC, (image_size,))
+        if crop_without_resize:
+            cropper = T.RandomCrop(size=tsize)
+        else:
+            cropper = T.RandomResizedCrop(
+                size=tsize, ratio=(1, 1), scale=(crop_min_scale_es, crop_max_scale_es), interpolation=imode
+            )
         pre_resize_transform_for_empty_string.append(
             T.RandomApply(
                 transforms=[
-                    T.RandomResizedCrop(size=tsize, ratio=(1, 1), scale=(crop_min_scale_es, crop_max_scale_es), interpolation=imode),
+                    cropper,
                 ],
                 p=crop_prob_es
             )
@@ -219,24 +258,71 @@ def load_data(
         image_file_to_capt=image_file_to_capt,
         capt_pdrop=capt_pdrop,
         all_pdrop=all_pdrop,
+        class_ix_drop=class_ix_drop,
+        class_pdrop=class_pdrop,
     )
     if return_dataset:
         return dataset
+    clip_probs_by_idxs = None
+    if clip_probs is not None:
+        clip_probs_by_idxs = {
+            i: clip_probs.get(p)
+            for i, p in enumerate(dataset.local_images)
+            if p in clip_probs
+        }
+        print(f"len(clip_probs_by_idxs): {len(clip_probs_by_idxs)}")
+        avg_pkeep = np.mean([clip_pkeep(p, middle_pkeep=clip_prob_middle_pkeep) for p in clip_probs_by_idxs.values()])
+        eff_len = avg_pkeep * len(dataset)
+        eff_steps_per = eff_len / batch_size
+        print(f"avg_pkeep {avg_pkeep:.3f} | effective data size {eff_len:.1f} | effective steps/epoch {eff_steps_per:.1f}")
     return _dataloader_gen(dataset, batch_size=batch_size, deterministic=deterministic, pin_memory=pin_memory,
-                           prefetch_factor=prefetch_factor)
+                           prefetch_factor=prefetch_factor,
+                           clip_probs_by_idxs=clip_probs_by_idxs,
+                           clip_prob_middle_pkeep=clip_prob_middle_pkeep,
+                           num_workers=num_workers)
 
 
-def _dataloader_gen(dataset, batch_size, deterministic, pin_memory, prefetch_factor):
-    if deterministic:
-        loader = DataLoader(
-            dataset, batch_size=batch_size, shuffle=False, num_workers=1, drop_last=True, pin_memory=pin_memory,
-            prefetch_factor=prefetch_factor
-        )
-    else:
-        loader = DataLoader(
-            dataset, batch_size=batch_size, shuffle=True, num_workers=1, drop_last=True, pin_memory=pin_memory,
-            prefetch_factor=prefetch_factor
-        )
+class DropSampler(BatchSampler):
+    def __init__(self, sampler, batch_size: int, drop_last: bool, clip_probs_by_idxs: dict, clip_prob_middle_pkeep=0.5):
+        super().__init__(sampler, batch_size, drop_last)
+        self.clip_probs_by_idxs = clip_probs_by_idxs
+        self.clip_prob_middle_pkeep = clip_prob_middle_pkeep
+
+    def __iter__(self):
+        batch = []
+        for idx in self.sampler:
+            if idx in self.clip_probs_by_idxs:
+                this_probs = self.clip_probs_by_idxs[idx]
+                pkeep = clip_pkeep(this_probs, middle_pkeep=self.clip_prob_middle_pkeep)
+                if random.random() > pkeep:
+                    continue
+
+            batch.append(idx)
+            if len(batch) == self.batch_size:
+                yield batch
+                batch = []
+        if len(batch) > 0 and not self.drop_last:
+            yield batch
+
+
+def _dataloader_gen(dataset, batch_size, deterministic, pin_memory, prefetch_factor,
+                    clip_probs_by_idxs=None,
+                    clip_prob_middle_pkeep=0.5,
+                    num_workers=1):
+    print(f'_dataloader_gen: deterministic={deterministic}')
+    kwargs = dict(batch_size=batch_size, drop_last=True, shuffle=not deterministic, )
+    if clip_probs_by_idxs is not None:
+        if not deterministic:
+            sampler = RandomSampler(dataset, generator=None)
+        else:
+            sampler = SequentialSampler(dataset)
+        batch_sampler = DropSampler(sampler=sampler, batch_size=batch_size, drop_last=True, clip_probs_by_idxs=clip_probs_by_idxs, clip_prob_middle_pkeep=clip_prob_middle_pkeep)
+        kwargs = dict(batch_sampler=batch_sampler)
+
+    loader = DataLoader(
+        dataset, num_workers=num_workers, pin_memory=pin_memory,
+        prefetch_factor=prefetch_factor, **kwargs
+    )
     while True:
         yield from loader
 
@@ -250,14 +336,21 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
                        crop_prob=0., crop_min_scale=0.75, crop_max_scale=1.,
                        use_special_crop_for_empty_string=False,
                        crop_prob_es=0., crop_min_scale_es=0.25, crop_max_scale_es=1.,
+                       crop_without_resize=False,
                        safebox_path="",
                        use_random_safebox_for_empty_string=False,
                        flip_lr_prob_es=0.,
                        px_scales_path="",
                        pin_memory=False,
                        prefetch_factor=2,
+                       num_workers=1,
                        min_imagesize=0,
+                       clip_prob_path=None,
+                       clip_prob_middle_pkeep=0.5,
+                       antialias=False,
+                       bicubic_down=False,
                        ):
+    print(f'load_superres_data: deterministic={deterministic}')
     data = load_data(
         data_dir=data_dir,
         batch_size=batch_size,
@@ -277,19 +370,41 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         crop_prob_es=crop_prob_es,
         crop_min_scale_es=crop_min_scale_es,
         crop_max_scale_es=crop_max_scale_es,
+        crop_without_resize=crop_without_resize,
         safebox_path=safebox_path,
         use_random_safebox_for_empty_string=use_random_safebox_for_empty_string,
         flip_lr_prob_es=flip_lr_prob_es,
         px_scales_path=px_scales_path,
         pin_memory=pin_memory,
         prefetch_factor=prefetch_factor,
+        num_workers=num_workers,
         min_imagesize=min_imagesize,
+        clip_prob_path=clip_prob_path,
+        clip_prob_middle_pkeep=clip_prob_middle_pkeep,
     )
 
     blurrer = T.RandomApply(transforms=[T.GaussianBlur(blur_width, sigma=(blur_sigma_min, blur_sigma_max))], p=blur_prob)
 
+    is_power_of_2 = False
+    top = large_size
+    while top > small_size:
+        top = top // 2
+        if top == small_size:
+            is_power_of_2 = True
+
+    print(f"is_power_of_2: {is_power_of_2}")
+    mode = "area" if is_power_of_2 else "bilinear"
+    use_antialias = False
+
+    if antialias:
+        use_antialias = True
+        mode = "bilinear"
+
+    if bicubic_down:
+        mode = 'bicubic'
+
     for large_batch, model_kwargs in data:
-        model_kwargs["low_res"] = F.interpolate(large_batch, small_size, mode="area")
+        model_kwargs["low_res"] = F.interpolate(large_batch, small_size, mode=mode, antialias=use_antialias)
         if colorize:
             model_kwargs["low_res"] = model_kwargs["low_res"].mean(dim=1, keepdim=True)
         if blur_prob > 0:
@@ -311,6 +426,7 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_image
         px_scales = {}
     if capts is None:
         capts = {}
+    n_excluded_filesize = 0
     n_excluded_imagesize = 0
     for entry in sorted(bf.listdir(data_dir)):
         full_path = bf.join(data_dir, entry)
@@ -324,6 +440,7 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_image
             if min_filesize > 0:
                 filesize = os.path.getsize(full_path)
                 if filesize < min_filesize:
+                    n_excluded_filesize += 1
                     continue
                 file_sizes[full_path] = filesize
 
@@ -363,7 +480,7 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_image
             image_file_to_safebox.update(next_image_file_to_safebox)
             image_file_to_px_scales.update(next_image_file_to_px_scales)
             image_file_to_capt.update(next_image_file_to_capt)
-    print(f"_list_image_files_recursively: data_dir={data_dir}, n_excluded_imagesize={n_excluded_imagesize}")
+    print(f"_list_image_files_recursively: data_dir={data_dir}, n_excluded_filesize={n_excluded_filesize}, n_excluded_imagesize={n_excluded_imagesize}")
     image_file_to_safebox = {k: v for k, v in image_file_to_safebox.items() if v is not None}
     image_file_to_px_scales = {k: v for k, v in image_file_to_px_scales.items() if v is not None}
     image_file_to_capt = {k: v for k, v in image_file_to_capt.items() if v is not None}
@@ -390,6 +507,8 @@ class ImageDataset(Dataset):
                  capt_pdrop=0.1,
                  capt_drop_string='unknown',
                  all_pdrop=0.1,
+                 class_ix_drop=999,
+                 class_pdrop=0.1,
                  ):
         super().__init__()
         self.resolution = resolution
@@ -420,6 +539,8 @@ class ImageDataset(Dataset):
         self.capt_pdrop = capt_pdrop
         self.capt_drop_string = capt_drop_string
         self.all_pdrop = all_pdrop
+        self.class_ix_drop = class_ix_drop
+        self.class_pdrop = class_pdrop
 
         if (self.image_file_to_safebox is not None) and (self.pre_resize_transform is None):
             raise ValueError
@@ -463,7 +584,7 @@ class ImageDataset(Dataset):
                 safebox = self.image_file_to_safebox[random.choice(self.safebox_keys)]
                 px_scale = self.image_file_to_px_scales.get(path)
                 pil_image = self.pre_resize_transform(pil_image, safebox, px_scale)
-        else:
+        elif self.txt:
             if self.image_file_to_safebox is not None:
                 if path in self.image_file_to_safebox:
                     safebox = self.image_file_to_safebox[path]
@@ -496,7 +617,9 @@ class ImageDataset(Dataset):
 
         out_dict = {}
         if self.local_classes is not None:
-            out_dict["y"] = np.array(self.local_classes[idx], dtype=np.int64)
+            drop_class = (self.class_pdrop > 0) and (random.random() < self.class_pdrop)
+            this_class = self.class_ix_drop if drop_class else self.local_classes[idx]
+            out_dict["y"] = np.array(this_class, dtype=np.int64)
         if self.txt:
             drop_txt = (self.txt_pdrop > 0) and (random.random() < self.txt_pdrop)
             drop_capt = (self.capt_pdrop > 0) and (random.random() < self.capt_pdrop)
@@ -515,6 +638,7 @@ class ImageDataset(Dataset):
             if drop_capt:
                 capt = self.capt_drop_string
             out_dict['capt'] = capt
+
         return np.transpose(arr, [2, 0, 1]), out_dict
 
 

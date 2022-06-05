@@ -21,6 +21,10 @@ from improved_diffusion.train_util import TrainLoop
 
 def main():
     args = create_argparser().parse_args()
+
+    th.backends.cudnn.benchmark = args.cudnn_benchmark
+    print(f"using cudnn_benchmark: {th.backends.cudnn.benchmark}")
+
     print(f"args: got txt={args.txt}")
 
     dist_util.setup_dist()
@@ -110,6 +114,7 @@ def main():
         crop_prob_es=args.crop_prob_es,
         crop_min_scale_es=args.crop_min_scale_es,
         crop_max_scale_es=args.crop_max_scale_es,
+        crop_without_resize=args.crop_without_resize,
         safebox_path=args.safebox_path,
         use_random_safebox_for_empty_string=args.use_random_safebox_for_empty_string,
         flip_lr_prob_es=args.flip_lr_prob_es,
@@ -122,6 +127,9 @@ def main():
         require_capts=args.require_capts,
         all_pdrop=args.all_pdrop,
         class_map_path=args.class_map_path,
+        clip_prob_path=args.clip_prob_path,
+        clip_prob_middle_pkeep=args.clip_prob_middle_pkeep,
+        num_workers=args.perf_num_workers,
     )
 
     if args.save_first_batch:
@@ -148,6 +156,7 @@ def main():
         weight_decay=args.weight_decay,
         lr_anneal_steps=args.lr_anneal_steps,
         lr_warmup_steps=args.lr_warmup_steps,
+        lr_warmup_shift=args.lr_warmup_shift,
         tokenizer=tokenizer,
         lg_loss_scale=args.lg_loss_scale,
         beta1=args.beta1,
@@ -180,6 +189,7 @@ def create_argparser():
         weight_decay=0.0,
         lr_anneal_steps=0,
         lr_warmup_steps=0,
+        lr_warmup_shift=0,
         batch_size=1,
         microbatch=-1,  # -1 disables microbatches
         ema_rate="0.9999",  # comma-separated list of EMA values
@@ -225,6 +235,7 @@ def create_argparser():
         crop_prob_es=0.,
         crop_min_scale_es=0.25,
         crop_max_scale_es=1.,
+        crop_without_resize=False,
         safebox_path="",
         use_random_safebox_for_empty_string=False,
         flip_lr_prob_es=0.,
@@ -236,6 +247,7 @@ def create_argparser():
         perf_no_ddl=False,
         perf_pin_memory=False,
         perf_prefetch_factor=2,
+        perf_num_workers=1,
         min_imagesize=0,
         capt_path="",
         capt_pdrop=0.1,
@@ -243,6 +255,9 @@ def create_argparser():
         require_capts=False,
         class_map_path="",
         freeze_capt_encoder=False,
+        clip_prob_path="",
+        clip_prob_middle_pkeep=0.5,
+        cudnn_benchmark=False,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

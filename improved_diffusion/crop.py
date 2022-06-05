@@ -34,6 +34,10 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
 
         pre_applied_rescale_factor = max(pre_applied_rescale_factor)
 
+        res_model = self.size
+        if not isinstance(res_model, int):
+            res_model = res_model[0]
+
         if pre_applied_rescale_factor <= 1:
             pass
             # dprint('on irrelevant branch\n')
@@ -48,9 +52,6 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
             #
             # criterion:
             #               Res_Dynamic > Res_Model * (Res_Saved / Res_Orig)
-            res_model = self.size
-            if not isinstance(res_model, int):
-                res_model = res_model[0]
             protected_edgesize_from_pre_applied_rescale = res_model * pre_applied_rescale_factor
 
             # don't protect more than the image we have on hand
@@ -68,6 +69,9 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
             dprint(f"after: {max(protected_space_h, protected_space_v)}")
 
         protected_edgesize = max(protected_space_h, protected_space_v)
+
+        protected_edgesize = max(protected_edgesize, min(max_possible_edgesize, res_model))
+
         protected_area = (protected_edgesize) * (protected_edgesize)
 
         min_area = max(self.min_area, protected_area / area)
@@ -117,12 +121,12 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
             n+=1
 
             if n > 10000:
-                print('struggling w/ image, returning uncropped')
-                print(f"safebox: {safebox}")
-                print(f"attempt: {(cropbox_left, cropbox_top, cropbox_right, cropbox_bottom)}")
-                print(f"target_edgesize: {target_edgesize}")
-                print(f"protected_edgesize: {protected_edgesize}")
-                print(f"max_possible_edgesize: {max_possible_edgesize}")
+                dprint('struggling w/ image, returning uncropped')
+                dprint(f"safebox: {safebox}")
+                dprint(f"attempt: {(cropbox_left, cropbox_top, cropbox_right, cropbox_bottom)}")
+                dprint(f"target_edgesize: {target_edgesize}")
+                dprint(f"protected_edgesize: {protected_edgesize}")
+                dprint(f"max_possible_edgesize: {max_possible_edgesize}")
                 cropbox_left, cropbox_top, cropbox_right, cropbox_bottom = (0, 0, width, height)
                 break
 
@@ -142,4 +146,5 @@ class RandomResizedProtectedCropLazy(torch.nn.Module):
         i, j = cropbox[1], cropbox[0]
         h, w = cropbox[2] - j, cropbox[3] - i
         # display(img.crop(cropbox).resize((self.size, self.size)))
-        return TF.resized_crop(img, i, j, h, w, self.size, self.interpolation)
+        # return TF.resized_crop(img, i, j, h, w, self.size, self.interpolation)
+        return TF.resize(TF.crop(img, i, j, h, w), self.size, self.interpolation, antialias=True)

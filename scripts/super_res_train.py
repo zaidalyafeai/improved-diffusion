@@ -24,6 +24,9 @@ from improved_diffusion.train_util import TrainLoop
 def main():
     args = create_argparser().parse_args()
 
+    th.backends.cudnn.benchmark = args.cudnn_benchmark
+    print(f"using cudnn_benchmark: {th.backends.cudnn.benchmark}")
+
     if args.text_lr < 0:
         args.text_lr = None
 
@@ -83,7 +86,7 @@ def main():
         large_size=args.large_size,
         small_size=args.small_size,
         class_cond=args.class_cond,
-        txt=args.txt,
+        txt=args.txt or args.use_txt_in_dataload,
         monochrome=args.monochrome,
         colorize=args.colorize,
         blur_prob=args.blur_prob,
@@ -98,14 +101,20 @@ def main():
         crop_prob_es=args.crop_prob_es,
         crop_min_scale_es=args.crop_min_scale_es,
         crop_max_scale_es=args.crop_max_scale_es,
+        crop_without_resize=args.crop_without_resize,
         safebox_path=args.safebox_path,
         use_random_safebox_for_empty_string=args.use_random_safebox_for_empty_string,
         flip_lr_prob_es=args.flip_lr_prob_es,
         px_scales_path=args.px_scales_path,
         pin_memory=args.perf_pin_memory,
         prefetch_factor=args.perf_prefetch_factor,
+        num_workers=args.perf_num_workers,
         min_imagesize=args.min_imagesize,
         blur_width=args.blur_width,
+        clip_prob_path=args.clip_prob_path,
+        clip_prob_middle_pkeep=args.clip_prob_middle_pkeep,
+        antialias=args.antialias,
+        bicubic_down=args.bicubic_down,
     )
 
     if args.save_first_batch:
@@ -129,6 +138,7 @@ def main():
         weight_decay=args.weight_decay,
         lr_anneal_steps=args.lr_anneal_steps,
         lr_warmup_steps=args.lr_warmup_steps,
+        lr_warmup_shift=args.lr_warmup_shift,
         tokenizer=tokenizer,
         lg_loss_scale=args.lg_loss_scale,
         beta1=args.beta1,
@@ -145,6 +155,11 @@ def main():
         gain_ff_setup_step=args.gain_ff_setup_step,
         perf_no_ddl=args.perf_no_ddl,
         param_sandwich=args.param_sandwich,
+        resize_mult=args.resize_mult,
+        noise_cond=args.noise_cond,
+        noise_cond_schedule=args.noise_cond_schedule,
+        noise_cond_steps=args.noise_cond_steps,
+        noise_cond_max_step=args.noise_cond_max_step,
     ).run_loop()
 
 
@@ -156,6 +171,7 @@ def create_argparser():
         weight_decay=0.0,
         lr_anneal_steps=0,
         lr_warmup_steps=0,
+        lr_warmup_shift=0,
         batch_size=1,
         microbatch=-1,
         ema_rate="0.9999",
@@ -196,6 +212,7 @@ def create_argparser():
         crop_prob_es=0.,
         crop_min_scale_es=0.25,
         crop_max_scale_es=1.,
+        crop_without_resize=False,
         safebox_path="",
         use_random_safebox_for_empty_string=False,
         flip_lr_prob_es=0.,
@@ -203,9 +220,21 @@ def create_argparser():
         perf_no_ddl=False,
         perf_pin_memory=False,
         perf_prefetch_factor=2,
+        perf_num_workers=1,
         param_sandwich=0,
         min_imagesize=0,
         save_first_batch=False,
+        clip_prob_path="",
+        clip_prob_middle_pkeep=0.5,
+        resize_mult=1.,
+        antialias=False,
+        bicubic_down=False,
+        use_txt_in_dataload=False,
+        noise_cond=False,
+        noise_cond_schedule='cosine',
+        noise_cond_steps=1000,
+        noise_cond_max_step=-1,
+        cudnn_benchmark=False,
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

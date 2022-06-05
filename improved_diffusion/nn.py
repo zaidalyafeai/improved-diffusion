@@ -84,6 +84,11 @@ def groupnorm_silu_24(x, w, b):
 
 
 @th.jit.script
+def groupnorm_silu_20(x, w, b):
+    return F.silu(th.group_norm(x.float(), 20, w, b).type(x.dtype))
+
+
+@th.jit.script
 def groupnorm_silu_8(x, w, b):
     return F.silu(th.group_norm(x.float(), 8, w, b).type(x.dtype))
 
@@ -115,6 +120,8 @@ class GroupNorm32(nn.GroupNorm):
                 return groupnorm_silu_32(x, self.weight, self.bias)
             elif self.num_groups == 24:
                 return groupnorm_silu_24(x, self.weight, self.bias)
+            elif num_groups == 20:
+                return groupnorm_silu_20(x, self.weight, self.bias)
             else:
                 raise ValueError(self.num_groups)
         return super().forward(x.float()).type(x.dtype)
@@ -266,6 +273,17 @@ def adagn_extended_32_1(h, h2, emb_out, emb_out2, w, b, w2, b2):
     return h
 
 
+class Conv2D(nn.Conv2d):
+    def __init__(self, *args, use_checkpoint=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.use_checkpoint = use_checkpoint
+
+    def forward(self, x):
+        return checkpoint(
+            super().forward, (x,), self.parameters(), self.use_checkpoint
+        )
+
+
 def conv_nd(dims, *args, **kwargs):
     """
     Create a 1D, 2D, or 3D convolution module.
@@ -273,7 +291,7 @@ def conv_nd(dims, *args, **kwargs):
     if dims == 1:
         return nn.Conv1d(*args, **kwargs)
     elif dims == 2:
-        return nn.Conv2d(*args, **kwargs)
+        return Conv2D(*args, **kwargs)
     elif dims == 3:
         return nn.Conv3d(*args, **kwargs)
     raise ValueError(f"unsupported dimensions: {dims}")
@@ -432,6 +450,8 @@ class GroupNormExtended(GroupNorm32):
                 xtra_out = groupnorm_silu_32(xtra, self.weight_xtra, self.bias_xtra)
             elif self.num_groups_xtra == 24:
                 xtra_out = groupnorm_silu_24(xtra, self.weight_xtra, self.bias_xtra)
+            elif self.num_groups_xtra == 20:
+                xtra_out = groupnorm_silu_20(xtra, self.weight_xtra, self.bias_xtra)
             elif self.num_groups_xtra == 8:
                 xtra_out = groupnorm_silu_8(xtra, self.weight_xtra, self.bias_xtra)
             elif self.num_groups_xtra == 6:
@@ -483,8 +503,12 @@ def expanded_timestep_embedding(timesteps, dim, base_dim, max_period=10000):
     base_logfreqs = -math.log(max_period) * th.arange(start=0, end=base_half, dtype=th.float32) / base_half
 
     step = base_dim//(dim-base_dim)
-    left = base_logfreqs[step//2::step]
-    right = base_logfreqs[step//2+1::step]
+    if step <= 2:
+        left = base_logfreqs[0::step]
+        right = base_logfreqs[1::step]
+    else:
+        left = base_logfreqs[step//2::step]
+        right = base_logfreqs[step//2+1::step]
 
     xtra_logfreqs = (right + left)/2
 
@@ -548,7 +572,8 @@ class CheckpointFunction(th.autograd.Function):
             ctx.input_tensors = [x.detach().requires_grad_(True) for x in ctx.input_tensors[:-ctx.final_nograd]] + ctx.input_tensors[-ctx.final_nograd:]
             grad_input_tensors = ctx.input_tensors[:-ctx.final_nograd]
         else:
-            ctx.input_tensors = [x.detach().requires_grad_(True) for x in ctx.input_tensors]
+            isnone = [t is None for t in ctx.input_tensors] + [False for _ in ctx.input_params]
+            ctx.input_tensors = [x.detach().requires_grad_(True) for x in ctx.input_tensors if x is not None]
             grad_input_tensors = ctx.input_tensors
         with th.enable_grad():
             # Fixes a bug where the first op in run_function modifies the
@@ -569,4 +594,14 @@ class CheckpointFunction(th.autograd.Function):
         del output_tensors
         if ctx.final_nograd:
             return (None, None, None) + input_grads[:ng] + (ctx.final_nograd * (None,)) + input_grads[ng:]
-        return (None, None, None) + input_grads
+
+        ct = 0
+        input_grads_with_nones = []
+        for val in isnone:
+            if val:
+                input_grads_with_nones.append(None)
+            else:
+                input_grads_with_nones.append(input_grads[ct])
+                ct += 1
+        return (None, None, None) + tuple(input_grads_with_nones)
+        # return (None, None, None) + input_grads

@@ -343,7 +343,8 @@ class GaussianDiffusion:
             assert model_output.shape == (B, C * 2, *x.shape[2:])
             model_output, model_var_values = th.split(model_output, C, dim=1)
             if is_guided:
-                unconditional_model_output, _ = th.split(unconditional_model_output, C, dim=1)
+                # don't guide variance
+                _, model_var_values = th.split(unconditional_model_output, C, dim=1)
             if self.model_var_type == ModelVarType.LEARNED:
                 model_log_variance = model_var_values
                 model_variance = th.exp(model_log_variance)
@@ -1297,6 +1298,89 @@ class GaussianDiffusion:
             "xstart_mse": xstart_mse,
             "mse": mse,
         }
+
+    def _extract_into_tensor(self, arr, timesteps, broadcast_shape):
+        """
+        Extract values from a 1-D numpy array for a batch of indices.
+
+        :param arr: the 1-D numpy array.
+        :param timesteps: a tensor of indices into the array to extract.
+        :param broadcast_shape: a larger shape of K dimensions with the batch
+                                dimension equal to the length of timesteps.
+        :return: a tensor of shape [batch_size, 1, ...] where the shape has K dims.
+        """
+        if self.is_tensorized(timesteps.device):
+            try:
+                res = arr[timesteps]
+            except TypeError as e:
+                print(type(timesteps), type(arr))
+                print((getattr(timesteps, 'device'), timesteps.dtype))
+                print((getattr(arr, 'device'), arr.dtype))
+                raise e
+        else:
+            res = th.from_numpy(arr).to(device=timesteps.device)[timesteps].float()
+            self.tensorize(timesteps.device)
+        while len(res.shape) < len(broadcast_shape):
+            res = res[..., None]
+        return res.expand(broadcast_shape)
+
+
+class SimpleForwardDiffusion:
+    def __init__(
+        self,
+        betas,
+    ):
+        betas = np.array(betas, dtype=np.float64)
+        self.betas = betas
+        assert len(betas.shape) == 1, "betas must be 1-D"
+        assert (betas > 0).all() and (betas <= 1).all()
+
+        self.num_timesteps = int(betas.shape[0])
+
+        alphas = 1.0 - betas
+        self.alphas_cumprod = np.cumprod(alphas, axis=0)
+
+        # calculations for diffusion q(x_t | x_{t-1}) and others
+        self.sqrt_alphas_cumprod = np.sqrt(self.alphas_cumprod)
+        self.sqrt_one_minus_alphas_cumprod = np.sqrt(1.0 - self.alphas_cumprod)
+        self.tensorized_for = None
+
+    def is_tensorized(self, device):
+        # out = self.tensorized_for == device
+        # if out:
+        #     print(f"DIFF YES | {device}")
+        # else:
+        #     print(f"DIFF NO  | have {self.tensorized_for} want {device}")
+        # return out
+        return self.tensorized_for == device
+
+    def tensorize(self, device):
+        arrays = {name: getattr(self, name) for name in vars(self) if isinstance(getattr(self, name), np.ndarray)}
+
+        for name, arr in arrays.items():
+            setattr(self, name, th.from_numpy(arr).to(device=device, dtype=th.float))
+
+        self.tensorized_for = device
+
+    def q_sample(self, x_start, t, noise=None):
+        """
+        Diffuse the data for a given number of diffusion steps.
+
+        In other words, sample from q(x_t | x_0).
+
+        :param x_start: the initial data batch.
+        :param t: the number of diffusion steps (minus 1). Here, 0 means one step.
+        :param noise: if specified, the split-out normal noise.
+        :return: A noisy version of x_start.
+        """
+        if noise is None:
+            noise = th.randn_like(x_start)
+        assert noise.shape == x_start.shape
+        return (
+            self._extract_into_tensor(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start
+            + self._extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape)
+            * noise
+        )
 
     def _extract_into_tensor(self, arr, timesteps, broadcast_shape):
         """

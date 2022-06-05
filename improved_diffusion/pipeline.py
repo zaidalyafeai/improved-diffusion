@@ -22,6 +22,8 @@ from improved_diffusion.image_datasets import load_tokenizer, tokenize
 from improved_diffusion.unet import UNetModel
 from improved_diffusion.respace import SpacedDiffusion
 
+from improved_diffusion.gaussian_diffusion import SimpleForwardDiffusion, get_named_beta_schedule
+
 import clip
 
 
@@ -34,6 +36,21 @@ def _to_visible(img):
     img = img.permute(0, 2, 3, 1)
     img = img.contiguous()
     return img
+
+
+def make_dynamic_threshold_denoised_fn(p):
+    def dynamic_threshold_denoised_fn(pred_xstart):
+        batch_elems = th.split(pred_xstart, 1, dim=0)
+        batch_elems_threshed = []
+
+        for b in batch_elems:
+            s = th.quantile(b.abs(), p, dim=None).clamp(min=1)
+            bt = b.clamp(min=-s, max=s) / s
+            batch_elems_threshed.append(bt)
+
+        pred_xstart_threshed = th.cat(batch_elems_threshed, dim=0)
+        return pred_xstart_threshed
+    return dynamic_threshold_denoised_fn
 
 
 class SamplingModel(nn.Module):
@@ -105,8 +122,20 @@ class SamplingModel(nn.Module):
         guidance_after_step=100000,
         y=None,
         verbose=True,
+        noise=None,
+        dynamic_threshold_p=0,
+        denoised_fn=None,
+        noise_cond_ts=0,
+        noise_cond_schedule='cosine',
+        noise_cond_steps=1000,
     ):
         # dist_util.setup_dist()
+
+        if denoised_fn is not None:
+            pass  # defer to use
+        elif dynamic_threshold_p > 0:
+            clip_denoised = False
+            denoised_fn = make_dynamic_threshold_denoised_fn(dynamic_threshold_p)
 
         if self.is_super_res and low_res is None:
             raise ValueError("must pass low_res for super res")
@@ -202,6 +231,11 @@ class SamplingModel(nn.Module):
                 capt_uncon = clip.tokenize(batch_size * [capt_drop_string], truncate=True).to(dist_util.dev())
                 model_kwargs["unconditional_model_kwargs"]["capt"] = capt_uncon
 
+        if self.model.noise_cond:
+            model_kwargs["cond_timesteps"] = th.as_tensor(batch_size * [int(noise_cond_ts)]).to(dist_util.dev())
+            if "unconditional_model_kwargs" in model_kwargs:
+                model_kwargs["unconditional_model_kwargs"]["cond_timesteps"] = model_kwargs["cond_timesteps"]
+
         all_low_res = []
 
         if self.is_super_res:
@@ -218,6 +252,11 @@ class SamplingModel(nn.Module):
             # print(
             #     f"batch_size: {batch_size} vs low_res kwarg shape {all_low_res.shape}"
             # )
+
+            if self.model.noise_cond and noise_cond_ts > 0:
+                betas = get_named_beta_schedule(noise_cond_schedule, noise_cond_steps)
+                noise_cond_diffusion = SimpleForwardDiffusion(betas)
+                all_low_res = noise_cond_diffusion.q_sample(all_low_res, model_kwargs["cond_timesteps"])
 
         image_channels = self.model.in_channels
         if self.is_super_res:
@@ -244,7 +283,9 @@ class SamplingModel(nn.Module):
                     self.model.image_size,
                 ),
                 clip_denoised=clip_denoised,
+                denoised_fn=denoised_fn,
                 model_kwargs=model_kwargs,
+                noise=noise,
                 **sample_fn_kwargs
             )
 
@@ -314,11 +355,20 @@ class SamplingPipeline(nn.Module):
         guidance_scale_sres=0.,
         strip_space=True,
         return_both_resolutions=False,
+        use_plms=False,
+        use_plms_sres=False,
         capt: Optional[Union[str, List[str]]]=None,
         yield_intermediates=False,
         guidance_after_step_base=100000,
         y=None,
         verbose=True,
+        noise=None,
+        noise_sres=None,
+        plms_ddim_first_n=0,
+        plms_ddim_first_n_sres=0,
+        dynamic_threshold_p=0,
+        dynamic_threshold_p_sres=0,
+        noise_cond_ts_sres=0,
     ):
         if strip_space:
             if isinstance(text, list):
@@ -347,6 +397,10 @@ class SamplingPipeline(nn.Module):
                 verbose=verbose,
                 capt=capt,
                 y=y,
+                use_plms=use_plms,
+                noise=noise,
+                plms_ddim_first_n=plms_ddim_first_n,
+                dynamic_threshold_p=dynamic_threshold_p,
             )
 
         def high_res_sample(low_res):
@@ -365,6 +419,11 @@ class SamplingPipeline(nn.Module):
                 from_visible=False,
                 yield_intermediates=yield_intermediates,
                 verbose=verbose,
+                use_plms=use_plms_sres,
+                noise=noise_sres,
+                plms_ddim_first_n=plms_ddim_first_n_sres,
+                dynamic_threshold_p=dynamic_threshold_p_sres,
+                noise_cond_ts=noise_cond_ts_sres,
             )
         if yield_intermediates:
             return _yield_intermediates(base_sample, high_res_sample)
@@ -406,6 +465,11 @@ class SamplingPipeline(nn.Module):
         guidance_after_step_base=100000,
         y=None,
         verbose=True,
+        plms_ddim_first_n=0,
+        plms_ddim_first_n_sres=0,
+        dynamic_threshold_p=0,
+        dynamic_threshold_p_sres=0,
+        noise_cond_ts_sres=0,
     ):
         if strip_space:
             if isinstance(text, list):
@@ -429,10 +493,12 @@ class SamplingPipeline(nn.Module):
             use_plms=use_plms,
             to_visible=True,
             plms_ddim_last_n=plms_ddim_last_n,
+            plms_ddim_first_n=plms_ddim_first_n,
             capt=capt,
             guidance_after_step=guidance_after_step_base,
             y=y,
-            verbose=verbose
+            verbose=verbose,
+            dynamic_threshold_p=dynamic_threshold_p,
         )
         low_res_pruned, text_pruned = prune_fn(low_res, text)
         if len(low_res_pruned) == 0:
@@ -469,8 +535,11 @@ class SamplingPipeline(nn.Module):
             seed=seed,
             use_plms=use_plms_sres,
             plms_ddim_last_n=plms_ddim_last_n_sres,
+            plms_ddim_first_n=plms_ddim_first_n_sres,
             from_visible=True,
-            verbose=verbose
+            verbose=verbose,
+            dynamic_threshold_p=dynamic_threshold_p_sres,
+            noise_cond_ts=noise_cond_ts_sres,
         )
         if return_both_resolutions:
             return high_res, low_res

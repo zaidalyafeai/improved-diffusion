@@ -100,7 +100,10 @@ def model_and_diffusion_defaults():
         glide_style_capt_emb_init_scale=0.1,
         glide_style_capt_emb_nonlin=False,
         clipname='RN50',
+        use_checkpoint_below_res=-1,
         vb_loss_ratio=1000.,
+        no_attn=False,
+        no_attn_substitute_resblock=False,
     )
 
 
@@ -187,7 +190,10 @@ def create_model_and_diffusion(
     glide_style_capt_emb_init_scale=0.1,
     glide_style_capt_emb_nonlin=False,
     clipname='RN50',
+    use_checkpoint_below_res=-1,
     vb_loss_ratio=1000.,
+    no_attn=False,
+    no_attn_substitute_resblock=False,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     print(f"create_model_and_diffusion: use_checkpoint={use_checkpoint}")
@@ -262,6 +268,9 @@ def create_model_and_diffusion(
         glide_style_capt_emb_init_scale=glide_style_capt_emb_init_scale,
         glide_style_capt_emb_nonlin=glide_style_capt_emb_nonlin,
         clipname=clipname,
+        use_checkpoint_below_res=use_checkpoint_below_res,
+        no_attn=no_attn,
+        no_attn_substitute_resblock=no_attn_substitute_resblock,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -361,12 +370,16 @@ def create_model(
     glide_style_capt_emb_init_scale=0.1,
     glide_style_capt_emb_nonlin=False,
     clipname='RN50',
+    use_checkpoint_below_res=-1,
+    no_attn=False,
+    no_attn_substitute_resblock=False,
+    noise_cond=False,
 ):
     text_lr_mult = 1.
     print(
         f"create_model: got txt={txt}, num_heads={num_heads}, channels_per_head={channels_per_head}, cross_attn_channels_per_head={cross_attn_channels_per_head}, text_lr_mult={text_lr_mult}"
     )
-    print(f"create_model: use_checkpoint={use_checkpoint}, use_checkpoint_lowcost={use_checkpoint_lowcost}")
+    print(f"create_model: noise_cond={noise_cond}, use_checkpoint={use_checkpoint}, use_checkpoint_lowcost={use_checkpoint_lowcost}")
     if channel_mult != "":
         print(f"got channel_mult: {channel_mult}")
         try:
@@ -474,6 +487,10 @@ def create_model(
         glide_style_capt_emb_init_scale=glide_style_capt_emb_init_scale,
         glide_style_capt_emb_nonlin=glide_style_capt_emb_nonlin,
         clipname=clipname,
+        use_checkpoint_below_res=use_checkpoint_below_res,
+        no_attn=no_attn,
+        no_attn_substitute_resblock=no_attn_substitute_resblock,
+        noise_cond=noise_cond,
     )
 
 
@@ -483,6 +500,7 @@ def sr_model_and_diffusion_defaults():
     res["small_size"] = 64
     res["colorize"] = False
     res["up_interp_mode"] = "bilinear"
+    res["noise_cond"] = False
     arg_names = inspect.getfullargspec(sr_create_model_and_diffusion)[0]
     for k in res.copy().keys():
         if k not in arg_names:
@@ -569,7 +587,12 @@ def sr_create_model_and_diffusion(
     glide_style_capt_emb=False,
     glide_style_capt_emb_init_scale=0.1,
     glide_style_capt_emb_nonlin=False,
+    expand_timestep_base_dim=-1,
+    use_checkpoint_below_res=-1,
     vb_loss_ratio=1000.,
+    no_attn=False,
+    no_attn_substitute_resblock=False,
+    noise_cond=False,
 ):
     model = sr_create_model(
         large_size,
@@ -635,6 +658,12 @@ def sr_create_model_and_diffusion(
         glide_style_capt_emb=glide_style_capt_emb,
         glide_style_capt_emb_init_scale=glide_style_capt_emb_init_scale,
         glide_style_capt_emb_nonlin=glide_style_capt_emb_nonlin,
+        expand_timestep_base_dim=expand_timestep_base_dim,
+        use_checkpoint_below_res=use_checkpoint_below_res,
+        verbose=verbose,
+        no_attn=no_attn,
+        no_attn_substitute_resblock=no_attn_substitute_resblock,
+        noise_cond=noise_cond,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,

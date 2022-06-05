@@ -22,7 +22,8 @@ from .fp16_util import (
     zero_grad,
 )
 from .nn import update_ema, update_arithmetic_average, scale_module
-from .resample import LossAwareSampler, UniformSampler
+from .resample import LossAwareSampler, UniformSampler, EarlyOnlySampler
+from .gaussian_diffusion import SimpleForwardDiffusion, get_named_beta_schedule
 
 from .image_datasets import tokenize
 
@@ -54,6 +55,7 @@ class TrainLoop:
         weight_decay=0.0,
         lr_anneal_steps=0,
         lr_warmup_steps=0,
+        lr_warmup_shift=0,
         tokenizer=None,
         text_lr=None,
         gain_lr=None,
@@ -79,6 +81,10 @@ class TrainLoop:
         resize_mult=1.,
         perf_no_ddl=False,
         freeze_capt_encoder=False,
+        noise_cond=False,
+        noise_cond_schedule='cosine',
+        noise_cond_steps=1000,
+        noise_cond_max_step=-1,
     ):
         self.model = model
         self.diffusion = diffusion
@@ -105,6 +111,7 @@ class TrainLoop:
         self.weight_decay = weight_decay
         self.lr_anneal_steps = lr_anneal_steps
         self.lr_warmup_steps = lr_warmup_steps
+        self.lr_warmup_shift = lr_warmup_shift
         self.tokenizer = tokenizer
         self.state_dict_sandwich = state_dict_sandwich
         self.state_dict_sandwich_manual_remaps = {kv.split(":")[0]: kv.split(":")[1]
@@ -135,6 +142,16 @@ class TrainLoop:
             raise ValueError('only_optimize_bread no longer supported')
         self.resize_mult = resize_mult
         self.freeze_capt_encoder = freeze_capt_encoder
+
+        self.noise_cond = noise_cond
+        self.noise_cond_diffusion = None
+        if self.noise_cond:
+            betas = get_named_beta_schedule(noise_cond_schedule, noise_cond_steps)
+            self.noise_cond_diffusion = SimpleForwardDiffusion(betas)
+            # todo: other schedules
+            if noise_cond_max_step < 0:
+                noise_cond_max_step = noise_cond_steps
+            self.noise_cond_schedule_sampler = EarlyOnlySampler(self.noise_cond_diffusion, noise_cond_max_step)
 
         print(f"TrainLoop self.master_device: {self.master_device}, use_amp={use_amp}, autosave={self.autosave}")
         print(f"TrainLoop self.arithmetic_avg_from_step: {self.arithmetic_avg_from_step}, self.arithmetic_avg_extra_shift={self.arithmetic_avg_extra_shift}")
@@ -502,6 +519,8 @@ class TrainLoop:
                 else v[i : i + self.microbatch]
                 for k, v in cond.items()
             }
+            if not (self.model.txt) and 'txt' in micro_cond:
+                del micro_cond['txt']
             if 'txt' in micro_cond:
                 # micro_cond['txt'] = th.as_tensor(tokenize(self.tokenizer, micro_cond['txt']), device=dist_util.dev())
 
@@ -511,6 +530,14 @@ class TrainLoop:
                 micro_cond['capt'] = capt
             last_batch = (i + self.microbatch) >= batch.shape[0]
             t, weights = self.schedule_sampler.sample(micro.shape[0], dist_util.dev())
+
+            if self.noise_cond:
+                if 'low_res' not in micro_cond:
+                    raise ValueError
+
+                t_noise_cond, _, = self.noise_cond_schedule_sampler.sample(micro.shape[0], dist_util.dev())
+                micro_cond['low_res'] = self.noise_cond_diffusion.q_sample(micro_cond['low_res'], t_noise_cond)
+                micro_cond['cond_timesteps'] = t_noise_cond
 
             with th.cuda.amp.autocast(enabled=self.use_amp, dtype=th.bfloat16 if self.use_bf16 else th.float16):
                 compute_losses = functools.partial(
@@ -714,7 +741,7 @@ class TrainLoop:
             frac_warmup_done = 1.
         else:
             # +1 so we don't use zero lr on first step
-            frac_warmup_done = min(1., (self.step + self.resume_step + 1) / self.lr_warmup_steps)
+            frac_warmup_done = min(1., (self.step + self.resume_step + 1 - self.lr_warmup_shift) / self.lr_warmup_steps)
 
         lr_variants = self.group_lrs
         # lr_variants = (len(self.opt.param_groups)-5) * [self.text_lr] + [self.gain_lr, self.bread_lr, self.lr, self.capt_lr, self.gain_lr]
