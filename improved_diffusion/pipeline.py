@@ -110,6 +110,7 @@ class SamplingModel(nn.Module):
         guidance_scale=0.,
         txt_drop_string='<mask><mask><mask><mask>',
         capt_drop_string='unknown',
+        class_ix_drop=999,
         return_intermediates=False,
         use_prk=False,
         use_plms=False,
@@ -159,8 +160,10 @@ class SamplingModel(nn.Module):
         if isinstance(y, str):
             print(f'in class_map? {y in self.class_map}')
             batch_y = batch_size * [self.class_map.get(y, 0)]
-        else:
-            if y is not None and len(y) != batch_size:
+        elif y is not None:
+            if isinstance(y, int):
+                y = batch_size * [y]
+            if len(y) != batch_size:
                 raise ValueError(f"got {len(y)} ys for bs {batch_size}")
             if y is not None:
                 print(f'in class_map? {[yy in self.class_map for yy in y]}')
@@ -217,14 +220,19 @@ class SamplingModel(nn.Module):
             model_kwargs["y"] = batch_y
 
         if clf_free_guidance and (guidance_scale > 0):
-            txt_uncon = batch_size * tokenize(self.tokenizer, [txt_drop_string])
-            txt_uncon = th.as_tensor(txt_uncon).to(dist_util.dev())
-
             model_kwargs["guidance_scale"] = guidance_scale
             model_kwargs["guidance_after_step"] = guidance_after_step
-            model_kwargs["unconditional_model_kwargs"] = {
-                "txt": txt_uncon
-            }
+            model_kwargs["unconditional_model_kwargs"] = {}
+
+            if batch_text is not None:
+                txt_uncon = batch_size * tokenize(self.tokenizer, [txt_drop_string])
+                txt_uncon = th.as_tensor(txt_uncon).to(dist_util.dev())
+                model_kwargs["unconditional_model_kwargs"]["txt"] = txt_uncon
+
+            if batch_y is not None:
+                y_uncon = batch_size * [class_ix_drop]
+                y_uncon = th.as_tensor(y_uncon).to(dist_util.dev())
+                model_kwargs["unconditional_model_kwargs"]["y"] = y_uncon
 
             if batch_capt is not None:
                 capt_uncon = clip.tokenize(batch_size * [capt_drop_string], truncate=True).to(dist_util.dev())
