@@ -157,6 +157,7 @@ class SamplingModel(nn.Module):
                 raise ValueError(f"got {len(capt)} capts for bs {batch_size}")
             batch_capt = capt
 
+        batch_y = None
         if isinstance(y, str):
             print(f'in class_map? {y in self.class_map}')
             batch_y = batch_size * [self.class_map.get(y, 0)]
