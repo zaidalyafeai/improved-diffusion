@@ -218,6 +218,7 @@ class SamplingModel(nn.Module):
             model_kwargs["capt"] = capt
 
         if batch_y is not None:
+            batch_y = th.as_tensor(batch_y).to(dist_util.dev())
             model_kwargs["y"] = batch_y
 
         if clf_free_guidance and (guidance_scale > 0):
