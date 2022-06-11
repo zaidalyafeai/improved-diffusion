@@ -266,6 +266,13 @@ class SamplingModel(nn.Module):
                 noise_cond_diffusion = SimpleForwardDiffusion(betas)
                 all_low_res = noise_cond_diffusion.q_sample(all_low_res, model_kwargs["cond_timesteps"])
 
+                # set seed again because we care about controlling the main diffusion's randomness
+                if seed is not None:
+                    if verbose:
+                        print(f"re-setting seed to {seed} after noising low res image")
+                    th.manual_seed(seed)
+
+
         image_channels = self.model.in_channels
         if self.is_super_res:
             image_channels -= all_low_res.shape[1]
