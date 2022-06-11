@@ -167,7 +167,7 @@ class SamplingModel(nn.Module):
             if len(y) != batch_size:
                 raise ValueError(f"got {len(y)} ys for bs {batch_size}")
             if y is not None:
-                print(f'in class_map? {[yy in self.class_map for yy in y]}')
+                print(f'in class_map? {[yy in set(self.class_map.values()) for yy in y]}')
             batch_y = y
 
         n_batches = n_samples // batch_size
