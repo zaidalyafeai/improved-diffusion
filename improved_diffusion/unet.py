@@ -31,15 +31,23 @@ from .nn import (
 from .text_nn import TextEncoder, CrossAttention, WeaveAttention
 
 import clip
-
+from transformer_utils.partial_forward import partial_forward
 
 def clip_encode_text_nopool(token_embedding, positional_embedding, transformer, toks, dtype=th.float32, out_format='nld',
-                            ln_final=None):
+                            ln_final=None,
+                            use_penultimate_layer=False):
     x = token_embedding(toks).type(dtype)  # [batch_size, n_ctx, d_model]
 
     x = x + positional_embedding.type(dtype)
     x = x.permute(1, 0, 2)  # NLD -> LND
-    x = transformer(x)
+
+    if use_penultimate_layer:
+        # from imagen paper - note that cos sims between layer outputs get way lower in the final one
+        out_name = 'resblocks.' + str(len(transformer.resblocks) - 2)
+        x = partial_forward(transformer, [out_name], x)[out_name]
+    else:
+        x = transformer(x)
+
     if ln_final is not None:
         x = x.permute(1, 0, 2)  # LND -> NLD
         x = ln_final(x)
@@ -724,6 +732,7 @@ class UNetModel(nn.Module):
         glide_style_capt_emb_nonlin=False,
         label_emb_init_scale=0.,
         clipname='RN50',
+        clip_use_penultimate_layer=False,
         use_checkpoint_below_res=-1,
         no_attn=False,
         no_attn_substitute_resblock=False,
@@ -776,6 +785,7 @@ class UNetModel(nn.Module):
         self.xattn_capt = xattn_capt
         self.glide_style_capt_attn = glide_style_capt_attn
         self.glide_style_capt_emb = glide_style_capt_emb
+        self.clip_use_penultimate_layer = clip_use_penultimate_layer
 
         self.noise_cond = noise_cond
 
@@ -818,6 +828,11 @@ class UNetModel(nn.Module):
             self.clipmod.positional_embedding = clipmod.positional_embedding
             self.clipmod.transformer = clipmod.transformer
             self.capt_embd_dim = clipmod.ln_final.weight.shape[0]
+
+            if self.clip_use_penultimate_layer:
+                self.capt_ln_final = nn.LayerNorm()
+            else:
+                self.capt_ln_final = clipmod.ln_final
 
         self.tgt_pos_embs = nn.ModuleDict({})
 
@@ -1293,9 +1308,10 @@ class UNetModel(nn.Module):
             capt = clip_encode_text_nopool(
                 self.clipmod.token_embedding, self.clipmod.positional_embedding, self.clipmod.transformer,
                 capt_toks,
-                ln_final=self.clipmod.ln_final if self.glide_style_capt_attn else None,
+                ln_final=self.capt_ln_final if self.glide_style_capt_attn else None,
+                use_penultimate_layer=self.clip_use_penultimate_layer,
                 out_format='ndl' if self.glide_style_capt_attn else 'nld',
-                dtype = self.inner_dtype
+                dtype = self.inner_dtype,
                 )
             # capt = capt.type(self.inner_dtype)
             if self.glide_style_capt_emb:
