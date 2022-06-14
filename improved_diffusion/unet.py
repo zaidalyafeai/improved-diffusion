@@ -830,7 +830,7 @@ class UNetModel(nn.Module):
             self.capt_embd_dim = clipmod.ln_final.weight.shape[0]
 
             if self.clip_use_penultimate_layer:
-                self.capt_ln_final = nn.LayerNorm()
+                self.capt_ln_final = nn.LayerNorm(self.capt_embd_dim)
             else:
                 self.capt_ln_final = clipmod.ln_final
 
