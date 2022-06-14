@@ -115,6 +115,10 @@ def main():
         clip_prob_middle_pkeep=args.clip_prob_middle_pkeep,
         antialias=args.antialias,
         bicubic_down=args.bicubic_down,
+        class_map_path=args.class_map_path,
+        class_ix_unk=args.class_ix_unk,
+        class_ix_drop=args.class_ix_drop,
+        class_pdrop=args.class_pdrop,
     )
 
     if args.save_first_batch:
@@ -224,6 +228,10 @@ def create_argparser():
         param_sandwich=0,
         min_imagesize=0,
         save_first_batch=False,
+        class_map_path="",
+        class_ix_unk=0,
+        class_ix_drop=999,
+        class_pdrop=0.1,
         clip_prob_path="",
         clip_prob_middle_pkeep=0.5,
         resize_mult=1.,

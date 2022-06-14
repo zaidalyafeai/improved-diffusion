@@ -111,6 +111,7 @@ class SamplingModel(nn.Module):
         guidance_scale=0.,
         txt_drop_string='<mask><mask><mask><mask>',
         capt_drop_string='unknown',
+        class_ix_drop=999,
         return_intermediates=False,
         use_prk=False,
         use_plms=False,
@@ -157,14 +158,17 @@ class SamplingModel(nn.Module):
                 raise ValueError(f"got {len(capt)} capts for bs {batch_size}")
             batch_capt = capt
 
+        batch_y = None
         if isinstance(y, str):
             print(f'in class_map? {y in self.class_map}')
             batch_y = batch_size * [self.class_map.get(y, 0)]
-        else:
-            if y is not None and len(y) != batch_size:
+        elif y is not None:
+            if isinstance(y, int):
+                y = batch_size * [y]
+            if len(y) != batch_size:
                 raise ValueError(f"got {len(y)} ys for bs {batch_size}")
             if y is not None:
-                print(f'in class_map? {[yy in self.class_map for yy in y]}')
+                print(f'in class_map? {[yy in set(self.class_map.values()) for yy in y]}')
             batch_y = y
 
         n_batches = n_samples // batch_size
@@ -215,17 +219,23 @@ class SamplingModel(nn.Module):
             model_kwargs["capt"] = capt
 
         if batch_y is not None:
+            batch_y = th.as_tensor(batch_y).to(dist_util.dev())
             model_kwargs["y"] = batch_y
 
         if clf_free_guidance and (guidance_scale > 0):
-            txt_uncon = batch_size * tokenize(self.tokenizer, [txt_drop_string])
-            txt_uncon = th.as_tensor(txt_uncon).to(dist_util.dev())
-
             model_kwargs["guidance_scale"] = guidance_scale
             model_kwargs["guidance_after_step"] = guidance_after_step
-            model_kwargs["unconditional_model_kwargs"] = {
-                "txt": txt_uncon
-            }
+            model_kwargs["unconditional_model_kwargs"] = {}
+
+            if batch_text is not None:
+                txt_uncon = batch_size * tokenize(self.tokenizer, [txt_drop_string])
+                txt_uncon = th.as_tensor(txt_uncon).to(dist_util.dev())
+                model_kwargs["unconditional_model_kwargs"]["txt"] = txt_uncon
+
+            if batch_y is not None:
+                y_uncon = batch_size * [class_ix_drop]
+                y_uncon = th.as_tensor(y_uncon).to(dist_util.dev())
+                model_kwargs["unconditional_model_kwargs"]["y"] = y_uncon
 
             if batch_capt is not None:
                 capt_uncon = clip.tokenize(batch_size * [capt_drop_string], truncate=True).to(dist_util.dev())
@@ -257,6 +267,13 @@ class SamplingModel(nn.Module):
                 betas = get_named_beta_schedule(noise_cond_schedule, noise_cond_steps)
                 noise_cond_diffusion = SimpleForwardDiffusion(betas)
                 all_low_res = noise_cond_diffusion.q_sample(all_low_res, model_kwargs["cond_timesteps"])
+
+                # set seed again because we care about controlling the main diffusion's randomness
+                if seed is not None:
+                    if verbose:
+                        print(f"re-setting seed to {seed} after noising low res image")
+                    th.manual_seed(seed)
+
 
         image_channels = self.model.in_channels
         if self.is_super_res:
