@@ -33,6 +33,9 @@ def main():
     if args.gain_lr < 0:
         args.gain_lr = None
 
+    if args.capt_lr < 0:
+        args.capt_lr = None
+
     dist_util.setup_dist()
     logger.configure()
 
@@ -115,6 +118,10 @@ def main():
         clip_prob_middle_pkeep=args.clip_prob_middle_pkeep,
         antialias=args.antialias,
         bicubic_down=args.bicubic_down,
+        capt_path=args.capt_path,
+        capt_pdrop=args.capt_pdrop,
+        require_capts=args.require_capts,
+        all_pdrop=args.all_pdrop,
         class_map_path=args.class_map_path,
         class_ix_unk=args.class_ix_unk,
         class_ix_drop=args.class_ix_drop,
@@ -164,6 +171,8 @@ def main():
         noise_cond_schedule=args.noise_cond_schedule,
         noise_cond_steps=args.noise_cond_steps,
         noise_cond_max_step=args.noise_cond_max_step,
+        capt_lr=args.capt_lr,
+        freeze_capt_encoder=args.freeze_capt_encoder,
     ).run_loop()
 
 
@@ -228,6 +237,12 @@ def create_argparser():
         param_sandwich=0,
         min_imagesize=0,
         save_first_batch=False,
+        capt_path="",
+        capt_pdrop=0.1,
+        all_pdrop=0.1,
+        require_capts=False,
+        class_map_path="",
+        freeze_capt_encoder=False,
         class_map_path="",
         class_ix_unk=0,
         class_ix_drop=999,
