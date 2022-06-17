@@ -243,7 +243,6 @@ def create_argparser():
         require_capts=False,
         class_map_path="",
         freeze_capt_encoder=False,
-        class_map_path="",
         class_ix_unk=0,
         class_ix_drop=999,
         class_pdrop=0.1,
