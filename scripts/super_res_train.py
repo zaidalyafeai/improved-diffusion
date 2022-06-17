@@ -197,6 +197,7 @@ def create_argparser():
         char_level=False,
         text_lr=-1.,
         gain_lr=-1.,
+        capt_lr=-1.,
         beta1=0.9,
         beta2=0.999,
         colorize=False,
