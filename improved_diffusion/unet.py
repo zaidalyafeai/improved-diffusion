@@ -738,6 +738,8 @@ class UNetModel(nn.Module):
         no_attn=False,
         no_attn_substitute_resblock=False,
         noise_cond=False,
+        assume_inference=False,
+        clipmod=None,
     ):
         super().__init__()
 
@@ -822,9 +824,11 @@ class UNetModel(nn.Module):
             )
 
         if self.using_capt:
-            clipmod, _ = clip.load(name=clipname)
-            clipmod.float()
-            del clipmod.visual
+            if clipmod is None:
+                clipmod, _ = clip.load(name=clipname)
+                del clipmod.visual
+            if not assume_inference:
+                clipmod.float()
             self.clipmod = clipmod
             self.clipmod.positional_embedding = clipmod.positional_embedding
             self.clipmod.transformer = clipmod.transformer

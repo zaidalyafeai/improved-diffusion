@@ -62,6 +62,7 @@ class SamplingModel(nn.Module):
         timestep_respacing,
         is_super_res=False,
         class_map=None,
+        clipmod=None,
     ):
         super().__init__()
         self.model = model
@@ -79,6 +80,7 @@ class SamplingModel(nn.Module):
     def from_config(checkpoint_path, config_path, timestep_respacing="", class_map=None):
         model, diffusion_factory, tokenizer, is_super_res = load_config_to_model(
             config_path,
+            overrides=dict(assume_inference=True, clipmod=clipmod)
         )
         model.load_state_dict(
             dist_util.load_state_dict(checkpoint_path, map_location="cpu"),
