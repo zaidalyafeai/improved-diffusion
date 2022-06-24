@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from functools import lru_cache
 
 import math
 
@@ -1260,6 +1261,19 @@ class UNetModel(nn.Module):
         """
         return next(self.input_blocks.parameters()).dtype
 
+    @lru_cache(2)
+    def embed_capt_cached(self, capt_toks):
+        capt_attn_mask = capt_toks != 0
+        capt = clip_encode_text_nopool(
+            self.clipmod.token_embedding, self.clipmod.positional_embedding, self.clipmod.transformer,
+            capt_toks,
+            ln_final=self.capt_ln_final if self.glide_style_capt_attn else None,
+            use_penultimate_layer=self.clip_use_penultimate_layer,
+            out_format='ndl' if self.glide_style_capt_attn else 'nld',
+            dtype = self.inner_dtype,
+            )
+        return capt, capt_attn_mask
+
     def forward(self, x, timesteps, y=None, txt=None, capt=None, cond_timesteps=None):
         """
         Apply the model to an input batch.
@@ -1303,16 +1317,17 @@ class UNetModel(nn.Module):
 
         capt_attn_mask = None
         if self.using_capt and capt is not None:
-            capt_toks = capt
-            capt_attn_mask = capt_toks != 0
-            capt = clip_encode_text_nopool(
-                self.clipmod.token_embedding, self.clipmod.positional_embedding, self.clipmod.transformer,
-                capt_toks,
-                ln_final=self.capt_ln_final if self.glide_style_capt_attn else None,
-                use_penultimate_layer=self.clip_use_penultimate_layer,
-                out_format='ndl' if self.glide_style_capt_attn else 'nld',
-                dtype = self.inner_dtype,
-                )
+            capt, capt_attn_mask = self.embed_capt_cached(capt)
+            # capt_toks = capt
+            # capt_attn_mask = capt_toks != 0
+            # capt = clip_encode_text_nopool(
+            #     self.clipmod.token_embedding, self.clipmod.positional_embedding, self.clipmod.transformer,
+            #     capt_toks,
+            #     ln_final=self.capt_ln_final if self.glide_style_capt_attn else None,
+            #     use_penultimate_layer=self.clip_use_penultimate_layer,
+            #     out_format='ndl' if self.glide_style_capt_attn else 'nld',
+            #     dtype = self.inner_dtype,
+            #     )
             # capt = capt.type(self.inner_dtype)
             if self.glide_style_capt_emb:
                 eos = capt[th.arange(capt_toks.shape[0]), :, capt_toks.argmax(dim=-1)]
