@@ -106,6 +106,7 @@ def model_and_diffusion_defaults():
         no_attn=False,
         no_attn_substitute_resblock=False,
         assume_inference=False,
+        clipmod=None,
     )
 
 
@@ -198,6 +199,7 @@ def create_model_and_diffusion(
     no_attn=False,
     no_attn_substitute_resblock=False,
     assume_inference=False,
+    clipmod=None,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     print(f"create_model_and_diffusion: use_checkpoint={use_checkpoint}")
@@ -277,6 +279,7 @@ def create_model_and_diffusion(
         no_attn=no_attn,
         no_attn_substitute_resblock=no_attn_substitute_resblock,
         assume_inference=assume_inference,
+        clipmod=clipmod,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -382,6 +385,7 @@ def create_model(
     no_attn_substitute_resblock=False,
     noise_cond=False,
     assume_inference=False,
+    clipmod=None,
 ):
     text_lr_mult = 1.
     print(
@@ -501,6 +505,7 @@ def create_model(
         no_attn_substitute_resblock=no_attn_substitute_resblock,
         noise_cond=noise_cond,
         assume_inference=assume_inference,
+        clipmod=clipmod,
     )
 
 
@@ -606,6 +611,7 @@ def sr_create_model_and_diffusion(
     no_attn_substitute_resblock=False,
     noise_cond=False,
     assume_inference=False,
+    clipmod=None,
 ):
     model = sr_create_model(
         large_size,
@@ -680,6 +686,7 @@ def sr_create_model_and_diffusion(
         no_attn_substitute_resblock=no_attn_substitute_resblock,
         noise_cond=noise_cond,
         assume_inference=assume_inference,
+        clipmod=clipmod,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
