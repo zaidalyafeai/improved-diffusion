@@ -37,9 +37,10 @@ from transformer_utils.partial_forward import partial_forward
 def clip_encode_text_nopool(token_embedding, positional_embedding, transformer, toks, dtype=th.float32, out_format='nld',
                             ln_final=None,
                             use_penultimate_layer=False):
-    x = token_embedding(toks).type(dtype)  # [batch_size, n_ctx, d_model]
+    clip_dtype = transformer.resblocks[0].attn.out_proj.weight.dtype
+    x = token_embedding(toks).type(clip_dtype)  # [batch_size, n_ctx, d_model]
 
-    x = x + positional_embedding.type(dtype)
+    x = x + positional_embedding.type(clip_dtype)
     x = x.permute(1, 0, 2)  # NLD -> LND
 
     if use_penultimate_layer:
@@ -51,6 +52,7 @@ def clip_encode_text_nopool(token_embedding, positional_embedding, transformer, 
 
     if ln_final is not None:
         x = x.permute(1, 0, 2)  # LND -> NLD
+        x = x.type(dtype)
         x = ln_final(x)
         if out_format == 'ndl':
             x = x.permute(0, 2, 1)  # NLD -> NDL
