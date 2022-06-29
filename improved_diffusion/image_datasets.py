@@ -651,6 +651,8 @@ class ImageDataset(Dataset):
             out_dict['txt'] = text
 
             capt = self.image_file_to_capt.get(path, self.capt_drop_string)
+            if isinstance(capt, list):
+                capt = random.choice(capt)
             if drop_capt:
                 capt = self.capt_drop_string
             out_dict['capt'] = capt
