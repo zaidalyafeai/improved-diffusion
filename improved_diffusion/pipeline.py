@@ -336,6 +336,8 @@ class SamplingModel(nn.Module):
                 all_sample_sequences.append(sample_sequence.cpu().numpy())
                 all_xstart_sequences.append(xstart_sequence.cpu().numpy())
 
+        self.model.embed_capt_cached.cache_clear()
+
         all_images = np.concatenate(all_images, axis=0)
 
         if return_intermediates:
