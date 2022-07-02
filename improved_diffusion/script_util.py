@@ -199,6 +199,7 @@ def create_model_and_diffusion(
     no_attn=False,
     no_attn_substitute_resblock=False,
     freeze_capt_encoder=False,
+    use_inference_caching=False,
     clipmod=None,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
@@ -279,6 +280,7 @@ def create_model_and_diffusion(
         no_attn=no_attn,
         no_attn_substitute_resblock=no_attn_substitute_resblock,
         freeze_capt_encoder=freeze_capt_encoder,
+        use_inference_caching=use_inference_caching,
         clipmod=clipmod,
     )
     diffusion = create_gaussian_diffusion(
@@ -385,6 +387,7 @@ def create_model(
     no_attn_substitute_resblock=False,
     noise_cond=False,
     freeze_capt_encoder=False,
+    use_inference_caching=False,
     clipmod=None,
 ):
     text_lr_mult = 1.
@@ -505,6 +508,7 @@ def create_model(
         no_attn_substitute_resblock=no_attn_substitute_resblock,
         noise_cond=noise_cond,
         freeze_capt_encoder=freeze_capt_encoder,
+        use_inference_caching=use_inference_caching,
         clipmod=clipmod,
     )
 
@@ -611,6 +615,7 @@ def sr_create_model_and_diffusion(
     no_attn_substitute_resblock=False,
     noise_cond=False,
     freeze_capt_encoder=False,
+    use_inference_caching=False,
     clipmod=None,
 ):
     model = sr_create_model(
@@ -686,6 +691,7 @@ def sr_create_model_and_diffusion(
         no_attn_substitute_resblock=no_attn_substitute_resblock,
         noise_cond=noise_cond,
         freeze_capt_encoder=freeze_capt_encoder,
+        use_inference_caching=use_inference_caching,
         clipmod=clipmod,
     )
     diffusion = create_gaussian_diffusion(

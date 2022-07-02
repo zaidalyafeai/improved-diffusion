@@ -79,7 +79,7 @@ class SamplingModel(nn.Module):
     def from_config(checkpoint_path, config_path, timestep_respacing="", class_map=None, clipmod=None):
         model, diffusion_factory, tokenizer, is_super_res = load_config_to_model(
             config_path,
-            overrides=dict(freeze_capt_encoder=True, clipmod=clipmod)
+            overrides=dict(freeze_capt_encoder=True, use_inference_caching=True, clipmod=clipmod)
         )
         model.load_state_dict(
             dist_util.load_state_dict(checkpoint_path, map_location="cpu"),

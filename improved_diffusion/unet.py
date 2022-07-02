@@ -741,6 +741,7 @@ class UNetModel(nn.Module):
         no_attn_substitute_resblock=False,
         noise_cond=False,
         freeze_capt_encoder=False,
+        use_inference_caching=False,
         clipmod=None,
     ):
         super().__init__()
@@ -791,6 +792,7 @@ class UNetModel(nn.Module):
         self.glide_style_capt_attn = glide_style_capt_attn
         self.glide_style_capt_emb = glide_style_capt_emb
         self.clip_use_penultimate_layer = clip_use_penultimate_layer
+        self.use_inference_caching = use_inference_caching
 
         self.noise_cond = noise_cond
 
@@ -1269,6 +1271,9 @@ class UNetModel(nn.Module):
 
     @lru_cache(2)
     def embed_capt_cached(self, capt_toks):
+        return self.embed_capt(capt_toks)
+
+    def embed_capt(self, capt_toks):
         capt_attn_mask = capt_toks != 0
         capt = clip_encode_text_nopool(
             self.clipmod.token_embedding, self.clipmod.positional_embedding, self.clipmod.transformer,
@@ -1323,7 +1328,7 @@ class UNetModel(nn.Module):
 
         capt_attn_mask = None
         if self.using_capt and capt is not None:
-            capt, capt_attn_mask = self.embed_capt_cached(capt)
+            capt, capt_attn_mask = self.embed_capt_cached(capt) if self.use_inference_caching else self.embed_capt(capt)
             # capt_toks = capt
             # capt_attn_mask = capt_toks != 0
             # capt = clip_encode_text_nopool(
