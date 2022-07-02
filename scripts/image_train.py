@@ -133,6 +133,7 @@ def main():
         clip_prob_path=args.clip_prob_path,
         clip_prob_middle_pkeep=args.clip_prob_middle_pkeep,
         num_workers=args.perf_num_workers,
+        freeze_capt_encoder=args.freeze_capt_encoder,
     )
 
     if args.save_first_batch:

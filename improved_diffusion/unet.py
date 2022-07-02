@@ -740,7 +740,7 @@ class UNetModel(nn.Module):
         no_attn=False,
         no_attn_substitute_resblock=False,
         noise_cond=False,
-        assume_inference=False,
+        freeze_capt_encoder=False,
         clipmod=None,
     ):
         super().__init__()
@@ -829,7 +829,7 @@ class UNetModel(nn.Module):
             if clipmod is None:
                 clipmod, _ = clip.load(name=clipname)
                 del clipmod.visual
-            if not assume_inference:
+            if not freeze_capt_encoder:
                 clipmod.float()
             self.clipmod = clipmod
             self.clipmod.positional_embedding = clipmod.positional_embedding

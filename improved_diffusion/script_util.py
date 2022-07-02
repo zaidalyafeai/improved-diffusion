@@ -105,7 +105,7 @@ def model_and_diffusion_defaults():
         vb_loss_ratio=1000.,
         no_attn=False,
         no_attn_substitute_resblock=False,
-        assume_inference=False,
+        freeze_capt_encoder=False,
         clipmod=None,
     )
 
@@ -198,7 +198,7 @@ def create_model_and_diffusion(
     vb_loss_ratio=1000.,
     no_attn=False,
     no_attn_substitute_resblock=False,
-    assume_inference=False,
+    freeze_capt_encoder=False,
     clipmod=None,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
@@ -278,7 +278,7 @@ def create_model_and_diffusion(
         use_checkpoint_below_res=use_checkpoint_below_res,
         no_attn=no_attn,
         no_attn_substitute_resblock=no_attn_substitute_resblock,
-        assume_inference=assume_inference,
+        freeze_capt_encoder=freeze_capt_encoder,
         clipmod=clipmod,
     )
     diffusion = create_gaussian_diffusion(
@@ -384,7 +384,7 @@ def create_model(
     no_attn=False,
     no_attn_substitute_resblock=False,
     noise_cond=False,
-    assume_inference=False,
+    freeze_capt_encoder=False,
     clipmod=None,
 ):
     text_lr_mult = 1.
@@ -504,7 +504,7 @@ def create_model(
         no_attn=no_attn,
         no_attn_substitute_resblock=no_attn_substitute_resblock,
         noise_cond=noise_cond,
-        assume_inference=assume_inference,
+        freeze_capt_encoder=freeze_capt_encoder,
         clipmod=clipmod,
     )
 
@@ -610,7 +610,7 @@ def sr_create_model_and_diffusion(
     no_attn=False,
     no_attn_substitute_resblock=False,
     noise_cond=False,
-    assume_inference=False,
+    freeze_capt_encoder=False,
     clipmod=None,
 ):
     model = sr_create_model(
@@ -685,7 +685,7 @@ def sr_create_model_and_diffusion(
         no_attn=no_attn,
         no_attn_substitute_resblock=no_attn_substitute_resblock,
         noise_cond=noise_cond,
-        assume_inference=assume_inference,
+        freeze_capt_encoder=freeze_capt_encoder,
         clipmod=clipmod,
     )
     diffusion = create_gaussian_diffusion(
