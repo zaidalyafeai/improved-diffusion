@@ -126,7 +126,6 @@ def main():
         class_ix_unk=args.class_ix_unk,
         class_ix_drop=args.class_ix_drop,
         class_pdrop=args.class_pdrop,
-        freeze_capt_encoder=args.freeze_capt_encoder,
     )
 
     if args.save_first_batch:
