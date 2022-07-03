@@ -7,6 +7,7 @@ Docstrings have been added, as well as DDIM sampling and a new collection of bet
 
 import enum
 import math
+from functools import lru_cache
 
 import numpy as np
 import torch as th
@@ -548,6 +549,8 @@ class GaussianDiffusion:
             img = noise
         else:
             img = th.randn(*shape, device=device)
+
+        trange = ts_index_range(shape[0], self.num_timesteps, device=device)
         indices = list(range(self.num_timesteps))[::-1]
 
         if progress:
@@ -557,7 +560,8 @@ class GaussianDiffusion:
             indices = tqdm(indices)
 
         for i in indices:
-            t = th.tensor([i] * shape[0], device=device)
+            # t = th.tensor([i] * shape[0], device=device)
+            t = trange[i]
             with th.no_grad():
                 out = self.p_sample(
                     model,
@@ -829,6 +833,7 @@ class GaussianDiffusion:
         else:
             img = th.randn(*shape, device=device)
         # indices = list(range(self.num_timesteps))[::-1]
+        trange = ts_index_range(shape[0], self.num_timesteps, device=device)
         indices = list(range(2, self.num_timesteps, 2))[::-1]
 
         if progress:
@@ -839,7 +844,8 @@ class GaussianDiffusion:
 
         old_eps = []
         for i in indices:
-            t = th.tensor([i] * shape[0], device=device)
+            # t = th.tensor([i] * shape[0], device=device)
+            t = trange[i]
             with th.no_grad():
                 out = self.prk_double_step(
                     model,
@@ -906,8 +912,7 @@ class GaussianDiffusion:
         else:
             img = th.randn(*shape, device=device)
 
-        # rk_indices = [self.num_timesteps-1, self.num_timesteps-3, self.num_timesteps-5]
-        # indices = list(range(2, self.num_timesteps-5, 2))[::-1]
+        trange = ts_index_range(shape[0], self.num_timesteps, device=device)
         indices = list(range(2, self.num_timesteps, 2))[::-1]
         nsteps = len(indices)
         rk_indices = indices[:3]
@@ -917,7 +922,8 @@ class GaussianDiffusion:
 
         old_eps = []
         for i in rk_indices:
-            t = th.tensor([i] * shape[0], device=device)
+            # t = th.tensor([i] * shape[0], device=device)
+            t = trange[i]
             with th.no_grad():
                 ddim_fallback = (step_counter < ddim_first_n) or (ddim_last_n is not None and (nsteps - step_counter) < ddim_last_n)
                 out = self.prk_double_step(
@@ -937,7 +943,8 @@ class GaussianDiffusion:
                 # yield out
                 img = out["sample"]
         for i in indices:
-            t = th.tensor([i] * shape[0], device=device)
+            # t = th.tensor([i] * shape[0], device=device)
+            t = trange[i]
             with th.no_grad():
                 ddim_fallback = (step_counter < ddim_first_n) or (ddim_last_n is not None and (nsteps - step_counter) < ddim_last_n)
                 out = self.plms_steps(
@@ -1050,6 +1057,8 @@ class GaussianDiffusion:
             img = noise
         else:
             img = th.randn(*shape, device=device)
+
+        trange = ts_index_range(shape[0], self.num_timesteps, device=device)
         indices = list(range(self.num_timesteps))[::-1]
 
         if progress:
@@ -1059,7 +1068,8 @@ class GaussianDiffusion:
             indices = tqdm(indices)
 
         for i in indices:
-            t = th.tensor([i] * shape[0], device=device)
+            # t = th.tensor([i] * shape[0], device=device)
+            t = trange[i]
             with th.no_grad():
                 out = self.ddim_sample(
                     model,
@@ -1406,3 +1416,17 @@ class SimpleForwardDiffusion:
         while len(res.shape) < len(broadcast_shape):
             res = res[..., None]
         return res.expand(broadcast_shape)
+
+
+def ts_index_range(batch_size, maxstep, device):
+    return _ts_index_range(batch_size, maxstep, str(device))
+
+
+@lru_cache(1)
+def _ts_index_range(batch_size, nsteps, device):
+    with th.no_grad():
+        tblock = th.tile(th.arange(nsteps, device=device), (batch_size, 1))
+        ts = []
+        for i in range(0, nsteps):
+            ts.append(tblock[:, i:i+1].view(-1))
+    return ts
