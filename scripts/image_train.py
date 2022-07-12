@@ -186,7 +186,6 @@ def main():
         perf_no_ddl=args.perf_no_ddl,
         capt_lr=args.capt_lr,
         freeze_capt_encoder=args.freeze_capt_encoder,
-        float32_matmul_precision="medium",
     ).run_loop()
 
 
@@ -270,6 +269,7 @@ def create_argparser():
         clip_prob_path="",
         clip_prob_middle_pkeep=0.5,
         cudnn_benchmark=False,
+        float32_matmul_precision="medium",
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
