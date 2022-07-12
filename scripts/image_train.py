@@ -25,6 +25,11 @@ def main():
     th.backends.cudnn.benchmark = args.cudnn_benchmark
     print(f"using cudnn_benchmark: {th.backends.cudnn.benchmark}")
 
+    try:
+        th.set_float32_matmul_precision(args.float32_matmul_precision)
+    except Exception as e:
+        print(f"Couldn't set float32_matmul_precision: {repr(e)}")
+
     print(f"args: got txt={args.txt}")
 
     dist_util.setup_dist()
@@ -181,6 +186,7 @@ def main():
         perf_no_ddl=args.perf_no_ddl,
         capt_lr=args.capt_lr,
         freeze_capt_encoder=args.freeze_capt_encoder,
+        float32_matmul_precision="medium",
     ).run_loop()
 
 
