@@ -93,10 +93,13 @@ class SamplingModel(nn.Module):
         self.diffusion = self.diffusion_factory(timestep_respacing)
 
     @staticmethod
-    def from_config(checkpoint_path, config_path, timestep_respacing="", class_map=None, clipmod=None):
+    def from_config(checkpoint_path, config_path, timestep_respacing="", class_map=None, clipmod=None, **overrides):
+        overrides_ = dict(freeze_capt_encoder=True, use_inference_caching=True, clipmod=clipmod)
+        overrides_.update(overrides)
+
         model, diffusion_factory, tokenizer, is_super_res = load_config_to_model(
             config_path,
-            overrides=dict(freeze_capt_encoder=True, use_inference_caching=True, clipmod=clipmod)
+            overrides=overrides_
         )
         model.load_state_dict(
             dist_util.load_state_dict(checkpoint_path, map_location="cpu"),
