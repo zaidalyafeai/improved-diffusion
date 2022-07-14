@@ -1356,7 +1356,6 @@ class SimpleForwardDiffusion:
         self.tensorized_for = None
 
     def is_tensorized(self, device):
-        return True  # DEBUG
         # out = self.tensorized_for == device
         # if out:
         #     print(f"DIFF YES | {device}")

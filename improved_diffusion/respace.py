@@ -88,7 +88,6 @@ class SpacedDiffusion(GaussianDiffusion):
         super().__init__(**kwargs)
 
     def is_map_tensorized(self, device):
-        return True  # DEBUG
         # out = self.map_tensorized_for == device
         # if out:
         #     print(f"RESPACE YES | {device}")
