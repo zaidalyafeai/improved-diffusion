@@ -146,5 +146,4 @@ class _WrappedModel:
 
     @property
     def parameters(self):
-        # deep copy
-        return th.device(str(self.model.parameters))
+        return self.model.parameters
