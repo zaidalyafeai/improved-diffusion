@@ -305,6 +305,8 @@ class SamplingModel(nn.Module):
         all_sample_sequences = []
         all_xstart_sequences = []
 
+        wrapped = self.diffusion._wrap_model(self.model)
+
         while len(all_images) * batch_size < n_samples:
             offset = len(all_images)
             if self.is_super_res:
@@ -313,8 +315,9 @@ class SamplingModel(nn.Module):
                 if "unconditional_model_kwargs" in model_kwargs:
                     model_kwargs["unconditional_model_kwargs"]["low_res"] = model_kwargs["low_res"]
 
+
             sample = sample_fn(
-                self.model,
+                wrapped,
                 (
                     batch_size,
                     image_channels,
@@ -356,6 +359,8 @@ class SamplingModel(nn.Module):
                 xstart_sequence = th.stack(xstart_sequence, dim=1)
                 all_sample_sequences.append(sample_sequence.cpu().numpy())
                 all_xstart_sequences.append(xstart_sequence.cpu().numpy())
+
+        del wrapped
 
         self.model.embed_capt_cached.cache_clear()
 
