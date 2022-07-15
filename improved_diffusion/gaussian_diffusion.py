@@ -218,6 +218,7 @@ class GaussianDiffusion:
         return self.tensorized_for == device
 
     def tensorize(self, device):
+        print("GaussianDiffusion tensorize called")
         arrays = {name: getattr(self, name) for name in vars(self) if isinstance(getattr(self, name), np.ndarray)}
 
         for name, arr in arrays.items():
@@ -1424,6 +1425,7 @@ def ts_index_range(batch_size, maxstep, device):
 
 @lru_cache(1)
 def _ts_index_range(batch_size, nsteps, device):
+    print(f"_ts_index_range called for {(batch_size, nsteps, device)}")
     with th.no_grad():
         tblock = th.tile(th.arange(nsteps, device=device), (batch_size, 1))
         ts = []

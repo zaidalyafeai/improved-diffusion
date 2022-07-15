@@ -97,6 +97,7 @@ class SpacedDiffusion(GaussianDiffusion):
         return self.map_tensorized_for == device
 
     def tensorize_map(self, device):
+        print("SpacedDiffusion tensorize_map called")
         self.timestep_map = th.as_tensor(self.timestep_map, device=device, dtype=th.long)
         self.map_tensorized_for = device
 
