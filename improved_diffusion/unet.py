@@ -1269,6 +1269,10 @@ class UNetModel(nn.Module):
         """
         return next(self.input_blocks.parameters()).dtype
 
+    @property
+    def device(self):
+        return self.time_embed[0].weight.device
+
     @lru_cache(2)
     def embed_capt_cached(self, capt_toks):
         return self.embed_capt(capt_toks)

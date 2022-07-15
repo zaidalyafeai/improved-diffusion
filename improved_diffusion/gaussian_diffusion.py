@@ -543,7 +543,7 @@ class GaussianDiffusion:
         p_sample().
         """
         if device is None:
-            device = next(model.parameters()).device
+            device = model.device
         assert isinstance(shape, (tuple, list))
         if noise is not None:
             img = noise
@@ -826,7 +826,7 @@ class GaussianDiffusion:
         Same usage as p_sample_loop_progressive().
         """
         if device is None:
-            device = next(model.parameters()).device
+            device = model.device
         assert isinstance(shape, (tuple, list))
         if noise is not None:
             img = noise
@@ -905,7 +905,7 @@ class GaussianDiffusion:
         ddim_last_n=None,
     ):
         if device is None:
-            device = next(model.parameters()).device
+            device = model.device
         assert isinstance(shape, (tuple, list))
         if noise is not None:
             img = noise
@@ -1051,7 +1051,7 @@ class GaussianDiffusion:
         Same usage as p_sample_loop_progressive().
         """
         if device is None:
-            device = next(model.parameters()).device
+            device = model.device
         assert isinstance(shape, (tuple, list))
         if noise is not None:
             img = noise
