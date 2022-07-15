@@ -532,7 +532,7 @@ class QKVAttention(nn.Module):
         weight = weight.float()
         if attn_mask is not None:
             weight = weight + attn_mask
-        weight = th.softmax(weight, dim=-1).type(weight.dtype)
+        weight = th.softmax(weight, dim=-1).type(v.dtype)
         # if encoder_kv is not None:
         #     l_base = qkv.shape[2]
         #     print(f'l_base {l_base}')
