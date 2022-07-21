@@ -74,6 +74,8 @@ class SpacedDiffusion(GaussianDiffusion):
         self.timestep_map = []
         self.original_num_steps = len(kwargs["betas"])
 
+        self.map_tensorized_for = None
+
         base_diffusion = GaussianDiffusion(**kwargs)  # pylint: disable=missing-kwoa
         last_alpha_cumprod = 1.0
         new_betas = []
@@ -84,6 +86,20 @@ class SpacedDiffusion(GaussianDiffusion):
                 self.timestep_map.append(i)
         kwargs["betas"] = np.array(new_betas)
         super().__init__(**kwargs)
+
+    def is_map_tensorized(self, device):
+        # out = self.map_tensorized_for == device
+        # if out:
+        #     print(f"RESPACE YES | {device}")
+        # else:
+        #     print(f"RESPACE NO  | have {self.map_tensorized_for} want {device}")
+        # return out
+        return self.map_tensorized_for == device
+
+    def tensorize_map(self, device):
+        # print("SpacedDiffusion tensorize_map called")
+        self.timestep_map = th.as_tensor(self.timestep_map, device=device, dtype=th.long)
+        self.map_tensorized_for = device
 
     def p_mean_variance(
         self, model, *args, **kwargs
@@ -98,6 +114,9 @@ class SpacedDiffusion(GaussianDiffusion):
     def _wrap_model(self, model):
         if isinstance(model, _WrappedModel):
             return model
+        device = model.device
+        if not self.is_map_tensorized(device):
+            self.tensorize_map(device)
         return _WrappedModel(
             model, self.timestep_map, self.rescale_timesteps, self.original_num_steps
         )
@@ -115,8 +134,14 @@ class _WrappedModel:
         self.original_num_steps = original_num_steps
 
     def __call__(self, x, ts, **kwargs):
-        map_tensor = th.tensor(self.timestep_map, device=ts.device, dtype=ts.dtype)
-        new_ts = map_tensor[ts]
+        new_ts = self.timestep_map[ts]
+        # map_tensor = th.tensor(self.timestep_map, device=ts.device, dtype=ts.dtype)
+        # new_ts = map_tensor[ts]
         if self.rescale_timesteps:
             new_ts = new_ts.float() * (1000.0 / self.original_num_steps)
         return self.model(x, new_ts, **kwargs)
+
+    @property
+    def device(self):
+        # deep copy
+        return th.device(str(self.model.device))
