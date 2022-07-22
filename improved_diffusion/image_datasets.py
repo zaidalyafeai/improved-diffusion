@@ -514,7 +514,7 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_image
             image_file_to_safebox.update(next_image_file_to_safebox)
             image_file_to_px_scales.update(next_image_file_to_px_scales)
             image_file_to_capt.update(next_image_file_to_capt)
-    print(f"_list_image_files_recursively: data_dir={data_dir}, n_excluded_filesize={n_excluded_filesize}, n_excluded_imagesize={n_excluded_imagesize}, n_excluded_path={n_excluded_path}")
+    print(f"_list_image_files_recursively: data_dir={data_dir}, n_excluded_filesize={n_excluded_filesize}, n_excluded_imagesize={n_excluded_imagesize},\n\tn_excluded_path={n_excluded_path}")
     image_file_to_safebox = {k: v for k, v in image_file_to_safebox.items() if v is not None}
     image_file_to_px_scales = {k: v for k, v in image_file_to_px_scales.items() if v is not None}
     image_file_to_capt = {k: v for k, v in image_file_to_capt.items() if v is not None}
