@@ -126,6 +126,7 @@ def main():
         class_ix_unk=args.class_ix_unk,
         class_ix_drop=args.class_ix_drop,
         class_pdrop=args.class_pdrop,
+        exclusions_data_path=args.exclusions_data_path,
     )
 
     if args.save_first_batch:
@@ -258,6 +259,7 @@ def create_argparser():
         noise_cond_steps=1000,
         noise_cond_max_step=-1,
         cudnn_benchmark=False,
+        exclusions_data_path="",
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

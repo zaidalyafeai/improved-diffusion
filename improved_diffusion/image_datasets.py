@@ -72,6 +72,7 @@ def load_data(
     class_pdrop=0.1,
     clip_prob_path=None,
     clip_prob_middle_pkeep=0.5,
+    exclusions_data_path=None,
     debug=False,
 ):
     """
@@ -129,7 +130,14 @@ def load_data(
         with open(clip_prob_path, 'r') as f:
             clip_probs = json.load(f)
 
-    all_files, image_file_to_text_file, file_sizes, image_file_to_safebox, image_file_to_px_scales, image_file_to_capt = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize, min_imagesize=min_imagesize, safeboxes=safeboxes, px_scales=px_scales, capts=capts, require_capts=require_capts)
+    excluded_paths = None
+    if exclusions_data_path and os.path.exists(exclusions_data_path):
+        print('using exclusions_data_path')
+        with open(exclusions_data_path, 'r') as f:
+            exclusions_data = json.load(f)
+        excluded_paths = set(exclusions_data['excluded'])
+
+    all_files, image_file_to_text_file, file_sizes, image_file_to_safebox, image_file_to_px_scales, image_file_to_capt = _list_image_files_recursively(data_dir, txt=txt, min_filesize=min_filesize, min_imagesize=min_imagesize, safeboxes=safeboxes, px_scales=px_scales, capts=capts, require_capts=require_capts, excluded_paths=excluded_paths)
     print(f"found {len(all_files)} images, {len(image_file_to_text_file)} texts, {len(image_file_to_capt)} capts")
     all_files = all_files[offset:]
 
@@ -355,6 +363,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
                        class_ix_unk=0,
                        class_ix_drop=999,
                        class_pdrop=0.1,
+                       exclusions_data_path=None,
                        antialias=False,
                        bicubic_down=False,
                        ):
@@ -397,6 +406,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         class_ix_unk=class_ix_unk,
         class_ix_drop=class_ix_drop,
         class_pdrop=class_pdrop,
+        exclusions_data_path=exclusions_data_path,
     )
 
     blurrer = T.RandomApply(transforms=[T.GaussianBlur(blur_width, sigma=(blur_sigma_min, blur_sigma_max))], p=blur_prob)
@@ -429,7 +439,7 @@ def load_superres_data(data_dir, batch_size, large_size, small_size, class_cond=
         yield large_batch, model_kwargs
 
 
-def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_imagesize=0, safeboxes=None, px_scales=None, capts=None, require_capts=False):
+def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_imagesize=0, safeboxes=None, px_scales=None, capts=None, require_capts=False, excluded_paths=None):
     results = []
     image_file_to_text_file = {}
     file_sizes = {}
@@ -442,10 +452,18 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_image
         px_scales = {}
     if capts is None:
         capts = {}
+    if excluded_paths is None:
+        excluded_paths = set()
     n_excluded_filesize = 0
     n_excluded_imagesize = 0
+    n_excluded_path = 0
     for entry in sorted(bf.listdir(data_dir)):
         full_path = bf.join(data_dir, entry)
+
+        if full_path in excluded_paths:
+            n_excluded_path += 1
+            continue
+
         prefix, _, ext = entry.rpartition(".")
         safebox_key = prefix.replace('/', '_')
 
@@ -488,7 +506,7 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_image
 
         elif bf.isdir(full_path):
             next_results, next_map, next_file_sizes, next_image_file_to_safebox, next_image_file_to_px_scales, next_image_file_to_capt = _list_image_files_recursively(
-                full_path, txt=txt, min_filesize=min_filesize, min_imagesize=min_imagesize, safeboxes=safeboxes, px_scales=px_scales, capts=capts, require_capts=require_capts
+                full_path, txt=txt, min_filesize=min_filesize, min_imagesize=min_imagesize, safeboxes=safeboxes, px_scales=px_scales, capts=capts, require_capts=require_capts, excluded_paths=excluded_paths
             )
             results.extend(next_results)
             image_file_to_text_file.update(next_map)
@@ -496,7 +514,7 @@ def _list_image_files_recursively(data_dir, txt=False, min_filesize=0, min_image
             image_file_to_safebox.update(next_image_file_to_safebox)
             image_file_to_px_scales.update(next_image_file_to_px_scales)
             image_file_to_capt.update(next_image_file_to_capt)
-    print(f"_list_image_files_recursively: data_dir={data_dir}, n_excluded_filesize={n_excluded_filesize}, n_excluded_imagesize={n_excluded_imagesize}")
+    print(f"_list_image_files_recursively: data_dir={data_dir}, n_excluded_filesize={n_excluded_filesize}, n_excluded_imagesize={n_excluded_imagesize}, n_excluded_path={n_excluded_path}")
     image_file_to_safebox = {k: v for k, v in image_file_to_safebox.items() if v is not None}
     image_file_to_px_scales = {k: v for k, v in image_file_to_px_scales.items() if v is not None}
     image_file_to_capt = {k: v for k, v in image_file_to_capt.items() if v is not None}
