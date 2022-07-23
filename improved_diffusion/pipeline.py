@@ -150,6 +150,7 @@ class SamplingModel(nn.Module):
         noise_cond_ts=0,
         noise_cond_schedule='cosine',
         noise_cond_steps=1000,
+        guidance_scale_txt=None,  # if provided and different from guidance_scale, applied using step drop
     ):
         # dist_util.setup_dist()
 
@@ -249,6 +250,14 @@ class SamplingModel(nn.Module):
             model_kwargs["guidance_after_step"] = guidance_after_step
             model_kwargs["unconditional_model_kwargs"] = {}
 
+            txt_guidance_pdrop = 0.0
+            if guidance_scale_txt is not None and guidance_scale_txt != guidance_scale:
+                txt_guidance_pkeep = guidance_scale_txt / guidance_scale
+                txt_guidance_pdrop = 1 - txt_guidance_pkeep
+                print(f"txt_guidance_pdrop: {txt_guidance_pdrop}")
+
+                model_kwargs["txt_guidance_pdrop"] = txt_guidance_pdrop
+
             if batch_text is not None:
                 txt_uncon = batch_size * tokenize(self.tokenizer, [txt_drop_string])
                 txt_uncon = th.as_tensor(txt_uncon).to(dist_util.dev())
@@ -267,6 +276,10 @@ class SamplingModel(nn.Module):
             model_kwargs["cond_timesteps"] = th.as_tensor(batch_size * [int(noise_cond_ts)]).to(dist_util.dev())
             if "unconditional_model_kwargs" in model_kwargs:
                 model_kwargs["unconditional_model_kwargs"]["cond_timesteps"] = model_kwargs["cond_timesteps"]
+
+        if model_kwargs.get("txt_guidance_pdrop", 0) > 0:
+            model_kwargs["unconditional_drop_model_kwargs"] = model_kwargs["unconditional_model_kwargs"]
+            model_kwargs["unconditional_drop_model_kwargs"]["txt"] = model_kwargs["txt"]
 
         all_low_res = []
 

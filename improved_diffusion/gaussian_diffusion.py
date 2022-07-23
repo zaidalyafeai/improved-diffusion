@@ -318,7 +318,10 @@ class GaussianDiffusion:
 
         # are we doing clf free guide?
         guidance_scale = model_kwargs.get("guidance_scale", 0)
-        unconditional_model_kwargs = model_kwargs.get("unconditional_model_kwargs")
+        unconditional_key = "unconditional_model_kwargs"
+        if "txt_guidance_pdrop" in model_kwargs and random.rand() < model_kwargs["txt_guidance_pdrop"]:
+            unconditional_key = "unconditional_drop_model_kwargs"
+        unconditional_model_kwargs = model_kwargs.get(unconditional_key)
         guidance_after_step = float(model_kwargs.get("guidance_after_step", 100000.))
         is_eps = self.model_mean_type == ModelMeanType.EPSILON
         effective_guidance_scale = th.where(t < guidance_after_step, float(guidance_scale), 0.)
@@ -327,7 +330,7 @@ class GaussianDiffusion:
         is_guided = (guidance_scale is not None) and (unconditional_model_kwargs is not None) and is_eps and (not can_skip)
         # print(f"is_guided {is_guided} | can_skip {can_skip} | guidance_scale {guidance_scale} | is_eps {is_eps}")
 
-        drop_args = {"guidance_scale", "guidance_after_step", "unconditional_model_kwargs"}
+        drop_args = {"guidance_scale", "guidance_after_step", "unconditional_model_kwargs", "unconditional_drop_model_kwargs"}
         model_kwargs_cond = {k: v for k, v in model_kwargs.items() if k not in drop_args}
         model_output = model(x, self._scale_timesteps(t), **model_kwargs_cond)
 
