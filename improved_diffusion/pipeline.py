@@ -254,9 +254,17 @@ class SamplingModel(nn.Module):
             if guidance_scale_txt is not None and guidance_scale_txt != guidance_scale:
                 txt_guidance_pkeep = guidance_scale_txt / guidance_scale
                 txt_guidance_pdrop = 1 - txt_guidance_pkeep
-                print(f"txt_guidance_pdrop: {txt_guidance_pdrop}")
 
-                model_kwargs["txt_guidance_pdrop"] = txt_guidance_pdrop
+                nstep = len(self.diffusion.betas)
+                txt_guidance_ndrop = int(round(txt_guidance_pdrop * nstep))
+                if verbose:
+                    print(f"txt_guidance_ndrop: {txt_guidance_ndrop}")
+
+                ixs = list(range(nstep))
+                random.shuffle(ixs)
+                txt_guidance_drop_ixs = set(ixs[:txt_guidance_ndrop])
+
+                model_kwargs["txt_guidance_drop_ixs"] = txt_guidance_drop_ixs
 
             if batch_text is not None:
                 txt_uncon = batch_size * tokenize(self.tokenizer, [txt_drop_string])
@@ -277,7 +285,7 @@ class SamplingModel(nn.Module):
             if "unconditional_model_kwargs" in model_kwargs:
                 model_kwargs["unconditional_model_kwargs"]["cond_timesteps"] = model_kwargs["cond_timesteps"]
 
-        if model_kwargs.get("txt_guidance_pdrop", 0) > 0:
+        if model_kwargs.get("txt_guidance_drop_ixs", set()) != set():
             model_kwargs["unconditional_drop_model_kwargs"] = {
                 k: v for k, v in model_kwargs["unconditional_model_kwargs"].items()
             }

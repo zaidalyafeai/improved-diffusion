@@ -320,7 +320,8 @@ class GaussianDiffusion:
         # are we doing clf free guide?
         guidance_scale = model_kwargs.get("guidance_scale", 0)
         unconditional_key = "unconditional_model_kwargs"
-        if "txt_guidance_pdrop" in model_kwargs and random.random() < model_kwargs["txt_guidance_pdrop"]:
+        t_py = set(t.cpu().tolist())
+        if "txt_guidance_drop_ixs" in model_kwargs and (t_py.intersection(model_kwargs["txt_guidance_drop_ixs"]) != set()):
             unconditional_key = "unconditional_drop_model_kwargs"
         unconditional_model_kwargs = model_kwargs.get(unconditional_key)
         guidance_after_step = float(model_kwargs.get("guidance_after_step", 100000.))
@@ -333,7 +334,7 @@ class GaussianDiffusion:
 
         drop_args = {
             "guidance_scale", "guidance_after_step", "unconditional_model_kwargs",
-            "unconditional_drop_model_kwargs", "txt_guidance_pdrop"
+            "unconditional_drop_model_kwargs", "txt_guidance_pdrop", "txt_guidance_drop_ixs"
         }
         model_kwargs_cond = {k: v for k, v in model_kwargs.items() if k not in drop_args}
         model_output = model(x, self._scale_timesteps(t), **model_kwargs_cond)
