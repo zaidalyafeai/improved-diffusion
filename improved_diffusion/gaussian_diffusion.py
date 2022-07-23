@@ -331,7 +331,10 @@ class GaussianDiffusion:
         is_guided = (guidance_scale is not None) and (unconditional_model_kwargs is not None) and is_eps and (not can_skip)
         # print(f"is_guided {is_guided} | can_skip {can_skip} | guidance_scale {guidance_scale} | is_eps {is_eps}")
 
-        drop_args = {"guidance_scale", "guidance_after_step", "unconditional_model_kwargs", "unconditional_drop_model_kwargs"}
+        drop_args = {
+            "guidance_scale", "guidance_after_step", "unconditional_model_kwargs",
+            "unconditional_drop_model_kwargs", "txt_guidance_pdrop"
+        }
         model_kwargs_cond = {k: v for k, v in model_kwargs.items() if k not in drop_args}
         model_output = model(x, self._scale_timesteps(t), **model_kwargs_cond)
 
