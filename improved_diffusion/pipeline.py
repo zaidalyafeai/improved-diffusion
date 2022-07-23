@@ -278,7 +278,9 @@ class SamplingModel(nn.Module):
                 model_kwargs["unconditional_model_kwargs"]["cond_timesteps"] = model_kwargs["cond_timesteps"]
 
         if model_kwargs.get("txt_guidance_pdrop", 0) > 0:
-            model_kwargs["unconditional_drop_model_kwargs"] = model_kwargs["unconditional_model_kwargs"]
+            model_kwargs["unconditional_drop_model_kwargs"] = {
+                k: v for k, v in model_kwargs["unconditional_model_kwargs"].items()
+            }
             model_kwargs["unconditional_drop_model_kwargs"]["txt"] = model_kwargs["txt"]
 
         all_low_res = []
