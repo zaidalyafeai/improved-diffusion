@@ -320,7 +320,7 @@ class GaussianDiffusion:
         # are we doing clf free guide?
         guidance_scale = model_kwargs.get("guidance_scale", 0)
         unconditional_key = "unconditional_model_kwargs"
-        if "txt_guidance_pdrop" in model_kwargs and random.rand() < model_kwargs["txt_guidance_pdrop"]:
+        if "txt_guidance_pdrop" in model_kwargs and random.random() < model_kwargs["txt_guidance_pdrop"]:
             unconditional_key = "unconditional_drop_model_kwargs"
         unconditional_model_kwargs = model_kwargs.get(unconditional_key)
         guidance_after_step = float(model_kwargs.get("guidance_after_step", 100000.))
