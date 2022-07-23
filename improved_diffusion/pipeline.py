@@ -330,6 +330,8 @@ class SamplingModel(nn.Module):
                 if "unconditional_model_kwargs" in model_kwargs:
                     model_kwargs["unconditional_model_kwargs"]["low_res"] = model_kwargs["low_res"]
 
+                if "unconditional_drop_model_kwargs" in  model_kwargs:
+                    model_kwargs["unconditional_drop_model_kwargs"]["low_res"] = model_kwargs["low_res"]
 
             sample = sample_fn(
                 wrapped,
