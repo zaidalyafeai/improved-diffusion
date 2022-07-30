@@ -158,7 +158,7 @@ def load_data(
         print(f"of {n_nonempty_texts} nonempty texts, {n_with_safebox} have safeboxes (all safeboxes: {len(image_file_to_safebox)})")
 
     if px_scales is not None:
-        n_with_px_scale = sum(text_file_to_image_file[k] in image_file_to_px_scales for k in nonempty_text_files)
+        n_with_px_scale = len(set(text_file_to_image_file.values()).intersection(image_file_to_px_scales.keys()))
         print(f"of {n_texts} texts, {n_with_px_scale} have px scales (all px scales: {len(image_file_to_px_scales)})")
 
     n_images_with_capts = len(set(image_file_to_text_file.keys()).intersection(image_file_to_capt.keys()))
