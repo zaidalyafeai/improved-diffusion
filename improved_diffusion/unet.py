@@ -10,6 +10,7 @@ import torch.nn.functional as F
 
 from axial_positional_embedding import AxialPositionalEmbedding
 from x_transformers.x_transformers import Rezero
+from einops import rearrange
 
 from .fp16_util import convert_module_to_f16, convert_module_to_f32
 from .nn import (
@@ -18,6 +19,7 @@ from .nn import (
     adagn_silu_extended_32_8,
     adagn_silu_extended_32_6,
     adagn_silu_extended_32_1,
+    AdaGN,
     conv_nd,
     linear,
     avg_pool_nd,
@@ -455,14 +457,30 @@ class AttentionBlock(GlideStyleBlock):
     """
     # TODO: (nost) - why not try AdaGN for norm here?
     def __init__(self, channels, num_heads=1, use_checkpoint=False, use_checkpoint_lowcost=False, base_channels=None,
-                 encoder_channels=None):
+                 encoder_channels=None,
+                 use_pos_emb=False,
+                 use_adagn_pos_emb=False,
+                 pos_emb_res=None,
+                 ):
         super().__init__()
         self.channels = channels
         self.num_heads = num_heads
         self.use_checkpoint = use_checkpoint
         use_checkpoint_lowcost = use_checkpoint_lowcost and not use_checkpoint
 
-        self.norm = normalization(channels, base_channels=base_channels)
+        self.use_pos_emb = use_pos_emb
+        self.use_adagn_pos_emb = use_adagn_pos_emb
+
+        self.pos_emb = None
+
+        if self.use_pos_emb and self.use_adagn_pos_emb:
+            raise ValueError('use_adagn_pos_emb todo')
+        else:
+            if self.use_pos_emb:
+                self.pos_emb = zero_module(
+                    AxialPositionalEmbedding(dim=self.channels, axial_shape=(pos_emb_res, pos_emb_res))
+                )
+            self.norm = normalization(channels, base_channels=base_channels)
         self.qkv = conv_nd(1, channels, channels * 3, 1)
         self.attention = QKVAttention()
         self.proj_out = zero_module(conv_nd(1, channels, channels, 1))
@@ -477,24 +495,30 @@ class AttentionBlock(GlideStyleBlock):
     def forward(self, x, encoder_out=None, capt_attn_mask=None):
         return checkpoint(self._forward, (x, encoder_out, capt_attn_mask), self.parameters(), self.use_checkpoint)
 
-    def _forward(self, x, encoder_out=None, attn_mask=None):
+    def compute_pos_emb(self, x):
         b, c, *spatial = x.shape
-        x = x.reshape(b, c, -1)
-        qkv = self.qkv(self.norm(x))
+        in_shape  = (b, spatial[0]*spatial[1], c)
+        pseudo_in = torch.zeros(in_shape, dtype=x.dtype, device=x.device)
+        pos_emb_val = self.pos_emb(pseudo_in)
+        pos_emb_val = rearrange(pos_emb_val, 'b (h w) c -> b c h w', h=spatial[0])
+        return pos_emb_val
+
+    def _forward(self, x, encoder_out=None, attn_mask=None):
+        if self.use_pos_emb:
+            pos_emb_val = self.compute_pos_emb(x)
+            b, c, *spatial = x.shape
+            x = x.reshape(b, c, -1)
+            norm_out = self.norm(x + pos_emb_val)
+        else:
+            norm_out = self.norm(x)
+        qkv = self.qkv(norm_out)
         qkv = qkv.reshape(b * self.num_heads, -1, qkv.shape[2])
+
         if (encoder_out is not None) and (self.encoder_kv is not None):
-            # encoder_out = self.encoder_norm(encoder_out)
             encoder_kv = self.encoder_kv(encoder_out)
             encoder_kv = encoder_kv.reshape(b * self.num_heads, -1, encoder_kv.shape[2])
 
             my_attn_mask = th.tile(attn_mask.unsqueeze(1), (self.num_heads, qkv.shape[2], 1))
-            # image_attn_mask_name = f"mask_{qkv.shape[0]}_{qkv.shape[2]}"
-            # if not hasattr(self, image_attn_mask_name):
-            #     self.register_buffer(image_attn_mask_name, th.ones((qkv.shape[0], qkv.shape[2], qkv.shape[2]), dtype=bool, device=qkv.device), persistent=False)
-            #
-            # image_attn_mask = getattr(self, image_attn_mask_name)
-            #
-            # my_attn_mask = th.cat([image_attn_mask, my_attn_mask], dim=2)
 
             my_attn_mask = th.cat([th.ones((qkv.shape[0], qkv.shape[2], qkv.shape[2]), dtype=bool, device=qkv.device), my_attn_mask], dim=2)
             my_attn_mask = (~my_attn_mask).to(encoder_kv.dtype) * -10000.
@@ -743,6 +767,7 @@ class UNetModel(nn.Module):
         freeze_capt_encoder=False,
         use_inference_caching=False,
         clipmod=None,
+        post_txt_image_attn='none',  # 'none', 'final' or 'all'
     ):
         super().__init__()
 
@@ -1163,6 +1188,27 @@ class UNetModel(nn.Module):
                             use_capt=use_capt,
                             txt_already_normed=use_capt and (self.clipmod.ln_final is not None)
                         )
+
+                        using_post_txt_image_attn = (
+                            post_txt_image_attn == 'all'
+                            or (post_txt_image_attn == 'final' and ds == min(attention_resolutions))
+                        )
+                        post_txt_image_attn = None
+                        if using_post_txt_image_attn:
+                            print((f"using post_txt_image_attn, ds={ds}, emb_res={emb_res}, ch={ch}"))
+                            post_txt_image_attn = AttentionBlock(
+                                ch,
+                                use_checkpoint=use_checkpoint or use_checkpoint_up or ((image_size // ds) <= use_checkpoint_below_res),
+                                num_heads=num_heads_here,
+                                use_checkpoint_lowcost=use_checkpoint_lowcost,
+                                base_channels=expand_timestep_base_dim * ch // model_channels,
+                                encoder_channels=None,
+                                use_pos_emb=True,
+                                pos_emb_res=emb_res,
+                            )
+
+                        caa_args['post_txt_image_attn'] = post_txt_image_attn
+
                         if weave_attn:
                             caa_args['image_dim'] = caa_args.pop('dim')
                             caa_args.update(dict(
@@ -1179,6 +1225,7 @@ class UNetModel(nn.Module):
                             caa = WeaveAttentionAdapter(**caa_args) if use_attn else nn.Identity()
                         else:
                             caa = CrossAttentionAdapter(**caa_args) if use_attn else nn.Identity()
+
                         if txt_attn_before_attn and (ds in attention_resolutions):
                             layers.insert(-1, caa)
                         else:

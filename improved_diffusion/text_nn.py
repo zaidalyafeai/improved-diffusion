@@ -254,6 +254,7 @@ class CrossAttention(nn.Module):
         image_base_channels=-1,
         silu_impl="torch",
         txt_already_normed=False,
+        post_txt_image_attn=None,
     ):
         super().__init__()
         print(
@@ -318,6 +319,8 @@ class CrossAttention(nn.Module):
             self.gain = torch.nn.Parameter(torch.as_tensor(np.log(init_gain) / gain_scale))
 
         self.resid = resid
+
+        self.post_txt_image_attn = post_txt_image_attn
 
         if orth_init:
             torch.nn.init.orthogonal_(self.attn.q.weight)
@@ -412,6 +415,9 @@ class CrossAttention(nn.Module):
 
         if self.resid:
             tgt = tgt + attn_output
+
+            if self.post_txt_image_attn is not None:
+                tgt = self.post_txt_image_attn(tgt)
             return tgt, src
 
         return attn_output, src
@@ -618,6 +624,7 @@ class WeaveAttention(nn.Module):
         silu_impl="torch",
         no_itot=False,
         txt_already_normed=False,
+        post_txt_image_attn=None,
         **text_to_image_kwargs,
     ):
         super().__init__()
@@ -660,6 +667,7 @@ class WeaveAttention(nn.Module):
             ff_glu=ff_glu,
             qkv_dim=text_dim if qkv_dim_always_text else None,
             use_ff_gain=use_ff_gain,
+            post_txt_image_attn=post_txt_image_attn,
             **shared_args
         )
 
