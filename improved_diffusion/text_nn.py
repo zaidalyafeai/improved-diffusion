@@ -338,7 +338,7 @@ class CrossAttention(nn.Module):
         tgt_pos_emb = tgt_pos_embs[str(self.emb_res)]
         b, c, *spatial = tgt.shape
         tgt_in_shape  = (b, spatial[0]*spatial[1], c)
-        pseudo_tgt_in = torch.zeros(tgt_in_shape, dtype=tgt.dtype, device=tgt.device)
+        pseudo_tgt_in = torch.zeros(tgt_in_shape, dtype=tgt.dtype, device=tgt.device)  # todo: allocate only once
         tgt_pos_emb_val = tgt_pos_emb(pseudo_tgt_in)
 
         return checkpoint(
