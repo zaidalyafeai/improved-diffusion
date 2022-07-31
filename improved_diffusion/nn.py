@@ -621,5 +621,5 @@ class AxialPositionalEmbeddingShape(AxialPositionalEmbedding):
             emb = ax_emb.expand(expand_shape).reshape(b, self.max_seq_len, axial_dim)
             embs.append(emb)
 
-        pos_emb = sum(embs) if self.summed else torch.cat(embs, dim=-1)
+        pos_emb = sum(embs) if self.summed else th.cat(embs, dim=-1)
         return pos_emb[:, :t].to(device=device, dtype=dtype)
