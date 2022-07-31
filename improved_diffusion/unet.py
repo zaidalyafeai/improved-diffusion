@@ -8,7 +8,6 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 
-from axial_positional_embedding import AxialPositionalEmbedding
 from x_transformers.x_transformers import Rezero
 
 from .fp16_util import convert_module_to_f16, convert_module_to_f32
@@ -26,7 +25,8 @@ from .nn import (
     timestep_embedding,
     checkpoint,
     expanded_timestep_embedding,
-    scale_module
+    scale_module,
+    AxialPositionalEmbeddingShape,
 )
 
 from .text_nn import TextEncoder, CrossAttention, WeaveAttention
@@ -959,7 +959,7 @@ class UNetModel(nn.Module):
                         # pos emb in AdaGN
                         if (not txt_avoid_groupnorm) and cross_attn_q_t_emb:
                             pos_emb_dim *= 2
-                        self.tgt_pos_embs[str(emb_res)] = AxialPositionalEmbedding(
+                        self.tgt_pos_embs[str(emb_res)] = AxialPositionalEmbeddingShape(
                             dim=pos_emb_dim,
                             axial_shape=(emb_res, emb_res),
                         )
@@ -1137,7 +1137,7 @@ class UNetModel(nn.Module):
                             # pos emb in AdaGN
                             if (not txt_avoid_groupnorm) and cross_attn_q_t_emb:
                                 pos_emb_dim *= 2
-                            self.tgt_pos_embs[str(emb_res)] = AxialPositionalEmbedding(
+                            self.tgt_pos_embs[str(emb_res)] = AxialPositionalEmbeddingShape(
                                 dim=pos_emb_dim,
                                 axial_shape=(emb_res, emb_res),
                             )
