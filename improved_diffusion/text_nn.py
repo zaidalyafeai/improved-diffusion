@@ -186,6 +186,8 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         self.bias_k = self.bias_v = None
         self.add_zero_attn = False
 
+        self.register_buffer("fake_proj_weight", torch.eye(self.qkv_dim, **factory_kwargs), persistent=False)
+
         # self._reset_parameters()
 
     def _reset_parameters(self):
@@ -204,8 +206,6 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         key = self.k(key)
         value = self.v(value)
 
-        fake_proj_weight = torch.eye(self.qkv_dim, dtype=query.dtype, device=query.device)
-
         in_dtype = query.dtype
 
         attn_output, attn_output_weights = torch.nn.functional.multi_head_attention_forward(
@@ -216,11 +216,10 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
             training=self.training,
             key_padding_mask=None, need_weights=need_weights,
             attn_mask=attn_mask, use_separate_proj_weight=True,
-            q_proj_weight=fake_proj_weight, k_proj_weight=fake_proj_weight,
-            v_proj_weight=fake_proj_weight)
+            q_proj_weight=self.fake_proj_weight, k_proj_weight=self.fake_proj_weight,
+            v_proj_weight=self.fake_proj_weight)
 
         attn_output = attn_output.to(in_dtype)
-        del fake_proj_weight
 
         if self.batch_first:
             return attn_output.transpose(1, 0), attn_output_weights
