@@ -769,7 +769,7 @@ class UNetModel(nn.Module):
         freeze_capt_encoder=False,
         use_inference_caching=False,
         clipmod=None,
-        post_txt_image_attn='none',  # 'none', 'final' or 'all'
+        post_txt_image_attn='none',  # 'none', 'final', 'final_res', or 'all'
     ):
         super().__init__()
 
@@ -1191,12 +1191,18 @@ class UNetModel(nn.Module):
                             txt_already_normed=use_capt and (self.clipmod.ln_final is not None)
                         )
 
+                        is_final_res = (ds == min(txt_resolutions)
+                        is_final_resblock = (i == num_res_blocks)
+
                         using_post_txt_image_attn = (
                             (post_txt_image_attn == 'all')
                             or (
+                                (post_txt_image_attn == 'final_res')
+                                and is_final_res
+                            ) or 
                                 (post_txt_image_attn == 'final')
-                                and (ds == min(txt_resolutions))
-                                and (i == num_res_blocks)
+                                and is_final_res
+                                and is_final_resblock
                             )
                         )
                         post_txt_image_attn_mod = None
