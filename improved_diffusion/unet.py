@@ -478,7 +478,7 @@ class AttentionBlock(GlideStyleBlock):
         else:
             if self.use_pos_emb:
                 self.pos_emb = zero_module(
-                    AxialPositionalEmbedding(dim=self.channels, axial_shape=(pos_emb_res, pos_emb_res))
+                    AxialPositionalEmbeddingShape(dim=self.channels, axial_shape=(pos_emb_res, pos_emb_res))
                 )
             self.norm = normalization(channels, base_channels=base_channels)
         self.qkv = conv_nd(1, channels, channels * 3, 1)
@@ -498,8 +498,7 @@ class AttentionBlock(GlideStyleBlock):
     def compute_pos_emb(self, x):
         b, c, *spatial = x.shape
         in_shape  = (b, spatial[0]*spatial[1], c)
-        pseudo_in = torch.zeros(in_shape, dtype=x.dtype, device=x.device)  # todo: allocate only once
-        pos_emb_val = self.pos_emb(pseudo_in)
+        pos_emb_val = self.pos_emb(in_shape, dtype=x.dtype, device=x.device)
         pos_emb_val = rearrange(pos_emb_val, 'b (h w) c -> b c h w', h=spatial[0])
         return pos_emb_val
 
