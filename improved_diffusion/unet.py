@@ -484,7 +484,7 @@ class AttentionBlock(GlideStyleBlock):
             if self.use_pos_emb:
                 if use_rotary_pos_emb:
                     rotary_pos_emb = RotaryEmbedding(
-                        dim = self.channels // 2,
+                        dim = self.channels // (2 * self.num_heads),
                         freqs_for = 'pixel',
                         max_freq = pos_emb_res
                     )
