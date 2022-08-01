@@ -650,6 +650,7 @@ class WeaveAttention(nn.Module):
                 q_t_emb=q_t_emb,
                 rezero_keeps_prenorm=rezero_keeps_prenorm,
                 qkv_dim=text_dim if qkv_dim_always_text else None,
+                post_txt_image_attn=post_txt_image_attn,
                 **shared_args
             )
         )
@@ -663,7 +664,6 @@ class WeaveAttention(nn.Module):
             ff_glu=ff_glu,
             qkv_dim=text_dim if qkv_dim_always_text else None,
             use_ff_gain=use_ff_gain,
-            post_txt_image_attn=post_txt_image_attn,
             **shared_args
         )
 
