@@ -461,6 +461,7 @@ class AttentionBlock(GlideStyleBlock):
                  use_pos_emb=False,
                  use_adagn_pos_emb=False,
                  pos_emb_res=None,
+                 zero_init_pos_emb=True,
                  ):
         super().__init__()
         self.channels = channels
@@ -477,7 +478,8 @@ class AttentionBlock(GlideStyleBlock):
             raise ValueError('use_adagn_pos_emb todo')
         else:
             if self.use_pos_emb:
-                self.pos_emb = zero_module(
+                scaler = zero_module if zero_init_pos_emb else lambda x: x
+                self.pos_emb = scaler(
                     AxialPositionalEmbeddingShape(dim=self.channels, axial_shape=(pos_emb_res, pos_emb_res))
                 )
             self.norm = normalization(channels, base_channels=base_channels)
@@ -1208,6 +1210,7 @@ class UNetModel(nn.Module):
                                 base_channels=expand_timestep_base_dim * ch // model_channels,
                                 encoder_channels=None,
                                 use_pos_emb=True,
+                                zero_init_pos_emb=False,
                                 pos_emb_res=emb_res,
                             )
                         else:
