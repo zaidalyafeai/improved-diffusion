@@ -1199,7 +1199,7 @@ class UNetModel(nn.Module):
                             or (
                                 (post_txt_image_attn == 'final_res')
                                 and is_final_res
-                            ) or
+                            ) or (
                                 (post_txt_image_attn == 'final')
                                 and is_final_res
                                 and is_final_resblock
