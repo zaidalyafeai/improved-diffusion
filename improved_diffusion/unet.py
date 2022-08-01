@@ -552,7 +552,7 @@ class QKVAttention(nn.Module):
     """
 
     def __init__(self, rotary_pos_emb=None, pos_emb_res=None,):
-        super().__init__(self)
+        super().__init__()
         self.rotary_pos_emb = rotary_pos_emb
         self.pos_emb_res = pos_emb_res
 
