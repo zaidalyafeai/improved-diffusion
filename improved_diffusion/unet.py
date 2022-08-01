@@ -10,6 +10,7 @@ import torch.nn.functional as F
 
 from x_transformers.x_transformers import Rezero
 from einops import rearrange
+from rotary_embedding_torch import apply_rotary_emb, RotaryEmbedding, broadcat
 
 from .fp16_util import convert_module_to_f16, convert_module_to_f32
 from .nn import (
@@ -462,6 +463,7 @@ class AttentionBlock(GlideStyleBlock):
                  use_adagn_pos_emb=False,
                  pos_emb_res=None,
                  zero_init_pos_emb=True,
+                 rotary_pos_emb=False,
                  ):
         super().__init__()
         self.channels = channels
@@ -478,10 +480,13 @@ class AttentionBlock(GlideStyleBlock):
             raise ValueError('use_adagn_pos_emb todo')
         else:
             if self.use_pos_emb:
+                if self.rotary_pos_emb:
+                    raise ValueError('todo')
+                else:
                 scaler = zero_module if zero_init_pos_emb else lambda x: x
-                self.pos_emb = scaler(
-                    AxialPositionalEmbeddingShape(dim=self.channels, axial_shape=(pos_emb_res, pos_emb_res))
-                )
+                    self.pos_emb = scaler(
+                        AxialPositionalEmbeddingShape(dim=self.channels, axial_shape=(pos_emb_res, pos_emb_res))
+                    )
             self.norm = normalization(channels, base_channels=base_channels)
         self.qkv = conv_nd(1, channels, channels * 3, 1)
         self.attention = QKVAttention()
