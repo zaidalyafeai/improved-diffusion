@@ -572,7 +572,7 @@ class QKVAttention(nn.Module):
             print(("q.shape", q.shape))
             print(("self.freqs.shape", self.freqs.shape))
             q = rearrange(q, 'bhe c (h w) -> bhe h w c', h=self.pos_emb_res)
-            k = rearrange(k, 'bhe c (h w) -> bhe h wc ', h=self.pos_emb_res)
+            k = rearrange(k, 'bhe c (h w) -> bhe h w c ', h=self.pos_emb_res)
             q = apply_rotary_emb(self.freqs, q)
             k = apply_rotary_emb(self.freqs, k)
             q = rearrange(q, 'bhe h w c -> bhe c (h w)', h=self.pos_emb_res)
