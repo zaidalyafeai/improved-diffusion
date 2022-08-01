@@ -1211,7 +1211,7 @@ class UNetModel(nn.Module):
                                 pos_emb_res=emb_res,
                             )
                         else:
-                            print(f"not using post_txt_image_attn, ds={ds}, emb_res={emb_res}, ch={ch} | attention_resolutions={attention_resolutions}, num_res_blocks={num_res_blocks}")
+                            print(f"not using post_txt_image_attn, ds={ds}, i={i}, emb_res={emb_res}, ch={ch} | attention_resolutions={attention_resolutions}, num_res_blocks={num_res_blocks}")
 
                         caa_args['post_txt_image_attn'] = post_txt_image_attn
 
