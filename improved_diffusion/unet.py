@@ -1253,6 +1253,7 @@ class UNetModel(nn.Module):
                                 use_pos_emb=True,
                                 zero_init_pos_emb=False,
                                 pos_emb_res=emb_res,
+                                use_rotary_pos_emb=True,
                             )
                         else:
                             print(f"not using post_txt_image_attn, ds={ds}, i={i}, emb_res={emb_res}, ch={ch} | min(txt_resolutions)={min(txt_resolutions)}, num_res_blocks={num_res_blocks}, post_txt_image_attn={post_txt_image_attn}")
