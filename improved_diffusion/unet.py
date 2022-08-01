@@ -1190,16 +1190,16 @@ class UNetModel(nn.Module):
                         )
 
                         using_post_txt_image_attn = (
-                            post_txt_image_attn == 'all'
+                            (post_txt_image_attn == 'all')
                             or (
-                                post_txt_image_attn == 'final'
-                                and ds == min(attention_resolutions)
-                                and i == num_res_blocks
+                                (post_txt_image_attn == 'final')
+                                and (ds == min(attention_resolutions))
+                                and (i == num_res_blocks)
                             )
                         )
                         post_txt_image_attn = None
                         if using_post_txt_image_attn:
-                            print(f"using post_txt_image_attn, ds={ds}, emb_res={emb_res}, ch={ch}")
+                            print(f"using post_txt_image_attn, ds={ds}, i={i}, emb_res={emb_res}, ch={ch} | min(attention_resolutions)={min(attention_resolutions)}, num_res_blocks={num_res_blocks}, post_txt_image_attn={post_txt_image_attn}")
                             post_txt_image_attn = AttentionBlock(
                                 ch,
                                 use_checkpoint=use_checkpoint or use_checkpoint_up or ((image_size // ds) <= use_checkpoint_below_res),
@@ -1211,7 +1211,7 @@ class UNetModel(nn.Module):
                                 pos_emb_res=emb_res,
                             )
                         else:
-                            print(f"not using post_txt_image_attn, ds={ds}, i={i}, emb_res={emb_res}, ch={ch} | attention_resolutions={attention_resolutions}, num_res_blocks={num_res_blocks}")
+                            print(f"not using post_txt_image_attn, ds={ds}, i={i}, emb_res={emb_res}, ch={ch} | min(attention_resolutions)={min(attention_resolutions)}, num_res_blocks={num_res_blocks}, post_txt_image_attn={post_txt_image_attn}")
 
                         caa_args['post_txt_image_attn'] = post_txt_image_attn
 
