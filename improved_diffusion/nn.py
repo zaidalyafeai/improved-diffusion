@@ -8,6 +8,8 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 
+from axial_positional_embedding import AxialPositionalEmbedding
+
 
 # PyTorch 1.7 has SiLU, but we support PyTorch 1.5.
 class SiLUImplOpenAI(nn.Module):
@@ -605,3 +607,19 @@ class CheckpointFunction(th.autograd.Function):
                 ct += 1
         return (None, None, None) + tuple(input_grads_with_nones)
         # return (None, None, None) + input_grads
+
+
+class AxialPositionalEmbeddingShape(AxialPositionalEmbedding):
+    def forward(self, shape, device, dtype):
+        b, t, e = shape
+        assert (t <= self.max_seq_len), f'Sequence length ({t}) must be less than the maximum sequence length allowed ({self.max_seq_len})'
+        embs = []
+
+        for ax_emb in self.weights.to_list():
+            axial_dim = ax_emb.shape[-1]
+            expand_shape = (b, *self.shape, axial_dim)
+            emb = ax_emb.expand(expand_shape).reshape(b, self.max_seq_len, axial_dim)
+            embs.append(emb)
+
+        pos_emb = sum(embs) if self.summed else th.cat(embs, dim=-1)
+        return pos_emb[:, :t].to(device=device, dtype=dtype)

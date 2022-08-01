@@ -3,12 +3,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from axial_positional_embedding import AxialPositionalEmbedding
 from einops import rearrange
 from x_transformers import TransformerWrapper, Encoder, XTransformer
 from x_transformers.x_transformers import AbsolutePositionalEmbedding, Attention, FeedForward, Rezero
 
-from .nn import normalization_1group, timestep_embedding, silu, AdaGN, checkpoint
+from .nn import normalization_1group, timestep_embedding, silu, AdaGN, checkpoint, AxialPositionalEmbeddingShape
 
 
 def make_grad_mult_hook(mult, debug=False):
@@ -187,6 +186,8 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         self.bias_k = self.bias_v = None
         self.add_zero_attn = False
 
+        self.register_buffer("fake_proj_weight", torch.eye(self.qkv_dim, **factory_kwargs), persistent=False)
+
         # self._reset_parameters()
 
     def _reset_parameters(self):
@@ -205,8 +206,6 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
         key = self.k(key)
         value = self.v(value)
 
-        fake_proj_weight = torch.eye(self.qkv_dim, dtype=query.dtype, device=query.device)
-
         in_dtype = query.dtype
 
         attn_output, attn_output_weights = torch.nn.functional.multi_head_attention_forward(
@@ -217,11 +216,10 @@ class BetterMultiheadAttention(torch.nn.MultiheadAttention):
             training=self.training,
             key_padding_mask=None, need_weights=need_weights,
             attn_mask=attn_mask, use_separate_proj_weight=True,
-            q_proj_weight=fake_proj_weight, k_proj_weight=fake_proj_weight,
-            v_proj_weight=fake_proj_weight)
+            q_proj_weight=self.fake_proj_weight, k_proj_weight=self.fake_proj_weight,
+            v_proj_weight=self.fake_proj_weight)
 
         attn_output = attn_output.to(in_dtype)
-        del fake_proj_weight
 
         if self.batch_first:
             return attn_output.transpose(1, 0), attn_output_weights
@@ -287,7 +285,7 @@ class CrossAttention(nn.Module):
             # pos emb in AdaGN
             if (not avoid_groupnorm) and self.q_t_emb:
                 pos_emb_dim *= 2
-            self.tgt_pos_emb = AxialPositionalEmbedding(
+            self.tgt_pos_emb = AxialPositionalEmbeddingShape(
                 dim=self.dim,
                 axial_shape=(emb_res, emb_res),
                 axial_dims=(pos_emb_dim, pos_emb_dim),
@@ -341,8 +339,7 @@ class CrossAttention(nn.Module):
         tgt_pos_emb = tgt_pos_embs[str(self.emb_res)]
         b, c, *spatial = tgt.shape
         tgt_in_shape  = (b, spatial[0]*spatial[1], c)
-        pseudo_tgt_in = torch.zeros(tgt_in_shape, dtype=tgt.dtype, device=tgt.device)  # todo: allocate only once
-        tgt_pos_emb_val = tgt_pos_emb(pseudo_tgt_in)
+        tgt_pos_emb_val = tgt_pos_emb(tgt_in_shape, device=tgt.device, dtype=tgt.dtype)
 
         return checkpoint(
             self._forward, (src, tgt, tgt_pos_emb_val, timestep_emb, attn_mask, ), self.parameters(), self.use_checkpoint,
@@ -540,8 +537,7 @@ class ImageToTextCrossAttention(nn.Module):
         b, c, *spatial = src.shape
 
         src_in_shape  = (b, spatial[0]*spatial[1], c)
-        pseudo_src_in = torch.zeros(src_in_shape, dtype=src.dtype, device=src.device)
-        src_pos_emb_val = src_pos_emb(pseudo_src_in)
+        src_pos_emb_val = src_pos_emb(src_in_shape, device=src.device, dtype=src.dtype)
 
         return checkpoint(
             self._forward, (src, tgt, src_pos_emb_val, timestep_emb, attn_mask, ), self.parameters(), self.use_checkpoint,
