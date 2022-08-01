@@ -503,9 +503,9 @@ class AttentionBlock(GlideStyleBlock):
         return pos_emb_val
 
     def _forward(self, x, encoder_out=None, attn_mask=None):
+        b, c, *spatial = x.shape
         if self.use_pos_emb:
             pos_emb_val = self.compute_pos_emb(x)
-            b, c, *spatial = x.shape
             x = x.reshape(b, c, -1)
             norm_out = self.norm(x + pos_emb_val)
         else:
