@@ -1191,7 +1191,11 @@ class UNetModel(nn.Module):
 
                         using_post_txt_image_attn = (
                             post_txt_image_attn == 'all'
-                            or (post_txt_image_attn == 'final' and ds == min(attention_resolutions))
+                            or (
+                                post_txt_image_attn == 'final'
+                                and ds == min(attention_resolutions)
+                                and i == num_res_blocks
+                            )
                         )
                         post_txt_image_attn = None
                         if using_post_txt_image_attn:
