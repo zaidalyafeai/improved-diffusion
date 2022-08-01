@@ -1191,7 +1191,7 @@ class UNetModel(nn.Module):
                             txt_already_normed=use_capt and (self.clipmod.ln_final is not None)
                         )
 
-                        is_final_res = (ds == min(txt_resolutions)
+                        is_final_res = (ds == min(txt_resolutions))
                         is_final_resblock = (i == num_res_blocks)
 
                         using_post_txt_image_attn = (
@@ -1199,7 +1199,7 @@ class UNetModel(nn.Module):
                             or (
                                 (post_txt_image_attn == 'final_res')
                                 and is_final_res
-                            ) or 
+                            ) or
                                 (post_txt_image_attn == 'final')
                                 and is_final_res
                                 and is_final_resblock
