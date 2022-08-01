@@ -1201,7 +1201,7 @@ class UNetModel(nn.Module):
                         )
                         post_txt_image_attn_mod = None
                         if using_post_txt_image_attn:
-                            print(f"using post_txt_image_attn, ds={ds}, i={i}, emb_res={emb_res}, ch={ch} | min(attention_resolutions)={min(txt_resolutions)}, num_res_blocks={num_res_blocks}, post_txt_image_attn={post_txt_image_attn}")
+                            print(f"using post_txt_image_attn, ds={ds}, i={i}, emb_res={emb_res}, ch={ch} | min(txt_resolutions)={min(txt_resolutions)}, num_res_blocks={num_res_blocks}, post_txt_image_attn={post_txt_image_attn}")
                             post_txt_image_attn_mod = AttentionBlock(
                                 ch,
                                 use_checkpoint=use_checkpoint or use_checkpoint_up or ((image_size // ds) <= use_checkpoint_below_res),
@@ -1214,7 +1214,7 @@ class UNetModel(nn.Module):
                                 pos_emb_res=emb_res,
                             )
                         else:
-                            print(f"not using post_txt_image_attn, ds={ds}, i={i}, emb_res={emb_res}, ch={ch} | min(attention_resolutions)={min(txt_resolutions)}, num_res_blocks={num_res_blocks}, post_txt_image_attn={post_txt_image_attn}")
+                            print(f"not using post_txt_image_attn, ds={ds}, i={i}, emb_res={emb_res}, ch={ch} | min(txt_resolutions)={min(txt_resolutions)}, num_res_blocks={num_res_blocks}, post_txt_image_attn={post_txt_image_attn}")
 
                         caa_args['post_txt_image_attn'] = post_txt_image_attn_mod
 
