@@ -499,7 +499,7 @@ class AttentionBlock(GlideStyleBlock):
         self.proj_out = zero_module(conv_nd(1, channels, channels, 1))
 
         if encoder_channels is not None:
-            if self.rotary_pos_emb:
+            if self.use_rotary_pos_emb:
                 raise ValueError('todo')
             self.encoder_kv = conv_nd(1, encoder_channels, channels * 2, 1)
             self.encoder_norm = None # normalization(encoder_channels)
@@ -519,7 +519,7 @@ class AttentionBlock(GlideStyleBlock):
 
     def _forward(self, x, encoder_out=None, attn_mask=None):
         b, c, *spatial = x.shape
-        if self.use_pos_emb and not self.rotary_pos_emb:
+        if self.use_pos_emb and not self.use_rotary_pos_emb:
             pos_emb_val = self.compute_pos_emb(x)
             x = x.reshape(b, c, -1)
             norm_out = self.norm(x + pos_emb_val)
