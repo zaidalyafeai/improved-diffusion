@@ -779,7 +779,7 @@ class UNetModel(nn.Module):
         print(f"unet: have text_lr_mult={text_lr_mult}")
         print(f"unet: got use_scale_shift_norm={use_scale_shift_norm}, resblock_updown={resblock_updown}")
         print(f"unet: got use_checkpoint={use_checkpoint}, use_checkpoint_up={use_checkpoint_up}, use_checkpoint_middle={use_checkpoint_middle}, use_checkpoint_down={use_checkpoint_down}, use_checkpoint_lowcost={use_checkpoint_lowcost}")
-        print(f"unet: have noise_cond={noise_cond}, freeze_capt_encoder={freeze_capt_encoder}")
+        print(f"unet: have noise_cond={noise_cond}, freeze_capt_encoder={freeze_capt_encoder}, post_txt_image_attn={post_txt_image_attn}")
 
         def vprint(*args):
             if verbose:
@@ -1199,7 +1199,7 @@ class UNetModel(nn.Module):
                         )
                         post_txt_image_attn = None
                         if using_post_txt_image_attn:
-                            print((f"using post_txt_image_attn, ds={ds}, emb_res={emb_res}, ch={ch}"))
+                            print(f"using post_txt_image_attn, ds={ds}, emb_res={emb_res}, ch={ch}")
                             post_txt_image_attn = AttentionBlock(
                                 ch,
                                 use_checkpoint=use_checkpoint or use_checkpoint_up or ((image_size // ds) <= use_checkpoint_below_res),
@@ -1210,6 +1210,8 @@ class UNetModel(nn.Module):
                                 use_pos_emb=True,
                                 pos_emb_res=emb_res,
                             )
+                        else:
+                            print(f"not using post_txt_image_attn, ds={ds}, emb_res={emb_res}, ch={ch} | attention_resolutions={attention_resolutions}, num_res_blocks={num_res_blocks}")
 
                         caa_args['post_txt_image_attn'] = post_txt_image_attn
 
