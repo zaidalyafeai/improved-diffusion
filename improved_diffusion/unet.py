@@ -560,12 +560,17 @@ class QKVAttention(nn.Module):
             freqs_h = self.rotary_pos_emb(th.linspace(-1, 1, steps = self.pos_emb_res), cache_key = self.pos_emb_res)
             freqs_w = self.rotary_pos_emb(th.linspace(-1, 1, steps = self.pos_emb_res), cache_key = self.pos_emb_res)
 
+            print(("freqs_h.shape", freqs_h.shape))
+            print(("freqs_w.shape", freqs_w.shape))
             self.register_buffer('freqs', broadcat((freqs_h[:, None, :], freqs_w[None, :, :]), dim = -1))
+            print(("self.freqs.shape", self.freqs.shape))
         else:
             self.freqs = None
 
     def apply_rotary_pos_emb(self, q, k):
         if self.freqs is not None:
+            print(("q.shape", q.shape))
+            print(("self.freqs.shape", self.freqs.shape))
             q = apply_rotary_emb(self.freqs, q)
             k = apply_rotary_emb(self.freqs, k)
         return q, k
