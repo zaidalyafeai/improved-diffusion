@@ -463,7 +463,7 @@ class AttentionBlock(GlideStyleBlock):
                  use_adagn_pos_emb=False,
                  pos_emb_res=None,
                  zero_init_pos_emb=True,
-                 rotary_pos_emb=False,
+                 use_rotary_pos_emb=False,
                  ):
         super().__init__()
         self.channels = channels
@@ -473,26 +473,34 @@ class AttentionBlock(GlideStyleBlock):
 
         self.use_pos_emb = use_pos_emb
         self.use_adagn_pos_emb = use_adagn_pos_emb
+        self.use_rotary_pos_emb = use_rotary_pos_emb
 
         self.pos_emb = None
+        rotary_pos_emb = None
 
         if self.use_pos_emb and self.use_adagn_pos_emb:
             raise ValueError('use_adagn_pos_emb todo')
         else:
             if self.use_pos_emb:
-                if self.rotary_pos_emb:
-                    raise ValueError('todo')
+                if use_rotary_pos_emb:
+                    rotary_pos_emb = RotaryEmbedding(
+                        dim = self.channels,
+                        freqs_for = 'pixel',
+                        max_freq = pos_emb_res
+                    )
                 else:
-                scaler = zero_module if zero_init_pos_emb else lambda x: x
+                    scaler = zero_module if zero_init_pos_emb else lambda x: x
                     self.pos_emb = scaler(
                         AxialPositionalEmbeddingShape(dim=self.channels, axial_shape=(pos_emb_res, pos_emb_res))
                     )
             self.norm = normalization(channels, base_channels=base_channels)
         self.qkv = conv_nd(1, channels, channels * 3, 1)
-        self.attention = QKVAttention()
+        self.attention = QKVAttention(rotary_pos_emb=rotary_pos_emb, pos_emb_res=pos_emb_res)
         self.proj_out = zero_module(conv_nd(1, channels, channels, 1))
 
         if encoder_channels is not None:
+            if self.rotary_pos_emb:
+                raise ValueError('todo')
             self.encoder_kv = conv_nd(1, encoder_channels, channels * 2, 1)
             self.encoder_norm = None # normalization(encoder_channels)
         else:
@@ -511,7 +519,7 @@ class AttentionBlock(GlideStyleBlock):
 
     def _forward(self, x, encoder_out=None, attn_mask=None):
         b, c, *spatial = x.shape
-        if self.use_pos_emb:
+        if self.use_pos_emb and not self.rotary_pos_emb:
             pos_emb_val = self.compute_pos_emb(x)
             x = x.reshape(b, c, -1)
             norm_out = self.norm(x + pos_emb_val)
@@ -543,6 +551,27 @@ class QKVAttention(nn.Module):
     A module which performs QKV attention.
     """
 
+    def __init__(self, rotary_pos_emb=None, pos_emb_res=None,):
+        super().__init__(self)
+        self.rotary_pos_emb = rotary_pos_emb
+        self.pos_emb_res = pos_emb_res
+
+        if self.rotary_pos_emb is not None:
+            return q, k
+
+            freqs_h = pos_emb(th.linspace(-1, 1, steps = self.pos_emb_res), cache_key = self.pos_emb_res)
+            freqs_w = pos_emb(th.linspace(-1, 1, steps = self.pos_emb_res), cache_key = self.pos_emb_res)
+
+            self.register_buffer('freqs', broadcat((freqs_h[:, None, :], freqs_w[None, :, :]), dim = -1))
+        else:
+            self.freqs = None
+
+    def apply_rotary_pos_emb(self, q, k):
+        if self.freqs is not None:
+            q = apply_rotary_emb(self.freqs, q)
+            k = apply_rotary_emb(self.freqs, k)
+        return q, k
+
     def forward(self, qkv, encoder_kv=None, attn_mask=None):
         """
         Apply QKV attention.
@@ -552,6 +581,7 @@ class QKVAttention(nn.Module):
         """
         ch = qkv.shape[1] // 3
         q, k, v = th.split(qkv, ch, dim=1)
+        q, k = self.apply_rotary_pos_emb(q, k)
         if encoder_kv is not None:
             ek, ev = encoder_kv.split(ch, dim=1)
             k = th.cat([ek, k], dim=-1)
