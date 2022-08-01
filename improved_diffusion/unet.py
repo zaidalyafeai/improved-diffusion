@@ -571,8 +571,12 @@ class QKVAttention(nn.Module):
         if self.freqs is not None:
             print(("q.shape", q.shape))
             print(("self.freqs.shape", self.freqs.shape))
+            q = rearrange(q, 'bhe c (h w) -> bhe c h w', h=self.pos_emb_res)
+            k = rearrange(k, 'bhe c (h w) -> bhe c h w', h=self.pos_emb_res)
             q = apply_rotary_emb(self.freqs, q)
             k = apply_rotary_emb(self.freqs, k)
+            q = rearrange(q, 'bhe c h w -> bhe c (h w)', h=self.pos_emb_res)
+            k = rearrange(k, 'bhe c h w -> bhe c (h w)', h=self.pos_emb_res)
         return q, k
 
     def forward(self, qkv, encoder_kv=None, attn_mask=None):
