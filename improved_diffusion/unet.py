@@ -557,8 +557,8 @@ class QKVAttention(nn.Module):
         self.pos_emb_res = pos_emb_res
 
         if self.rotary_pos_emb is not None:
-            freqs_h = pos_emb(th.linspace(-1, 1, steps = self.pos_emb_res), cache_key = self.pos_emb_res)
-            freqs_w = pos_emb(th.linspace(-1, 1, steps = self.pos_emb_res), cache_key = self.pos_emb_res)
+            freqs_h = self.rotary_pos_emb(th.linspace(-1, 1, steps = self.pos_emb_res), cache_key = self.pos_emb_res)
+            freqs_w = self.rotary_pos_emb(th.linspace(-1, 1, steps = self.pos_emb_res), cache_key = self.pos_emb_res)
 
             self.register_buffer('freqs', broadcat((freqs_h[:, None, :], freqs_w[None, :, :]), dim = -1))
         else:
