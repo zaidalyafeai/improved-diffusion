@@ -107,6 +107,7 @@ def model_and_diffusion_defaults():
         no_attn_substitute_resblock=False,
         freeze_capt_encoder=False,
         clipmod=None,
+        post_txt_image_attn='none',
     )
 
 
@@ -201,6 +202,7 @@ def create_model_and_diffusion(
     freeze_capt_encoder=False,
     use_inference_caching=False,
     clipmod=None,
+    post_txt_image_attn='none',
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
     print(f"create_model_and_diffusion: use_checkpoint={use_checkpoint}")
@@ -282,6 +284,7 @@ def create_model_and_diffusion(
         freeze_capt_encoder=freeze_capt_encoder,
         use_inference_caching=use_inference_caching,
         clipmod=clipmod,
+        post_txt_image_attn=post_txt_image_attn,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
@@ -389,6 +392,7 @@ def create_model(
     freeze_capt_encoder=False,
     use_inference_caching=False,
     clipmod=None,
+    post_txt_image_attn='none',
 ):
     text_lr_mult = 1.
     print(
@@ -510,6 +514,7 @@ def create_model(
         freeze_capt_encoder=freeze_capt_encoder,
         use_inference_caching=use_inference_caching,
         clipmod=clipmod,
+        post_txt_image_attn=post_txt_image_attn,
     )
 
 
@@ -617,6 +622,7 @@ def sr_create_model_and_diffusion(
     freeze_capt_encoder=False,
     use_inference_caching=False,
     clipmod=None,
+    post_txt_image_attn='none',
 ):
     model = sr_create_model(
         large_size,
@@ -693,6 +699,7 @@ def sr_create_model_and_diffusion(
         freeze_capt_encoder=freeze_capt_encoder,
         use_inference_caching=use_inference_caching,
         clipmod=clipmod,
+        post_txt_image_attn=post_txt_image_attn,
     )
     diffusion = create_gaussian_diffusion(
         steps=diffusion_steps,
