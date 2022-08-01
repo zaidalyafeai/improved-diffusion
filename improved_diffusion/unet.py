@@ -499,7 +499,7 @@ class AttentionBlock(GlideStyleBlock):
         b, c, *spatial = x.shape
         in_shape  = (b, spatial[0]*spatial[1], c)
         pos_emb_val = self.pos_emb(in_shape, dtype=x.dtype, device=x.device)
-        pos_emb_val = rearrange(pos_emb_val, 'b (h w) c -> b c h w', h=spatial[0])
+        pos_emb_val = pos_emb_val.transpose(1, 2)   # b hw c --> b c hw
         return pos_emb_val
 
     def _forward(self, x, encoder_out=None, attn_mask=None):
@@ -509,6 +509,7 @@ class AttentionBlock(GlideStyleBlock):
             x = x.reshape(b, c, -1)
             norm_out = self.norm(x + pos_emb_val)
         else:
+            x = x.reshape(b, c, -1)
             norm_out = self.norm(x)
         qkv = self.qkv(norm_out)
         qkv = qkv.reshape(b * self.num_heads, -1, qkv.shape[2])
