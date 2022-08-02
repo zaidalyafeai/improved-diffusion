@@ -463,6 +463,7 @@ class AttentionBlock(GlideStyleBlock):
                  use_adagn_pos_emb=False,
                  pos_emb_res=None,
                  zero_init_pos_emb=True,
+                 zero_init_proj_out=True,
                  use_rotary_pos_emb=False,
                  ):
         super().__init__()
@@ -496,7 +497,8 @@ class AttentionBlock(GlideStyleBlock):
             self.norm = normalization(channels, base_channels=base_channels)
         self.qkv = conv_nd(1, channels, channels * 3, 1)
         self.attention = QKVAttention(rotary_pos_emb=rotary_pos_emb, pos_emb_res=pos_emb_res)
-        self.proj_out = zero_module(conv_nd(1, channels, channels, 1))
+        scaler = zero_module if zero_init_proj_out else lambda x: x
+        self.proj_out = scaler(conv_nd(1, channels, channels, 1))
 
         if encoder_channels is not None:
             if self.use_rotary_pos_emb:
@@ -1257,6 +1259,7 @@ class UNetModel(nn.Module):
                                 encoder_channels=None,
                                 use_pos_emb=True,
                                 zero_init_pos_emb=False,
+                                zero_init_proj_out=False,
                                 pos_emb_res=emb_res,
                                 use_rotary_pos_emb=True,
                             )
