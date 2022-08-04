@@ -479,7 +479,7 @@ class TrainLoop:
         ):
             batch, cond = next(self.data)
 
-            if self.use_profiler:
+            if self.use_profiler and (self.step > 0):
                 with th.profiler.profile(with_stack=True, profile_memory=True, with_flops=True) as _p:
                     self.run_step(batch, cond, verbose = (self.step % self.log_interval == 0))
                 print(_p.key_averages(group_by_stack_n=5).table(sort_by="self_cuda_time_total", row_limit=50))
