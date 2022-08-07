@@ -320,8 +320,6 @@ class ResBlock(TimestepBlock):
 
         self.fused = silu_impl=="fused"
 
-        print(f"ResBlock | channels={channels} base_channels={base_channels} out_channels={out_channels}")
-
         if base_channels == channels:
             base_channels = 0  # means "not expanded (in practice)"
 
