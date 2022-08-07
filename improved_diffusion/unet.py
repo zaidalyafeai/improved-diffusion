@@ -990,7 +990,7 @@ class UNetModel(nn.Module):
                         silu_impl=silu_impl,
                     )
                 ]
-                ch = mult * model_channels
+                ch = int(mult * model_channels)
                 if (ds in attention_resolutions):
                     if no_attn_substitute_resblock:
                         layers.append(
@@ -1163,7 +1163,7 @@ class UNetModel(nn.Module):
                         silu_impl=silu_impl,
                     )
                 ]
-                ch = model_channels * mult
+                ch = int(model_channels * mult)
                 if ds in attention_resolutions:
                     if no_attn_substitute_resblock:
                         layers.append(
