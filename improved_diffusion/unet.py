@@ -1328,8 +1328,12 @@ class UNetModel(nn.Module):
                 #     bread_adapter_out_added = True
                 #     self.output_blocks[-1].bread_adapter_out_pt = True
 
+        out_base_channels = self.expand_timestep_base_dim
+        if out_base_channels == ch:
+            out_base_channels = -1
+
         self.out = nn.Sequential(
-            normalization(ch, base_channels=self.expand_timestep_base_dim, fused=silu_impl=="fused"),
+            normalization(ch, base_channels=out_base_channels, fused=silu_impl=="fused"),
             silu(impl=silu_impl, use_checkpoint=use_checkpoint_lowcost),
             zero_module(conv_nd(dims, int(channel_mult[0] * model_channels), out_channels, 3, padding=1)),
         )
