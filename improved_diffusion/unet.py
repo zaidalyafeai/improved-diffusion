@@ -1345,7 +1345,7 @@ class UNetModel(nn.Module):
             self.output_to_rgb = DropinRGBAdapter(needs_var=out_channels>3)
 
     def timestep_embedding(self, timesteps):
-        if self.expand_timestep_base_dim > 0:
+        if self.expand_timestep_base_dim > 0 and self.expand_timestep_base_dim != self.model_channels:
             return expanded_timestep_embedding(timesteps, self.model_channels, self.expand_timestep_base_dim)
         return timestep_embedding(timesteps, self.model_channels)
 
