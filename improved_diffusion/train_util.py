@@ -508,7 +508,7 @@ class TrainLoop:
         if (self.step - 1) % self.save_interval != 0:
             self.save()
 
-    def run_step(self, batch, cond, verbose=False, single_fwd_only=False)
+    def run_step(self, batch, cond, verbose=False, single_fwd_only=False):
         self.forward_backward(batch, cond, verbose=verbose, single_fwd_only=single_fwd_only)
         if single_fwd_only:
             return
