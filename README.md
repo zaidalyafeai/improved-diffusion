@@ -2,9 +2,10 @@
 
 | **Prompt (transcription)**  | `"I can\nwrite\nwords\ninto an\nimage!"`  |
 | :- | :- |
-| **Prompt (description)**    | **`"a happy metal robot with a speech bubble next to it"`**  |
+| **Prompt (description)**    | **`"a smiling metal robot with a speech bubble next to it"`**  |
 
-![robot](https://user-images.githubusercontent.com/20358899/180326006-546b59ca-72ff-40e9-8685-b54384de8163.png)
+![robot-08-18-22](https://user-images.githubusercontent.com/20358899/185503487-a9d218f3-f9b6-4bf7-a60e-ea2a9652149b.png)
+
 
 This is a heavily modified fork of OpenAI's [improved-diffusion](https://github.com/openai/improved-diffusion) codebase, adding many features I've found useful or interesting:
 
