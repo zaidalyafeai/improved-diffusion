@@ -148,6 +148,14 @@ class TextEncoder(nn.Module):
             attn_mask = tokens != 0
             my_attn_mask = torch.tile(attn_mask.unsqueeze(1).unsqueeze(1), (self.n_heads, tokens.shape[1], 1))
 
+            print('TextEncoder')
+            print(repr(tokens[:4]))
+            print(repr(attn_mask[:4]))
+            print()
+            print(my_attn_mask.shape)
+            print(repr(my_attn_mask[:4]))
+            print()
+
             out = self.model_forward(x, attn_mask=my_attn_mask)
             if not self.return_sequences:
                 out = out[:, 0, :], attn_mask
@@ -392,6 +400,13 @@ class CrossAttention(nn.Module):
             my_attn_mask = torch.tile(attn_mask.unsqueeze(1), (self.heads, q.shape[1], 1))
             my_attn_mask = (~my_attn_mask).to(q.dtype) * -10000.
 
+            print('CrossAttention')
+            print(repr(attn_mask[:4]))
+            print()
+            print(my_attn_mask.shape)
+            print(repr(my_attn_mask[:4]))
+            print()
+
         attn_output, attn_output_weights = self.attn(q, k, v, attn_mask=my_attn_mask)
         attn_output = attn_output * self.effective_gain()
         attn_output = _to_b_c_h_w(attn_output, spatial)
@@ -580,6 +595,13 @@ class ImageToTextCrossAttention(nn.Module):
         if attn_mask is not None:
             my_attn_mask = torch.tile(attn_mask.unsqueeze(2), (self.heads, 1, k.shape[1]))
             my_attn_mask = (~my_attn_mask).to(q.dtype) * -10000.
+
+            print('ImageToTextCrossAttention')
+            print(repr(attn_mask[:4]))
+            print()
+            print(my_attn_mask.shape)
+            print(repr(my_attn_mask[:4]))
+            print()
 
         attn_output, attn_output_weights = self.attn(q, k, v, attn_mask=my_attn_mask)
         attn_output = attn_output * self.effective_gain()
