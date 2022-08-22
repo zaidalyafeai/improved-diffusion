@@ -149,11 +149,11 @@ class TextEncoder(nn.Module):
             my_attn_mask = torch.tile(attn_mask.unsqueeze(1).unsqueeze(1), (self.n_heads, tokens.shape[1], 1))
 
             print('TextEncoder')
-            print(repr(tokens[:4]))
-            print(repr(attn_mask[:4]))
+            print(repr(tokens[0, :6]))
+            print(repr(attn_mask[0, :6]))
             print()
             print(my_attn_mask.shape)
-            print(repr(my_attn_mask[:4]))
+            print(repr(my_attn_mask[0, 0, :6]))
             print()
 
             out = self.model_forward(x, attn_mask=my_attn_mask)
@@ -401,10 +401,10 @@ class CrossAttention(nn.Module):
             my_attn_mask = (~my_attn_mask).to(q.dtype) * -10000.
 
             print('CrossAttention')
-            print(repr(attn_mask[:4]))
+            print(repr(attn_mask[0, :6]))
             print()
             print(my_attn_mask.shape)
-            print(repr(my_attn_mask[:4]))
+            print(repr(my_attn_mask[0, :, :6]))
             print()
 
         attn_output, attn_output_weights = self.attn(q, k, v, attn_mask=my_attn_mask)
@@ -597,10 +597,10 @@ class ImageToTextCrossAttention(nn.Module):
             my_attn_mask = (~my_attn_mask).to(q.dtype) * -10000.
 
             print('ImageToTextCrossAttention')
-            print(repr(attn_mask[:4]))
+            print(repr(attn_mask[0, :4]))
             print()
             print(my_attn_mask.shape)
-            print(repr(my_attn_mask[:4]))
+            print(repr(my_attn_mask[0, :4, :]))
             print()
 
         attn_output, attn_output_weights = self.attn(q, k, v, attn_mask=my_attn_mask)
