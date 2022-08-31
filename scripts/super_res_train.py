@@ -271,6 +271,7 @@ def create_argparser():
         noise_cond_max_step=-1,
         cudnn_benchmark=False,
         exclusions_data_path="",
+        float32_matmul_precision="medium",
     )
     defaults.update(sr_model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
