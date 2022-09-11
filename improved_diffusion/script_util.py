@@ -820,7 +820,7 @@ def create_gaussian_diffusion(
                 for i, (t1, t2) in enumerate(zip(orig_use_timesteps[:-1], orig_use_timesteps[1:])):
                     use_timesteps.add(t1)
                     if i < double_mesh_first_n:
-                        use_timesteps.add(int(round((t1 + t2 / 2))))
+                        use_timesteps.add(int(round((t1 + t2) / 2)))
                     use_timesteps.add(t2)
                 kwargs['use_timesteps'] = use_timesteps
         return cls(
