@@ -924,7 +924,7 @@ class GaussianDiffusion:
         trange = ts_index_range(shape[0], self.num_timesteps, device=device)
 
         rk_indices = [self.num_timesteps - j for j in [1, 3, 5]]
-        indices = list(range(0, self.num_timesteps-6, 1))[::-1]
+        plms_indices = list(range(1, self.num_timesteps-6, 1))[::-1]
 
         step_counter = 0
 
@@ -948,7 +948,7 @@ class GaussianDiffusion:
 
                 yield out
                 img = out["sample"]
-        for i in indices:
+        for i in plms_indices:
             t = trange[i]
             with th.no_grad():
                 ddim_fallback = (step_counter < ddim_first_n) or (ddim_last_n is not None and (nsteps - step_counter) < ddim_last_n)
@@ -971,6 +971,18 @@ class GaussianDiffusion:
 
                 yield out
                 img = out["sample"]
+
+        # final step
+        with th.no_grad():
+            out = self.p_mean_variance(
+                model,
+                img,
+                trange[0],
+                clip_denoised=clip_denoised,
+                denoised_fn=denoised_fn,
+                model_kwargs=model_kwargs,
+            )
+            yield {"sample": out["mean"], "pred_xstart": out["pred_xstart"]}
 
     def plms_sample_loop(
             self,
