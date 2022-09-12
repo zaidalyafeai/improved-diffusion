@@ -924,7 +924,7 @@ class GaussianDiffusion:
         trange = ts_index_range(shape[0], self.num_timesteps, device=device)
 
         rk_indices = [self.num_timesteps - j for j in [1, 3, 5]]
-        indices = list(range(1, self.num_timesteps-6, 1))[::-1]
+        indices = list(range(0, self.num_timesteps-6, 1))[::-1]
 
         step_counter = 0
 
@@ -956,7 +956,7 @@ class GaussianDiffusion:
                     model,
                     img,
                     t,
-                    t2=t-1,
+                    t2=(t-1).clamp(min=0),
                     old_eps=old_eps,
                     clip_denoised=clip_denoised,
                     denoised_fn=denoised_fn,
