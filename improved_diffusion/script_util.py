@@ -50,9 +50,9 @@ def model_and_diffusion_defaults():
         max_seq_len=64,
         txt_resolutions="8",
         cross_attn_channels_per_head=-1,
-        cross_attn_init_gain=1.,
-        cross_attn_gain_scale=200.,
-        text_lr_mult=-1.,
+        cross_attn_init_gain=1.0,
+        cross_attn_gain_scale=200.0,
+        text_lr_mult=-1.0,
         txt_output_layers_only=False,
         monochrome=False,
         monochrome_adapter=False,
@@ -99,15 +99,15 @@ def model_and_diffusion_defaults():
         glide_style_capt_emb=False,
         glide_style_capt_emb_init_scale=0.1,
         glide_style_capt_emb_nonlin=False,
-        clipname='RN50',
+        clipname="RN50",
         clip_use_penultimate_layer=False,
         use_checkpoint_below_res=-1,
-        vb_loss_ratio=1000.,
+        vb_loss_ratio=1000.0,
         no_attn=False,
         no_attn_substitute_resblock=False,
         freeze_capt_encoder=False,
         clipmod=None,
-        post_txt_image_attn='none',
+        post_txt_image_attn="none",
         txt_groupnorm_1group=True,
     )
 
@@ -146,9 +146,9 @@ def create_model_and_diffusion(
     txt_depth=2,
     txt_resolutions="8",
     cross_attn_channels_per_head=-1,
-    cross_attn_init_gain=1.,
-    cross_attn_gain_scale=200.,
-    text_lr_mult=-1.,
+    cross_attn_init_gain=1.0,
+    cross_attn_gain_scale=200.0,
+    text_lr_mult=-1.0,
     txt_output_layers_only=False,
     monochrome=False,
     monochrome_adapter=False,
@@ -194,16 +194,16 @@ def create_model_and_diffusion(
     glide_style_capt_emb=False,
     glide_style_capt_emb_init_scale=0.1,
     glide_style_capt_emb_nonlin=False,
-    clipname='RN50',
+    clipname="RN50",
     clip_use_penultimate_layer=False,
     use_checkpoint_below_res=-1,
-    vb_loss_ratio=1000.,
+    vb_loss_ratio=1000.0,
     no_attn=False,
     no_attn_substitute_resblock=False,
     freeze_capt_encoder=False,
     use_inference_caching=False,
     clipmod=None,
-    post_txt_image_attn='none',
+    post_txt_image_attn="none",
     txt_groupnorm_1group=True,
 ):
     print(f"create_model_and_diffusion: got txt={txt}")
@@ -337,9 +337,9 @@ def create_model(
     txt_depth=2,
     txt_resolutions="8",
     cross_attn_channels_per_head=-1,
-    cross_attn_init_gain=1.,
-    cross_attn_gain_scale=200.,
-    text_lr_mult=-1.,
+    cross_attn_init_gain=1.0,
+    cross_attn_gain_scale=200.0,
+    text_lr_mult=-1.0,
     txt_output_layers_only=False,
     monochrome=False,
     monochrome_adapter=False,
@@ -386,7 +386,7 @@ def create_model(
     glide_style_capt_emb=False,
     glide_style_capt_emb_init_scale=0.1,
     glide_style_capt_emb_nonlin=False,
-    clipname='RN50',
+    clipname="RN50",
     clip_use_penultimate_layer=False,
     use_checkpoint_below_res=-1,
     no_attn=False,
@@ -395,18 +395,20 @@ def create_model(
     freeze_capt_encoder=False,
     use_inference_caching=False,
     clipmod=None,
-    post_txt_image_attn='none',
+    post_txt_image_attn="none",
     txt_groupnorm_1group=True,
 ):
-    text_lr_mult = 1.
+    text_lr_mult = 1.0
     print(
         f"create_model: got txt={txt}, num_heads={num_heads}, channels_per_head={channels_per_head}, cross_attn_channels_per_head={cross_attn_channels_per_head}, text_lr_mult={text_lr_mult}"
     )
-    print(f"create_model: noise_cond={noise_cond}, use_checkpoint={use_checkpoint}, use_checkpoint_lowcost={use_checkpoint_lowcost}")
+    print(
+        f"create_model: noise_cond={noise_cond}, use_checkpoint={use_checkpoint}, use_checkpoint_lowcost={use_checkpoint_lowcost}"
+    )
     if channel_mult != "":
         print(f"got channel_mult: {channel_mult}")
         try:
-            channel_mult = tuple(float(v) for v in channel_mult.strip().split(','))
+            channel_mult = tuple(float(v) for v in channel_mult.strip().split(","))
         except ValueError:
             pass
 
@@ -432,10 +434,10 @@ def create_model(
 
     if monochrome and (not monochrome_adapter):
         in_channels = 1
-        out_channels = (1 if not learn_sigma else 2)
+        out_channels = 1 if not learn_sigma else 2
     else:
         in_channels = 3
-        out_channels = (3 if not learn_sigma else 6)
+        out_channels = 3 if not learn_sigma else 6
 
     return model_cls(
         in_channels=in_channels,
@@ -571,9 +573,9 @@ def sr_create_model_and_diffusion(
     txt_depth=2,
     txt_resolutions="8",
     cross_attn_channels_per_head=-1,
-    cross_attn_init_gain=1.,
-    cross_attn_gain_scale=200.,
-    text_lr_mult=-1.,
+    cross_attn_init_gain=1.0,
+    cross_attn_gain_scale=200.0,
+    text_lr_mult=-1.0,
     txt_output_layers_only=False,
     monochrome=False,
     monochrome_adapter=False,
@@ -600,7 +602,7 @@ def sr_create_model_and_diffusion(
     channels_last_mem=False,
     txt_ff_glu=False,
     txt_ff_mult=4,
-    up_interp_mode='bilinear',
+    up_interp_mode="bilinear",
     weave_v2=False,
     use_checkpoint_lowcost=False,
     weave_use_ff_gain=False,
@@ -616,18 +618,18 @@ def sr_create_model_and_diffusion(
     glide_style_capt_emb=False,
     glide_style_capt_emb_init_scale=0.1,
     glide_style_capt_emb_nonlin=False,
-    clipname='RN50',
+    clipname="RN50",
     clip_use_penultimate_layer=False,
     expand_timestep_base_dim=-1,
     use_checkpoint_below_res=-1,
-    vb_loss_ratio=1000.,
+    vb_loss_ratio=1000.0,
     no_attn=False,
     no_attn_substitute_resblock=False,
     noise_cond=False,
     freeze_capt_encoder=False,
     use_inference_caching=False,
     clipmod=None,
-    post_txt_image_attn='none',
+    post_txt_image_attn="none",
     txt_groupnorm_1group=True,
 ):
     model = sr_create_model(
@@ -792,7 +794,7 @@ def create_gaussian_diffusion(
     use_balanced_loss=False,
     use_v_loss=False,
     use_snr_plus_one_loss=False,
-    vb_loss_ratio=1000.,
+    vb_loss_ratio=1000.0,
 ):
     betas = gd.get_named_beta_schedule(noise_schedule, steps)
     if use_snr_plus_one_loss:
@@ -809,15 +811,18 @@ def create_gaussian_diffusion(
         loss_type = gd.LossType.MSE
     if not timestep_respacing:
         timestep_respacing = [steps]
+
     def diffusion_factory(timestep_respacing_=timestep_respacing):
         cls, kwargs = gd.GaussianDiffusion, {}
         if timestep_respacing_ != [steps]:
             cls = SpacedDiffusion
-            kwargs['use_timesteps'] = space_timesteps(steps, timestep_respacing_)
+            kwargs["use_timesteps"] = space_timesteps(steps, timestep_respacing_)
         return cls(
             betas=betas,
             model_mean_type=(
-                gd.ModelMeanType.EPSILON if not predict_xstart else gd.ModelMeanType.START_X
+                gd.ModelMeanType.EPSILON
+                if not predict_xstart
+                else gd.ModelMeanType.START_X
             ),
             model_var_type=(
                 (
@@ -831,8 +836,9 @@ def create_gaussian_diffusion(
             loss_type=loss_type,
             rescale_timesteps=rescale_timesteps,
             vb_loss_ratio=vb_loss_ratio,
-            **kwargs
+            **kwargs,
         )
+
     if return_diffusion_factory:
         return diffusion_factory
     return diffusion_factory()
@@ -871,12 +877,12 @@ def load_config_to_args(config_path, args, request_approval=False):
 
     updates = {}
 
-    with open(config_path, 'r') as f:
+    with open(config_path, "r") as f:
         conf = json.load(f)
     for k in conf:
-        if k == 'is_super_res':
+        if k == "is_super_res":
             is_super_res = conf[k]
-        elif k == 'tokenizer_config':
+        elif k == "tokenizer_config":
             for k2 in conf[k]:
                 updates[k2] = conf[k][k2]
         else:
@@ -895,9 +901,9 @@ def load_config_to_args(config_path, args, request_approval=False):
         print("Using config file would change these settings:")
         for (k, cur, new) in changes:
             print(f"\t{k}:\t\t{cur}\t\t--> {new}")
-        response = input("Really use config?\n")
+        response = "n"
 
-        use_config = (response.lower() == 'y')
+        use_config = response.lower() == "y"
         print(f"Using config?: {use_config}")
 
     if use_config:
@@ -911,12 +917,12 @@ def load_config_to_model(config_path, overrides=None):
     if overrides is None:
         overrides = {}
 
-    with open(config_path, 'r') as f:
+    with open(config_path, "r") as f:
         conf = json.load(f)
 
-    conf['return_diffusion_factory'] = True
+    conf["return_diffusion_factory"] = True
 
-    is_super_res = conf['is_super_res']
+    is_super_res = conf["is_super_res"]
 
     if is_super_res:
         defaults = sr_model_and_diffusion_defaults()
@@ -927,12 +933,14 @@ def load_config_to_model(config_path, overrides=None):
 
     tokenizer = None
 
-    if model_diffusion_args['txt']:
-        tokenizer_config = conf['tokenizer_config']
+    if model_diffusion_args["txt"]:
+        tokenizer_config = conf["tokenizer_config"]
         tokenizer = load_tokenizer(**tokenizer_config)
-        model_diffusion_args['tokenizer'] = tokenizer
+        model_diffusion_args["tokenizer"] = tokenizer
 
-    creator = sr_create_model_and_diffusion if is_super_res else create_model_and_diffusion
+    creator = (
+        sr_create_model_and_diffusion if is_super_res else create_model_and_diffusion
+    )
 
     model_diffusion_args.update(overrides)
 
@@ -947,5 +955,5 @@ def save_config(config_path, model_diffusion_args, tokenizer_config, is_super_re
         if k == "tokenizer":
             continue
         conf[k] = model_diffusion_args[k]
-    with open(config_path, 'w') as f:
+    with open(config_path, "w") as f:
         json.dump(conf, f, indent=1)
