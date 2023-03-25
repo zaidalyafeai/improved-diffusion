@@ -41,7 +41,7 @@ def run(args):
     seed = -1  # @param {type:"number"}
     seed = int(seed)  # avoids weirdness w/ colab's param type integer
 
-    transcription = args.txt  # @param {type:"string"}
+    transcription = args.text  # @param {type:"string"}
 
     description = "unkown"  # @param {type:"string"}
 
