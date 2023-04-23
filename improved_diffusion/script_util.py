@@ -904,7 +904,7 @@ def load_config_to_args(config_path, args, request_approval=False):
         print("Using config file would change these settings:")
         for (k, cur, new) in changes:
             print(f"\t{k}:\t\t{cur}\t\t--> {new}")
-        response = input("Really use config?\n")
+        response = "no"
 
         use_config = (response.lower() == 'y')
         print(f"Using config?: {use_config}")

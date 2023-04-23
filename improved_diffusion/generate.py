@@ -14,7 +14,7 @@ import os
 
 def run(args):
     ckpt_path = args.path
-    image_logs_path = "logs/generated_" + (ckpt_path.split("/")[-1].split(".")[0])
+    image_logs_path = "logs/generated_" + '_'.join(ckpt_path.split("/")).split(".")[0]
     print("saving to ", image_logs_path)
     os.makedirs(image_logs_path, exist_ok=True)
     model_part = pipeline.SamplingModel.from_config(
@@ -142,6 +142,7 @@ def run(args):
                     if img.size[1] < 128:
                         img = img.resize((256, 128), resample=Image.NEAREST)
                     img_last = s[0]
+                    print(f'saving image {image_logs_path}/{i}.png ...')
                     img.save(f"{image_logs_path}/{i}.png")
 
                     t_end_render = time.time()
