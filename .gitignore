@@ -1,9 +1,10 @@
 .DS_Store
 __pycache__/
-improved_diffusion/.ipynb_checkpoints/*
-.ipynb_checkpoints/*
-calliargen/*
-logs/*
-improved_diffusion.egg-info/*
-CalliarGen/*
-first_batch/*
+improved_diffusion/.ipynb_checkpoints/
+.ipynb_checkpoints/
+calliargen/
+logs/
+improved_diffusion.egg-info/
+CalliarGen/
+first_batch/
+wandb/

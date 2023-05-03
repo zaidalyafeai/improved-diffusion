@@ -42,8 +42,7 @@ def run(args):
     seed = int(seed)  # avoids weirdness w/ colab's param type integer
 
     transcription = args.text  # @param {type:"string"}
-
-    description = "unkown"  # @param {type:"string"}
+    description = args.capt  # @param {type:"string"}
 
     mask_transcription = False
     mask_description = False
@@ -161,6 +160,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="generate new images")
     parser.add_argument("-path", "--path", type=str, required=True)
     parser.add_argument("-text", "--text", type=str, required=True)
-
+    parser.add_argument("-capt", "--capt", type=str, required=True)
     args = parser.parse_args()
     run(args)
