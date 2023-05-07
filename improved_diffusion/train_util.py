@@ -87,11 +87,16 @@ class TrainLoop:
         noise_cond_schedule='cosine',
         noise_cond_steps=1000,
         noise_cond_max_step=-1,
+        use_wandb=False,
+        text_encoder_type='clip'
     ):
-        wandb.login()
-        wandb.init(
-            project="improved-diffusion",  
-        )
+        self.text_encoder_type = text_encoder_type
+        self.use_wandb = use_wandb
+        if use_wandb:
+            wandb.login()
+            wandb.init(
+                project="improved-diffusion",  
+            )
   
         self.model = model
         self.diffusion = diffusion
@@ -550,9 +555,10 @@ class TrainLoop:
                 # micro_cond['txt'] = th.as_tensor(tokenize(self.tokenizer, micro_cond['txt']), device=dist_util.dev())
 
                 txt = th.as_tensor(tokenize(self.tokenizer, micro_cond['txt']), device=dist_util.dev())
-                capt = clip.tokenize(micro_cond['capt'], truncate=True).to(dist_util.dev())
+                if self.text_encoder_type == 'clip':
+                    capt = clip.tokenize(micro_cond['capt'], truncate=True).to(dist_util.dev())
+                    micro_cond['capt'] = capt
                 micro_cond['txt'] = txt
-                micro_cond['capt'] = capt
             last_batch = (i + self.microbatch) >= batch.shape[0]
             t, weights = self.schedule_sampler.sample(micro.shape[0], dist_util.dev())
 
@@ -985,7 +991,10 @@ def find_ema_checkpoint(main_checkpoint, step, rate):
 def log_loss_dict(diffusion, ts, losses):
     for key, values in losses.items():
         logger.logkv_mean(key, values.mean().item())
-        wandb.log({key:values.mean().item()})
+        try:
+            wandb.log({key:values.mean().item()})
+        except:
+            pass
         # Log the quantiles (four quartiles, in particular).
         for sub_t, sub_loss in zip(ts.cpu().numpy(), values.detach().cpu().numpy()):
             quartile = int(4 * sub_t / diffusion.num_timesteps)

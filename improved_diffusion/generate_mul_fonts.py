@@ -31,6 +31,7 @@ def run(args, font_name):
         checkpoint_path=ckpt_path,
         config_path=config_path,
         timestep_respacing="250",
+        clipname="t5-v1_1-xxl"
     )
 
     model_64 = model_part
@@ -170,6 +171,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="generate new images")
     parser.add_argument("-path", "--path", type=str, required=True)
     parser.add_argument("-text", "--text", type=str, required=True)
+    parser.add_argument("-text_encoder_type", "--text_encoder_type", type=str, required=True)
     # parser.add_argument("-capt", "--capt", type=str, required=True)
     args = parser.parse_args()
     for font_name in font_names:

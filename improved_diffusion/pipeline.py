@@ -152,9 +152,10 @@ class SamplingModel(nn.Module):
         noise_cond_schedule='cosine',
         noise_cond_steps=1000,
         guidance_scale_txt=None,  # if provided and different from guidance_scale, applied using step drop
+        text_encoder_type="t5"
     ):
         # dist_util.setup_dist()
-
+        self.text_encoder_type= text_encoder_type
         if denoised_fn is not None:
             pass  # defer to use
         elif dynamic_threshold_p > 0:
@@ -239,7 +240,10 @@ class SamplingModel(nn.Module):
             model_kwargs["txt"] = txt
 
         if batch_capt is not None:
-            capt = clip.tokenize(batch_capt, truncate=True).to(dist_util.dev())
+            if self.text_encoder_type == 'clip':
+                capt = clip.tokenize(batch_capt, truncate=True).to(dist_util.dev())
+            else:
+                capt = batch_capt
             model_kwargs["capt"] = capt
 
         if batch_y is not None:
@@ -278,7 +282,10 @@ class SamplingModel(nn.Module):
                 model_kwargs["unconditional_model_kwargs"]["y"] = y_uncon
 
             if batch_capt is not None:
-                capt_uncon = clip.tokenize(batch_size * [capt_drop_string], truncate=True).to(dist_util.dev())
+                if self.text_encoder_type == 'clip':
+                    capt_uncon = clip.tokenize(batch_size * [capt_drop_string], truncate=True).to(dist_util.dev())
+                else:
+                    capt_uncon = batch_size * [capt_drop_string]
                 model_kwargs["unconditional_model_kwargs"]["capt"] = capt_uncon
 
         if self.model.noise_cond:

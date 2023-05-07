@@ -1,6 +1,6 @@
 BATCH_SIZE = "128"
 IMG_SIZE = "64"
-LOGDIR = f"calliargen/model_10k_mulfont_bs_{BATCH_SIZE}_{IMG_SIZE}x{IMG_SIZE}_non_frozen/"  # fill in directory to save checkpoints/etc.
+LOGDIR = f"calliargen/model_10k_mulfont_bs_{BATCH_SIZE}_{IMG_SIZE}x{IMG_SIZE}_with_t5/"  # fill in directory to save checkpoints/etc.
 DATADIR = "CalliarGen/data_10k_mulfont_64x64_en"
 MODEL_FLAGS=""
 TRAIN_FLAGS=""
@@ -53,7 +53,8 @@ MODEL_FLAGS+=" --using_capt 1"  # use description conditioning
 # # configuration for description conditioning
 
 # use frozen pretrained CLIP ViT-L/14@336px text encoder
-MODEL_FLAGS+=" --clipname ViT-L/14@336px --freeze_capt_encoder 0"
+# MODEL_FLAGS+=" --clipname ViT-L/14@336px --freeze_capt_encoder 1"
+MODEL_FLAGS+=" --clipname t5-v1_1-xxl --freeze_capt_encoder 1"
 # imagen-style attention approach
 MODEL_FLAGS+=" --glide_style_capt_attn 1 --glide_style_capt_emb 0 --clip_use_penultimate_layer 1"
 
@@ -93,9 +94,9 @@ TRAIN_FLAGS+=f" --config_path {LOGDIR}config.json"
 
 TRAIN_FLAGS+= " --log_interval 10 --verbose 0"
 TRAIN_FLAGS+=" --save_interval 5000 --autosave 0"  # todo: support gcs autosave for arbitrary buckets
-
-RESUME_FLAGS = ""  # if training from scratch
-
+TRAIN_FLAGS+=" --use_wandb True"
+# RESUME_FLAGS = "--resume_checkpoint calliargen/model_10k_mulfont_bs_128_64x64_with_t5/model005000.pt"  # if training from scratch
+RESUME_FLAGS = ""
 import os
 
 os.system(f"TOKENIZERS_PARALLELISM=false OPENAI_LOGDIR={LOGDIR} python3 scripts/image_train.py --data_dir {DATADIR}/train {MODEL_FLAGS} {DIFFUSION_FLAGS} {TRAIN_FLAGS} {RESUME_FLAGS}")

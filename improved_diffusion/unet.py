@@ -7,7 +7,7 @@ import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
-
+from .text_encoders import ClipModel, T5Model
 from x_transformers.x_transformers import Rezero
 from einops import rearrange
 from rotary_embedding_torch import apply_rotary_emb, RotaryEmbedding, broadcat
@@ -865,7 +865,6 @@ class UNetModel(nn.Module):
         txt_groupnorm_1group=True,
     ):
         super().__init__()
-
         print(f"unet: got txt={txt}, text_lr_mult={text_lr_mult}, txt_output_layers_only={txt_output_layers_only}, colorize={colorize} | weave_attn {weave_attn} | up_interp_mode={up_interp_mode} | weave_v2={weave_v2}")
 
         if text_lr_mult < 0:
@@ -946,22 +945,21 @@ class UNetModel(nn.Module):
                 use_checkpoint=use_checkpoint,
                 silu_impl=silu_impl
             )
-
+        
+        self.mode = None
         if self.using_capt:
             if clipmod is None:
-                clipmod, _ = clip.load(name=clipname)
-                del clipmod.visual
-            if not freeze_capt_encoder:
-                clipmod.float()
-            self.clipmod = clipmod
-            self.clipmod.positional_embedding = clipmod.positional_embedding
-            self.clipmod.transformer = clipmod.transformer
-            self.capt_embd_dim = clipmod.ln_final.weight.shape[0]
+                if 'ViT' in clipname:
+                    self.model = ClipModel(clipname=clipname, clip_use_penultimate_layer = self.clip_use_penultimate_layer, freeze_capt_encoder = freeze_capt_encoder, glide_style_capt_attn = glide_style_capt_attn)
+                    self.clipmod = self.model.clipmod
+                    self.capt_embd_dim = self.model.capt_embd_dim
+                    self.capt_ln_final = self.model.capt_ln_final
+                    self.text_encoder_type = 'clip'
 
-            if self.clip_use_penultimate_layer:
-                self.capt_ln_final = nn.LayerNorm(self.capt_embd_dim)
-            else:
-                self.capt_ln_final = clipmod.ln_final
+                if 't5' in clipname:
+                    self.model = T5Model(name = 't5-v1_1-xxl', torch_dtype = th.float16)
+                    self.capt_embd_dim = self.model.capt_embd_dim
+                    self.text_encoder_type = 't5'
 
         self.tgt_pos_embs = nn.ModuleDict({})
 
@@ -1441,16 +1439,20 @@ class UNetModel(nn.Module):
         return self.embed_capt(capt_toks)
 
     def embed_capt(self, capt_toks):
-        capt_attn_mask = capt_toks != 0
-        capt = clip_encode_text_nopool(
-            self.clipmod.token_embedding, self.clipmod.positional_embedding, self.clipmod.transformer,
-            capt_toks,
-            ln_final=self.capt_ln_final if self.glide_style_capt_attn else None,
-            use_penultimate_layer=self.clip_use_penultimate_layer,
-            out_format='ndl' if self.glide_style_capt_attn else 'nld',
-            dtype = self.inner_dtype,
-            )
-        return capt, capt_attn_mask
+        if self.text_encoder_type == 'clip':
+            attn_masks = capt_toks != 0
+            capt = clip_encode_text_nopool(
+                self.clipmod.token_embedding, self.clipmod.positional_embedding, self.clipmod.transformer,
+                capt_toks,
+                ln_final=self.capt_ln_final if self.glide_style_capt_attn else None,
+                use_penultimate_layer=self.clip_use_penultimate_layer,
+                out_format='ndl' if self.glide_style_capt_attn else 'nld',
+                dtype = self.inner_dtype,
+                )
+        elif self.text_encoder_type == 't5':
+            capt, attn_masks = self.model.encode(capt_toks, dtype = self.inner_dtype, out_format='ndl' if self.glide_style_capt_attn else 'nld')
+            capt, attn_masks = capt.to('cuda'), attn_masks.to('cuda')
+        return capt, attn_masks
 
     def forward(self, x, timesteps, y=None, txt=None, capt=None, cond_timesteps=None):
         """
