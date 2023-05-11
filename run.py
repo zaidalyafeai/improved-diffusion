@@ -1,7 +1,7 @@
 BATCH_SIZE = "128"
 IMG_SIZE = "64"
-LOGDIR = f"calliargen/model_10k_mulfont_bs_{BATCH_SIZE}_{IMG_SIZE}x{IMG_SIZE}_with_t5/"  # fill in directory to save checkpoints/etc.
-DATADIR = "CalliarGen/data_10k_mulfont_64x64_en"
+LOGDIR = f"calliargen/model_100k_mulfont_bs_{BATCH_SIZE}_{IMG_SIZE}x{IMG_SIZE}_with_t5/"  # fill in directory to save checkpoints/etc.
+DATADIR = "CalliarGen/data_100k_mulfont_64x64_en"
 MODEL_FLAGS=""
 TRAIN_FLAGS=""
 

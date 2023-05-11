@@ -864,6 +864,7 @@ class UNetModel(nn.Module):
         post_txt_image_attn='none',  # 'none', 'final', 'final_res', or 'all'
         txt_groupnorm_1group=True,
     ):
+        self.cached_encoder_capts = {}
         super().__init__()
         print(f"unet: got txt={txt}, text_lr_mult={text_lr_mult}, txt_output_layers_only={txt_output_layers_only}, colorize={colorize} | weave_attn {weave_attn} | up_interp_mode={up_interp_mode} | weave_v2={weave_v2}")
 
@@ -911,7 +912,7 @@ class UNetModel(nn.Module):
         self.glide_style_capt_attn = glide_style_capt_attn
         self.glide_style_capt_emb = glide_style_capt_emb
         self.clip_use_penultimate_layer = clip_use_penultimate_layer
-        self.use_inference_caching = use_inference_caching
+        self.use_inference_caching = False
 
         self.noise_cond = noise_cond
 
@@ -1450,8 +1451,20 @@ class UNetModel(nn.Module):
                 dtype = self.inner_dtype,
                 )
         elif self.text_encoder_type == 't5':
-            capt, attn_masks = self.model.encode(capt_toks, dtype = self.inner_dtype, out_format='ndl' if self.glide_style_capt_attn else 'nld')
-            capt, attn_masks = capt.to('cuda'), attn_masks.to('cuda')
+            out_capts = []
+            out_masks = []            
+            for capt_text in capt_toks:
+                if capt_text in self.cached_encoder_capts:
+                    capt_tokens = self.cached_encoder_capts[capt_text][0]
+                    attn_masks = self.cached_encoder_capts[capt_text][1]
+                else:
+                    capt_tokens, attn_masks = self.model.encode([capt_text], dtype = self.inner_dtype, out_format='ndl' if self.glide_style_capt_attn else 'nld')
+                    self.cached_encoder_capts[capt_text] = [capt_tokens, attn_masks]
+                    if len(self.cached_encoder_capts) > 21:
+                        raise('Cached encoder captions too large')
+                out_capts.append(capt_tokens)
+                out_masks.append(attn_masks)
+            capt, attn_masks = th.cat(out_capts, dim=0).to('cuda'), th.cat(out_masks, dim=0).to('cuda')
         return capt, attn_masks
 
     def forward(self, x, timesteps, y=None, txt=None, capt=None, cond_timesteps=None):
