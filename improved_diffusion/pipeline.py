@@ -80,6 +80,7 @@ class SamplingModel(nn.Module):
         timestep_respacing,
         is_super_res=False,
         class_map=None,
+        clipname= "t5"
     ):
         super().__init__()
         self.model = model
@@ -87,7 +88,7 @@ class SamplingModel(nn.Module):
         self.tokenizer = tokenizer
         self.is_super_res = is_super_res
         self.class_map = class_map
-
+        self.clipname = clipname
         self.set_timestep_respacing(timestep_respacing)
 
     def set_timestep_respacing(self, timestep_respacing, double_mesh_first_n=0):
@@ -116,6 +117,7 @@ class SamplingModel(nn.Module):
             is_super_res=is_super_res,
             timestep_respacing=timestep_respacing,
             class_map=class_map,
+            clipname = overrides['clipname']
         )
 
     def sample(
@@ -154,7 +156,6 @@ class SamplingModel(nn.Module):
         guidance_scale_txt=None,  # if provided and different from guidance_scale, applied using step drop
     ):
         # dist_util.setup_dist()
-
         if denoised_fn is not None:
             pass  # defer to use
         elif dynamic_threshold_p > 0:
@@ -239,7 +240,10 @@ class SamplingModel(nn.Module):
             model_kwargs["txt"] = txt
 
         if batch_capt is not None:
-            capt = clip.tokenize(batch_capt, truncate=True).to(dist_util.dev())
+            if 'ViT' in self.clipname:
+                capt = clip.tokenize(batch_capt, truncate=True).to(dist_util.dev())
+            else:
+                capt = batch_capt
             model_kwargs["capt"] = capt
 
         if batch_y is not None:
@@ -278,7 +282,10 @@ class SamplingModel(nn.Module):
                 model_kwargs["unconditional_model_kwargs"]["y"] = y_uncon
 
             if batch_capt is not None:
-                capt_uncon = clip.tokenize(batch_size * [capt_drop_string], truncate=True).to(dist_util.dev())
+                if 'ViT' in self.clipname:
+                    capt_uncon = clip.tokenize(batch_size * [capt_drop_string], truncate=True).to(dist_util.dev())
+                else:
+                    capt_uncon = batch_size * [capt_drop_string]
                 model_kwargs["unconditional_model_kwargs"]["capt"] = capt_uncon
 
         if self.model.noise_cond:

@@ -20,49 +20,30 @@ font_names = ['diwani decorated', 'diwani diacritized', 'diwani long', 'diwani s
                 'rukaa bold', 'rukaa standard', 'rukaa fast', 'thuluth diwani', 'thuluth standard'
                 ,'square standard', 'free bold', 'free standard', 'free long', 'mobili', 'managa'
                 , 'aljazeera']
-font_names += ['kufi long', 'rukaa diacritized', 'kufi fast', 'rukaa decorated', 'farisi bold']
-def run(args, font_name):
-    ckpt_path = args.path
-    image_logs_path = f"logs/generated_" + '_'.join(ckpt_path.split("/")[1:]).split(".")[0]+f"/{font_name}"
-    config_path = '/'.join(ckpt_path.split('/')[:-1])+"/config.json"
-    print("saving to ", image_logs_path)
-    os.makedirs(image_logs_path, exist_ok=True)
-    model_part = pipeline.SamplingModel.from_config(
-        checkpoint_path=ckpt_path,
-        config_path=config_path,
-        timestep_respacing="250",
-    )
+font_names += ['kufi long', 'kufi diacritized', 'kufi fast', 'kufi decorated', 'mobili managa']
 
-    model_64 = model_part
-
-    # @markdown #### Sampling steps
-
-    steps_64 = 250  # @param {type:"number"}
-
-    uneven_steps_for_upsamplers = True  # @param {type:"boolean"}
-    guidance_scale_64 = 2  # @param {type:"number"}
-    dynamic_threshold_p_64 = 0.995  # @param {type:"number"}
-    frameskip_64 = 25  # @param {type:"number"}
-
-    frameskip_64 = int(frameskip_64)
-
-    # @markdown #### **What should we draw?**
-
-    seed = -1  # @param {type:"number"}
-    seed = int(seed)  # avoids weirdness w/ colab's param type integer
-
-    transcription = args.text  # @param {type:"string"}
-    description = font_name  # @param {type:"string"}
-
-    mask_transcription = False
-    mask_description = False
-
+def generate(
+    model_64, 
+    transcription, 
+    description,
+    image_logs_path,
+    steps_64 = 250,  
+    uneven_steps_for_upsamplers = True,  
+    guidance_scale_64 = 2,  
+    dynamic_threshold_p_64 = 0.99,  
+    frameskip_64 = 25,
+    mask_transcription = False,
+    mask_description = False,
+    seed = -1
+    
+): 
     if seed < 0:
         seed = random.randint(0, 999999)
         print(
             f"Using seed: {seed} (Use this value to reproduce the same image if you like it.)"
         )
 
+    os.makedirs(image_logs_path, exist_ok = True)
     seed_64 = seed_128 = seed_256 = seed_512 = seed
 
     # internal terminology
@@ -162,6 +143,44 @@ def run(args, font_name):
                     t_last_render = t_end_render
 
                     time.sleep(0.1)
+def run(args,):
+    ckpt_path = args.path
+    image_logs_path = f"logs/generated_" + '_'.join(ckpt_path.split("/")[1:]).split(".")[0]
+    i = 0
+    while True:
+        if os.path.isdir(image_logs_path+f"_{i}"):
+            i += 1
+        else:
+            image_logs_path += f"_{i}"
+            print(f'saving to {image_logs_path}')
+            break
+    config_path = '/'.join(ckpt_path.split('/')[:-1])+"/config.json"
+    print("saving to ", image_logs_path)
+    clipname = "t5-v1_1-xxl"
+    if args.text_encoder_type == "clip":
+        clipname = "ViT-L/14@336px"
+    model_part = pipeline.SamplingModel.from_config(
+        checkpoint_path=ckpt_path,
+        config_path=config_path,
+        timestep_respacing="250",
+        clipname=clipname
+    )
+
+    model_64 = model_part
+    transcription = args.text  # @param {type:"string"}
+    if args.capt != "":
+        descriptions = [args.capt] * args.n  # @param {type:"string"}
+        for i, description in enumerate(descriptions):
+            generate(model_64, transcription, description, f"{image_logs_path}/{description}_{i}")
+    else:
+        descriptions = font_names
+        for i, description in enumerate(descriptions):
+            generate(model_64, transcription, description, f"{image_logs_path}/{description}")
+
+    
+
+
+    
 
 
 if __name__ == "__main__":
@@ -170,7 +189,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="generate new images")
     parser.add_argument("-path", "--path", type=str, required=True)
     parser.add_argument("-text", "--text", type=str, required=True)
-    # parser.add_argument("-capt", "--capt", type=str, required=True)
+    parser.add_argument("-text_encoder_type", "--text_encoder_type", type=str, required=True)
+    parser.add_argument("-capt", "--capt", default = "", type=str, required=False)
+    parser.add_argument("-n", "--n", type=int, required=True, default = 25)
     args = parser.parse_args()
-    for font_name in font_names:
-        run(args, font_name)
+    run(args)
