@@ -20,7 +20,7 @@ font_names = ['diwani decorated', 'diwani diacritized', 'diwani long', 'diwani s
                 'rukaa bold', 'rukaa standard', 'rukaa fast', 'thuluth diwani', 'thuluth standard'
                 ,'square standard', 'free bold', 'free standard', 'free long', 'mobili', 'managa'
                 , 'aljazeera']
-font_names += ['kufi long', 'rukaa diacritized', 'kufi fast', 'rukaa decorated', 'farisi bold']
+font_names += ['kufi long', 'kufi diacritized', 'kufi fast', 'kufi decorated', 'mobili managa']
 
 def generate(
     model_64, 
