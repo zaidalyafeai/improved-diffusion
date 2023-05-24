@@ -1,7 +1,7 @@
 BATCH_SIZE = "128"
 IMG_SIZE = "64"
-LOGDIR = f"calliargen/model_1m_mulfont_bs_{BATCH_SIZE}_{IMG_SIZE}x{IMG_SIZE}_brown_with_clip/"  # fill in directory to save checkpoints/etc.
-DATADIR = "CalliarGen/data_1m_mulfont_64x64_en_brown"
+LOGDIR = f"calliargen/model_1m_mulfont_bs_{BATCH_SIZE}_{IMG_SIZE}x{IMG_SIZE}_brown_with_clip_no_scale/"  # fill in directory to save checkpoints/etc.
+DATADIR = "CalliarGen/data_1m_mulfont_64x64_en_brown_no_scale"
 MODEL_FLAGS = ""
 TRAIN_FLAGS = ""
 
@@ -94,8 +94,9 @@ TRAIN_FLAGS += f" --config_path {LOGDIR}config.json"
 
 TRAIN_FLAGS += " --log_interval 10 --verbose 0"
 TRAIN_FLAGS += " --save_interval 5000 --autosave 0"  # todo: support gcs autosave for arbitrary buckets
+TRAIN_FLAGS += " --eval_interval 5000 --autosave 0"  # todo: support gcs autosave for arbitrary buckets
 TRAIN_FLAGS += " --use_wandb True"
-# RESUME_FLAGS = " --resume_checkpoint calliargen/model_100k_mulfont_bs_128_64x64_white_with_t5/model035000.pt"  # if training from scratch
+# RESUME_FLAGS = " --resume_checkpoint calliargen/model_1m_mulfont_bs_128_64x64_brown_with_clip/model020000.pt"  # if training from scratch
 RESUME_FLAGS = ""
 import os
 

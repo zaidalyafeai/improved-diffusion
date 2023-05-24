@@ -192,7 +192,9 @@ def main():
         capt_lr=args.capt_lr,
         freeze_capt_encoder=args.freeze_capt_encoder,
         use_wandb=args.use_wandb,
-        text_encoder_type='t5' if 't5' in args.clipname else 'clip'
+        text_encoder_type='t5' if 't5' in args.clipname else 'clip',
+        data_dir=args.data_dir,
+        eval_interval=args.eval_interval
     ).run_loop()
 
 
@@ -210,6 +212,7 @@ def create_argparser():
         ema_rate="0.9999",  # comma-separated list of EMA values
         log_interval=10,
         save_interval=10000,
+        eval_interval=10000,
         resume_checkpoint="",
         use_fp16=False,
         lg_loss_scale=20,

@@ -4,7 +4,7 @@ import os
 import time
 import subprocess
 from collections import defaultdict
-
+from improved_diffusion.script_util import model_and_diffusion_defaults
 import blobfile as bf
 import numpy as np
 import torch as th
@@ -12,7 +12,8 @@ import torch.distributed as dist
 from torch.nn.parallel.distributed import DistributedDataParallel as DDP
 from torch.optim import AdamW
 from transformer_utils.util.module_utils import get_child_module_by_names
-
+import easyocr
+from tqdm import tqdm
 from . import dist_util, logger
 from .fp16_util import (
     make_master_params,
@@ -21,6 +22,8 @@ from .fp16_util import (
     unflatten_master_params,
     zero_grad,
 )
+import json
+import editdistance
 from .nn import update_ema, update_arithmetic_average, scale_module
 from .resample import LossAwareSampler, UniformSampler, EarlyOnlySampler
 from .gaussian_diffusion import SimpleForwardDiffusion, get_named_beta_schedule
@@ -49,6 +52,7 @@ class TrainLoop:
         log_interval,
         save_interval,
         resume_checkpoint,
+        eval_interval,
         use_fp16=False,
         fp16_scale_growth=1e-3,
         schedule_sampler=None,
@@ -88,10 +92,15 @@ class TrainLoop:
         noise_cond_steps=1000,
         noise_cond_max_step=-1,
         use_wandb=False,
-        text_encoder_type='clip'
+        text_encoder_type='clip',
+        data_dir="",
     ):
         self.text_encoder_type = text_encoder_type
         self.use_wandb = use_wandb
+        self.ocr_reader = easyocr.Reader(['ar'], gpu = False)
+
+        self.data_dir = data_dir
+            
         if use_wandb:
             wandb.login()
             wandb.init(
@@ -116,6 +125,7 @@ class TrainLoop:
         )
         self.log_interval = log_interval
         self.save_interval = save_interval
+        self.eval_interval = eval_interval
         self.resume_checkpoint = resume_checkpoint
         self.use_fp16 = use_fp16
         self.fp16_scale_growth = fp16_scale_growth
@@ -513,12 +523,17 @@ class TrainLoop:
                 t2 = time.time()
                 print(f"{t2-t1:.2f} sec")
                 t1 = t2
-                logger.dumpkvs()
+                metrics = logger.dumpkvs()
+                wandb.log({"loss": metrics["loss"]})
             if (self.step % self.save_interval == 0) and (self.step > 0):
                 self.save()
+
                 # Run for a finite amount of time in integration tests.
                 if os.environ.get("DIFFUSION_TRAINING_TEST", "") and self.step > 0:
                     return
+            if (self.step % self.eval_interval == 0) and (self.step > 0):
+                ocr_metrics = self.evaluate_ocr(max_images= 512)
+                wandb.log(ocr_metrics)
             self.step += 1
         # Save the last checkpoint if it wasn't already saved.
         if (self.step - 1) % self.save_interval != 0:
@@ -612,6 +627,130 @@ class TrainLoop:
             else:
                 (loss * grad_acc_scale).backward()
 
+    def get_edit_distance(self, true_text, pred_text):
+        max_dist = max(len(true_text), len(pred_text))
+        distance = editdistance.eval(true_text, pred_text)
+        return 1 - distance/max_dist
+
+    def evaluate_ocr(self, max_images = 128):
+        base_path = '/'.join(self.data_dir.split('/')[:-1])
+        
+        all_texts = []
+        all_capts = []
+        test_path = f"{base_path}/test"
+        capt_path = f"{base_path}/capts.json"
+
+        with open(capt_path, "r") as f:
+            capts = json.load(f)
+
+        
+        i = 0 
+        for _, img_name in enumerate(os.listdir(test_path)):
+            key, _ = img_name.split('.')    
+            if img_name.endswith(".png"):
+                text_path = f"{test_path}/{img_name[:-4]}.txt"
+                all_texts.append(open(text_path, "r", encoding="utf-8").read())
+                all_capts.append(capts.get(key))
+                if i > max_images:
+                    break
+                i += 1
+        
+        images = self.sample_images(all_texts, all_capts, num_samples = max_images)
+        accuracy = 0
+        distance = 0 
+
+        pbar = tqdm(total=max_images, desc = "Evaluating OCR:")
+        for i, image in enumerate(images):
+            pred_text = self.ocr_reader.readtext(image, detail = 0)
+            if len(pred_text) == 0:
+                pred_text = ""
+            else:
+                pred_text = pred_text[0]
+            true_text = all_texts[i]
+            pbar.update(1)
+            if true_text == pred_text:
+                accuracy += 1
+            distance += self.get_edit_distance(true_text, pred_text)
+        accuracy = accuracy/len(images)
+        distance = distance/len(images)
+        return {"accuracy": accuracy, "distance": distance}
+
+
+    def sample_images(self,
+        texts = [], 
+        capts = [],
+        clip_denoised=True,
+        image_size = 64,
+        num_samples=4,
+        batch_size=16,
+        image_channels = 3,
+        use_ddim=False,
+        model_path="",
+        text_dir="",
+        text_dir_offset=0,
+        log_interval=10,  # ignored
+        seed=-1,
+        char_level=False,
+        max_seq_len=64,
+        config_path="",
+        clf_free_guidance=False,
+        guidance_scale=0.,
+        txt_drop_string='<mask><mask><mask><mask>',  # TODO: model attr
+        state_dict_sandwich=0,
+        capt_input="",
+        max_wandb_images= 8, 
+        ):
+        model_diffusion_args = model_and_diffusion_defaults()
+        model_diffusion_args['tokenizer'] = self.tokenizer
+        self.model.to(dist_util.dev())
+        self.model.eval()
+        n_texts = num_samples // batch_size
+        dist_util.setup_dist()
+        using_text_dir = False
+        all_texts = texts
+        all_capts = capts
+
+        all_images = []
+        all_labels = []
+        all_txts = []
+        pbar = tqdm(total=n_texts, desc = "Sampling Images:")
+        for i in range(n_texts):
+            model_kwargs = {}
+            batch_text = all_texts[i*batch_size: (i+1) * batch_size] 
+            txt = tokenize(self.tokenizer, batch_text)
+            all_txts.extend(txt)
+            txt = th.as_tensor(txt).to(dist_util.dev())
+            model_kwargs["txt"] = txt
+            batch_capt = all_capts[i*batch_size: (i+1) * batch_size] 
+            capt = clip.tokenize(batch_capt, truncate=True).to(dist_util.dev())
+            model_kwargs['capt'] = capt
+
+            sample_fn = (
+                self.diffusion.p_sample_loop if not use_ddim else self.diffusion.ddim_sample_loop
+            )
+            
+            sample = sample_fn(
+                self.model,
+                (batch_size, image_channels, image_size, image_size),
+                # noise=noise,
+                clip_denoised=clip_denoised,
+                model_kwargs=model_kwargs,
+            )
+            sample = ((sample + 1) * 127.5).clamp(0, 255).to(th.uint8)
+            sample = sample.permute(0, 2, 3, 1)
+            sample = sample.contiguous()
+            all_images.extend([s.cpu().numpy() for s in sample])
+            class_cond = False
+            pbar.update(1)
+
+        examples = []
+        for j,image in enumerate(all_images[:max_wandb_images]):
+            image = wandb.Image(image, caption=f"{all_texts[j]} - {all_capts[j]}")
+            examples.append(image)
+        wandb.log({"examples": examples})
+        logger.log("sampling complete")
+        return all_images
+
     def _update_ema(self, params, rate, arith_from_step=0, arith_extra_shift=0, verbose=True):
         def _vprint(*args, **kwargs):
             if verbose:
@@ -625,7 +764,7 @@ class TrainLoop:
                 update_ema(params, self.master_params, rate=rate)
             else:
                 _vprint('update_arithmetic_average')
-                update_arithmetic_average(params, self.master_params, n=n)
+                update_arithmetic_average(params, self.master_params, n=n)                
         else:
             update_ema(params, self.master_params, rate=rate)
 
@@ -991,10 +1130,6 @@ def find_ema_checkpoint(main_checkpoint, step, rate):
 def log_loss_dict(diffusion, ts, losses):
     for key, values in losses.items():
         logger.logkv_mean(key, values.mean().item())
-        try:
-            wandb.log({key:values.mean().item()})
-        except:
-            pass
         # Log the quantiles (four quartiles, in particular).
         for sub_t, sub_loss in zip(ts.cpu().numpy(), values.detach().cpu().numpy()):
             quartile = int(4 * sub_t / diffusion.num_timesteps)
