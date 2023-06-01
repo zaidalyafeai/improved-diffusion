@@ -723,7 +723,9 @@ class TrainLoop:
             model_kwargs["txt"] = txt
             batch_capt = all_capts[i*batch_size: (i+1) * batch_size] 
             capt = clip.tokenize(batch_capt, truncate=True).to(dist_util.dev())
-            model_kwargs['capt'] = capt
+            print(capt.dtype)
+            raise('error')
+            model_kwargs['capt'] = batch_capt
 
             sample_fn = (
                 self.diffusion.p_sample_loop if not use_ddim else self.diffusion.ddim_sample_loop

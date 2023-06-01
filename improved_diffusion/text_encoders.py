@@ -133,6 +133,7 @@ class T5Model:
                 param.requires_grad = False
 
     def tokenize(self, texts):
+        
         text_tokens_and_mask = self.tokenizer(
             texts,
             max_length=77,
@@ -153,7 +154,7 @@ class T5Model:
             )['last_hidden_state'].detach()
         if out_format == 'ndl':
             text_encoder_embs = text_encoder_embs.permute(0, 2, 1)    
-        return text_encoder_embs, att_masks
+        return text_encoder_embs.to(dtype), att_masks.type(dtype)
 
             
 class ClipModel:        
