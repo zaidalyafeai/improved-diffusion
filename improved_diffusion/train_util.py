@@ -654,7 +654,7 @@ class TrainLoop:
                 if i > max_images:
                     break
                 i += 1
-        
+        max_images = min(i, max_images)
         images = self.sample_images(all_texts, all_capts, num_samples = max_images)
         accuracy = 0
         distance = 0 
@@ -698,7 +698,7 @@ class TrainLoop:
         txt_drop_string='<mask><mask><mask><mask>',  # TODO: model attr
         state_dict_sandwich=0,
         capt_input="",
-        max_wandb_images= 8, 
+        max_wandb_images= 32, 
         ):
         model_diffusion_args = model_and_diffusion_defaults()
         model_diffusion_args['tokenizer'] = self.tokenizer
@@ -723,9 +723,7 @@ class TrainLoop:
             model_kwargs["txt"] = txt
             batch_capt = all_capts[i*batch_size: (i+1) * batch_size] 
             capt = clip.tokenize(batch_capt, truncate=True).to(dist_util.dev())
-            print(capt.dtype)
-            raise('error')
-            model_kwargs['capt'] = batch_capt
+            model_kwargs['capt'] = capt
 
             sample_fn = (
                 self.diffusion.p_sample_loop if not use_ddim else self.diffusion.ddim_sample_loop
