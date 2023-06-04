@@ -7,6 +7,8 @@ from collections import defaultdict
 from improved_diffusion.script_util import model_and_diffusion_defaults
 import blobfile as bf
 import numpy as np
+from skimage.transform import resize
+from PIL import Image
 import torch as th
 import torch.distributed as dist
 from torch.nn.parallel.distributed import DistributedDataParallel as DDP
@@ -532,7 +534,7 @@ class TrainLoop:
                 if os.environ.get("DIFFUSION_TRAINING_TEST", "") and self.step > 0:
                     return
             if (self.step % self.eval_interval == 0) and (self.step > 0):
-                ocr_metrics = self.evaluate_ocr(max_images= 512)
+                ocr_metrics = self.evaluate_ocr(max_images= 32)
                 wandb.log(ocr_metrics)
             self.step += 1
         # Save the last checkpoint if it wasn't already saved.
@@ -637,6 +639,8 @@ class TrainLoop:
         
         all_texts = []
         all_capts = []
+        org_images = []
+        
         test_path = f"{base_path}/test"
         capt_path = f"{base_path}/capts.json"
 
@@ -649,13 +653,23 @@ class TrainLoop:
             key, _ = img_name.split('.')    
             if img_name.endswith(".png"):
                 text_path = f"{test_path}/{img_name[:-4]}.txt"
+                im = np.array(Image.open(f"{test_path}/{img_name}"))
+                if len(im.shape) == 2:
+                    im = np.dstack((im, im, im))
+                elif im.shape[-1] == 2:
+                    im = np.dstack((im[...,0], im[...,0], im[...,0]))
+                    
+                assert len(im.shape) == 3 
+                assert im.shape[-1] == 3
+                
+                org_images.append(im)
                 all_texts.append(open(text_path, "r", encoding="utf-8").read())
                 all_capts.append(capts.get(key))
                 if i > max_images:
                     break
                 i += 1
         max_images = min(i, max_images)
-        images = self.sample_images(all_texts, all_capts, num_samples = max_images)
+        images = self.sample_images(all_texts, all_capts, org_images, num_samples = max_images)
         accuracy = 0
         distance = 0 
 
@@ -679,6 +693,7 @@ class TrainLoop:
     def sample_images(self,
         texts = [], 
         capts = [],
+        org_images = [], 
         clip_denoised=True,
         image_size = 64,
         num_samples=4,
@@ -711,12 +726,14 @@ class TrainLoop:
         all_capts = capts
 
         all_images = []
+        all_concat_images = []
         all_labels = []
         all_txts = []
         pbar = tqdm(total=n_texts, desc = "Sampling Images:")
         for i in range(n_texts):
             model_kwargs = {}
             batch_text = all_texts[i*batch_size: (i+1) * batch_size] 
+            batch_org_images = org_images[i*batch_size: (i+1) * batch_size]
             txt = tokenize(self.tokenizer, batch_text)
             all_txts.extend(txt)
             txt = th.as_tensor(txt).to(dist_util.dev())
@@ -739,12 +756,25 @@ class TrainLoop:
             sample = ((sample + 1) * 127.5).clamp(0, 255).to(th.uint8)
             sample = sample.permute(0, 2, 3, 1)
             sample = sample.contiguous()
-            all_images.extend([s.cpu().numpy() for s in sample])
+            for i, s in enumerate(sample):
+                image = s.cpu().numpy()
+                org_image = batch_org_images[i]
+                h, w, _ = org_image.shape
+                W, H = (1, 1)
+                if w > h:
+                    W = h/w
+                else:
+                    H = w/h
+                    
+                res_image = resize(image, (int(64 * W), int(64 * H)))
+                res_org_image = resize(org_image, (int(64 * W), int(64 * H)))
+                all_concat_images.append(np.concatenate((res_image, res_org_image), axis=1))
+                all_images.append(image)
             class_cond = False
             pbar.update(1)
 
         examples = []
-        for j,image in enumerate(all_images[:max_wandb_images]):
+        for j,image in enumerate(all_concat_images[:max_wandb_images]):
             image = wandb.Image(image, caption=f"{all_texts[j]} - {all_capts[j]}")
             examples.append(image)
         wandb.log({"examples": examples})

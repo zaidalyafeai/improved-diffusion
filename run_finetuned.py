@@ -1,7 +1,7 @@
 BATCH_SIZE = "128"
 IMG_SIZE = "64"
-LOGDIR = f"bucket/fintuned_model_2k_calliar_bs_{BATCH_SIZE}_{IMG_SIZE}x{IMG_SIZE}v3/"  # fill in directory to save checkpoints/etc.
-DATADIR = "CalliarGen/data_calliar_no_scalev3"
+LOGDIR = f"bucket/fintuned_model_2k_calliar_bs_{BATCH_SIZE}_{IMG_SIZE}x{IMG_SIZE}v2/"  # fill in directory to save checkpoints/etc.
+DATADIR = "CalliarGen/data_calliar_no_scalev4"
 MODEL_FLAGS = ""
 TRAIN_FLAGS = ""
 
@@ -96,7 +96,7 @@ TRAIN_FLAGS += " --log_interval 10 --verbose 0"
 TRAIN_FLAGS += " --save_interval 500 --autosave 0"  # todo: support gcs autosave for arbitrary buckets
 TRAIN_FLAGS += " --eval_interval 500 --autosave 0"  # todo: support gcs autosave for arbitrary buckets
 TRAIN_FLAGS += " --use_wandb True"
-RESUME_FLAGS = " --resume_checkpoint bucket/model_1m_mulfont_bs_128_64x64_brown_with_clip_no_scalev2/model050000.pt"  # if training from scratch
+RESUME_FLAGS = " --resume_checkpoint bucket/model_1m_mulfont_bs_128_64x64_brown_with_clipv2/model050000.pt"  # if training from scratch
 # RESUME_FLAGS = ""
 import os
 
