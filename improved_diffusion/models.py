@@ -93,5 +93,5 @@ class DiffusionModel:
                 t_end_render = time.time()
                 t_last_render = t_end_render
                 denoised_images.append((s[0], xs[0]))
-                tqdm.update(1)
+                pbar.update(1)
     return denoised_images
