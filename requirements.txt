@@ -1,0 +1,9 @@
+blobfile>=1.0.5
+torch
+tqdm
+transformer-utils
+rotary-embedding-torch
+axial_positional_embedding
+x-transformers==0.25.0
+openai-clip
+wget
