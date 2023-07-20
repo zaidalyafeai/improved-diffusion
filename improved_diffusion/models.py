@@ -12,7 +12,6 @@ from datetime import datetime
 import os
 from tqdm.auto import tqdm
 import wget
-bucket_path = 'https://storage.googleapis.com/arbml-bucket/model_1m_mulfont_bs_128_64x64_brown_with_clipv2'
 import sys
 
 def bar_progress(current, total, width=80):
@@ -21,16 +20,24 @@ def bar_progress(current, total, width=80):
   sys.stdout.write("\r" + progress_message)
   sys.stdout.flush()
 
+bucket_path = 'https://storage.googleapis.com/arbml-bucket'
+
 class DiffusionModel:
 
-  def __init__(self, nsteps_64 = 250, frameskip_64 = 25):
+  def __init__(self, mode="pretrained", nsteps_64 = 250, frameskip_64 = 25):
     os.makedirs('bucket', exist_ok = True)
-    ckpt_path = 'bucket/model.pt'
+    ckpt_path = f"bucket/{mode}_model.pt"
+    config_path = f"bucket/{mode}_config.json"
     if not os.path.exists(ckpt_path):
-      wget.download(f'{bucket_path}/model050000.pt', out = 'bucket/model.pt', bar = bar_progress)
-      wget.download(f'{bucket_path}/config.json', out = 'bucket/config.json', bar = bar_progress)
-
-    config_path = "bucket/config.json"
+      if mode == 'pretrained':
+        wget.download(f'{bucket_path}/model_1m_mulfont_bs_128_64x64_brown_with_clipv2/model050000.pt', out = f'bucket/{mode}_model.pt', bar = bar_progress)
+        wget.download(f'{bucket_path}/model_1m_mulfont_bs_128_64x64_brown_with_clipv2/config.json', out = f'bucket/{mode}_config.json', bar = bar_progress)
+      elif mode == 'finetuned':
+        wget.download(f'{bucket_path}/fintuned_model_2k_calliar_bs_128_64x64v2/ema_0.9999_057000.pt', out = f'bucket/{mode}_model.pt', bar = bar_progress)
+        wget.download(f'{bucket_path}/fintuned_model_2k_calliar_bs_128_64x64v2/config.json', out = f'bucket/{mode}_config.json', bar = bar_progress)
+      else:
+        raise('error not available mode')
+    
     clipname = "ViT-L/14@336px"
     self.model_64 = pipeline.SamplingModel.from_config(
         checkpoint_path=ckpt_path,
@@ -50,13 +57,15 @@ class DiffusionModel:
         return t.cpu().numpy()
     return np.asarray(t)
 
-  def generate(self, prompt, capt,
+  def generate(self, prompt, capt="",
               uneven_steps_for_upsamplers = True,
               guidance_scale_64 = 2,
               dynamic_threshold_p_64 = 0.99,
               seed = -1):
     t = time.time()
     t_last_render = t
+    if capt == "":
+      capt = "unknown"
     
     denoised_images = []
     with torch.cuda.amp.autocast():
