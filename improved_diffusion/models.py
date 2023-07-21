@@ -13,6 +13,12 @@ import os
 from tqdm.auto import tqdm
 import wget
 import sys
+font_names = ['diwani decorated', 'diwani diacritized', 'diwani long', 'diwani standard',
+                'kufi standard', 'kufi curved suqare', 'farisi standard', 'morrocan andulus',
+                'rukaa bold', 'rukaa standard', 'rukaa fast', 'thuluth diwani', 'thuluth standard'
+                ,'square standard', 'free bold', 'free standard', 'free long', 'mobili', 'managa'
+                , 'aljazeera']
+
 
 def bar_progress(current, total, width=80):
   progress_message = "Downloading: %d%% [%d / %d] bytes" % (current / total * 100, current, total)
@@ -57,13 +63,17 @@ class DiffusionModel:
         return t.cpu().numpy()
     return np.asarray(t)
 
-  def generate(self, prompt, capt="",
+  def generate_frames(self, prompt, capt="",
               uneven_steps_for_upsamplers = True,
               guidance_scale_64 = 2,
               dynamic_threshold_p_64 = 0.99,
-              seed = -1):
+              seed = -1, bar = True):
     t = time.time()
     t_last_render = t
+
+    if seed < 0:
+        seed = random.randint(0, 999999)
+
     if capt == "":
       capt = "unknown"
     
@@ -103,4 +113,38 @@ class DiffusionModel:
                 t_last_render = t_end_render
                 denoised_images.append((s[0], xs[0]))
                 pbar.update(1)
+    return denoised_images
+
+  def generate_all(self, prompt,
+              uneven_steps_for_upsamplers = True,
+              guidance_scale_64 = 2,
+              dynamic_threshold_p_64 = 0.99,
+              seed = -1):
+    
+    denoised_images = []
+    for capt in font_names:
+      imgs = self.generate_frames(prompt, capt=capt,
+              uneven_steps_for_upsamplers = uneven_steps_for_upsamplers,
+              guidance_scale_64 = guidance_scale_64,
+              dynamic_threshold_p_64 = dynamic_threshold_p_64,
+              seed = seed)
+      denoised_images.append({capt:imgs[-1][0]})
+    
+    return denoised_images
+  
+  def generate_same(self, prompt, capt = "", n = 4,
+              uneven_steps_for_upsamplers = True,
+              guidance_scale_64 = 2,
+              dynamic_threshold_p_64 = 0.99,
+              seed = -1):
+    
+    denoised_images = []
+    for n in range(n):
+      imgs = self.generate_frames(prompt, capt=capt,
+              uneven_steps_for_upsamplers = uneven_steps_for_upsamplers,
+              guidance_scale_64 = guidance_scale_64,
+              dynamic_threshold_p_64 = dynamic_threshold_p_64,
+              seed = seed)
+      denoised_images.append({capt:imgs[-1][0]})
+    
     return denoised_images
